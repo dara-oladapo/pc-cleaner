@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--
+      PC Cleaner design tokens — a "lab report" palette, not the two AI-tool defaults we're avoiding:
+      not cream+serif+terracotta, and not near-black+single-acid-accent. Cool pale paper in light mode,
+      ink-blue-slate (not flat black) in dark mode, with exactly one functional accent color: Signal teal.
+      Signal is spent ONLY on the primary action and on "how much space will I get back" numbers.
+    -->
+
+    <!-- Light -->
+    <Color x:Key="Paper">#EEF1F3</Color>
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="InkStrong">#12181D</Color>
+    <Color x:Key="InkMuted">#5B6672</Color>
+    <Color x:Key="Hairline">#D7DEE3</Color>
+    <Color x:Key="Signal">#0E7C7B</Color>
+    <Color x:Key="SignalMuted">#E4F1EF</Color>
+    <Color x:Key="Attention">#B8863B</Color>
+    <Color x:Key="AttentionMuted">#F5ECDC</Color>
+    <Color x:Key="OnSignal">#FFFFFF</Color>
+
+    <!-- Dark (mirrored, not inverted: an ink-blue-slate base rather than flat black) -->
+    <Color x:Key="PaperDark">#12161B</Color>
+    <Color x:Key="SurfaceDark">#1A2027</Color>
+    <Color x:Key="InkStrongDark">#EDF1F3</Color>
+    <Color x:Key="InkMutedDark">#8B99A6</Color>
+    <Color x:Key="HairlineDark">#2A323B</Color>
+    <Color x:Key="SignalDark">#4FD1CB</Color>
+    <Color x:Key="SignalMutedDark">#17302E</Color>
+    <Color x:Key="AttentionDark">#D9A857</Color>
+    <Color x:Key="AttentionMutedDark">#3A2F1C</Color>
+    <Color x:Key="OnSignalDark">#0A1513</Color>
+
+    <Color x:Key="White">White</Color>
+    <Color x:Key="Black">Black</Color>
+
+    <SolidColorBrush x:Key="SignalBrush" Color="{StaticResource Signal}"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
+    <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource Hairline}"/>
+</ResourceDictionary>

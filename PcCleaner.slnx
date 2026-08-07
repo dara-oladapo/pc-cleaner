@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PcCleaner.App/PcCleaner.App.csproj" />
+    <Project Path="src/PcCleaner.Core/PcCleaner.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===================== Base controls ===================== -->
+
+    <Style TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+    </Style>
+
+    <Style TargetType="Border">
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+    </Style>
+
+    <Style TargetType="BoxView">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="MinimumHeightRequest" Value="32"/>
+        <Setter Property="MinimumWidthRequest" Value="32"/>
+    </Style>
+
+    <Style TargetType="Entry">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular"/>
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+        <Setter Property="MinimumHeightRequest" Value="40"/>
+    </Style>
+
+    <!-- Default Label: quiet body text (OpenSans stays in a supporting role) -->
+    <Style TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.45" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Ghost button (default/secondary): outline, reads as an instrument control, not an app-store CTA -->
+    <Style TargetType="Button">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="BorderWidth" Value="1"/>
+        <Setter Property="FontFamily" Value="DisplayMedium"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="16,9"/>
+        <Setter Property="MinimumHeightRequest" Value="40"/>
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.4" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Primary button: the ONE place solid Signal teal appears as a fill -->
+    <Style TargetType="Button" x:Key="PrimaryButton">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSignal}, Dark={StaticResource OnSignalDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="BorderWidth" Value="0"/>
+        <Setter Property="FontFamily" Value="DisplayBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CharacterSpacing" Value="0.6" />
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="18,10"/>
+        <Setter Property="MinimumHeightRequest" Value="42"/>
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.35" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Compact ghost button used inline in rows (Remove, Enable/Disable, etc.) -->
+    <Style TargetType="Button" x:Key="InlineButton">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="BorderWidth" Value="1"/>
+        <Setter Property="FontFamily" Value="DisplayMedium"/>
+        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="MinimumHeightRequest" Value="30"/>
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.4" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- ===================== Typography ===================== -->
+
+    <!-- Page title: Space Grotesk carries the app's personality -->
+    <Style TargetType="Label" x:Key="PageTitle">
+        <Setter Property="FontFamily" Value="DisplayBold" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+    </Style>
+
+    <!-- Hero stat: the big reclaimable-size number at the top of each tool -->
+    <Style TargetType="Label" x:Key="HeroNumber">
+        <Setter Property="FontFamily" Value="MonoMedium" />
+        <Setter Property="FontSize" Value="36" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="HeroCaption">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+    <!-- Small tracked label for section headers ("FOLDERS TO SCAN") -->
+    <Style TargetType="Label" x:Key="Eyebrow">
+        <Setter Property="FontFamily" Value="DisplayMedium" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="CharacterSpacing" Value="1.2" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+        <Setter Property="TextTransform" Value="Uppercase" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="RowTitle">
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+    </Style>
+
+    <!-- Monospace path/command text -->
+    <Style TargetType="Label" x:Key="Mono">
+        <Setter Property="FontFamily" Value="MonoRegular" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+    <!-- Tabular monospace size/count figures — the app's signature: every number reads like a terminal readout -->
+    <Style TargetType="Label" x:Key="MonoNumber">
+        <Setter Property="FontFamily" Value="MonoMedium" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="HorizontalTextAlignment" Value="End" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="Caption">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+    <!-- ===================== Pills / badges ===================== -->
+
+    <Style TargetType="Border" x:Key="Pill">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SignalMuted}, Dark={StaticResource SignalMutedDark}}" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 4" />
+        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="PillLabel">
+        <Setter Property="FontFamily" Value="DisplayMedium" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="TextTransform" Value="Uppercase" />
+    </Style>
+
+    <Style TargetType="Border" x:Key="AttentionPill" BasedOn="{StaticResource Pill}">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AttentionMuted}, Dark={StaticResource AttentionMutedDark}}" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="AttentionPillLabel" BasedOn="{StaticResource PillLabel}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Attention}, Dark={StaticResource AttentionDark}}" />
+    </Style>
+
+    <!-- ===================== Meter bar (signature element) ===================== -->
+    <!-- Two BoxViews: a hairline track and a Signal-colored fill whose WidthRequest is bound via ShareToWidthConverter -->
+
+    <Style TargetType="BoxView" x:Key="MeterTrack">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="HeightRequest" Value="3" />
+        <Setter Property="WidthRequest" Value="60" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+    </Style>
+
+    <Style TargetType="BoxView" x:Key="MeterFill">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="HeightRequest" Value="3" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+    </Style>
+
+    <!-- ===================== Shell / navigation ===================== -->
+
+    <Style TargetType="Page" ApplyToDerivedTypes="True">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Paper}, Dark={StaticResource PaperDark}}" />
+    </Style>
+
+    <Style TargetType="Shell" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.BackgroundColor" Value="{AppThemeBinding Light={StaticResource Paper}, Dark={StaticResource PaperDark}}" />
+        <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="Shell.TitleColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+        <Setter Property="Shell.DisabledColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="Shell.UnselectedColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+        <Setter Property="Shell.NavBarHasShadow" Value="False" />
+        <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+        <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             x:Class="PcCleaner.App.Pages.JunkCleanupPage"
+             x:DataType="vm:JunkCleanupViewModel"
+             Title="Junk Cleanup">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="24,20" RowSpacing="16">
+
+        <!-- Hero -->
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Style="{StaticResource Eyebrow}" Text="Reclaimable right now" />
+            <Label Style="{StaticResource HeroNumber}" Text="{Binding SelectedSizeText}" />
+            <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
+        </VerticalStackLayout>
+
+        <HorizontalStackLayout Grid.Row="1" Spacing="10">
+            <Button Text="Scan" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" />
+            <Button Text="Cancel" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+            <ActivityIndicator IsRunning="{Binding IsScanning}" IsVisible="{Binding IsScanning}" />
+        </HorizontalStackLayout>
+
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Items}">
+            <CollectionView.EmptyView>
+                <Label Style="{StaticResource Caption}" Text="No results yet. Tap Scan to look for temp files, caches, and logs." Margin="0,24" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:JunkItemViewModel">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,12" ColumnSpacing="14">
+                        <Grid.Resources>
+                            <Style TargetType="BoxView" x:Key="RowDivider">
+                                <Setter Property="HeightRequest" Value="1" />
+                                <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+                            </Style>
+                        </Grid.Resources>
+                        <BoxView Grid.ColumnSpan="3" Style="{StaticResource RowDivider}" VerticalOptions="End" Opacity="0.6" />
+
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Start" />
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="5">
+                            <Label Style="{StaticResource RowTitle}" Text="{Binding Description}" />
+                            <Border Style="{StaticResource Pill}">
+                                <Label Style="{StaticResource PillLabel}" Text="{Binding CategoryText}" />
+                            </Border>
+                            <Label Style="{StaticResource Mono}" Text="{Binding Path}" LineBreakMode="MiddleTruncation" />
+                            <Grid HorizontalOptions="Start">
+                                <BoxView Style="{StaticResource MeterTrack}" />
+                                <BoxView Style="{StaticResource MeterFill}"
+                                         WidthRequest="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter='60'}" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}" VerticalOptions="Start" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button Grid.Row="3" Text="Clean Selected" Style="{StaticResource PrimaryButton}" Command="{Binding CleanCommand}" HorizontalOptions="Fill" />
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="PcCleaner.App.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:PcCleaner.App.Pages"
+    Title="PC Cleaner"
+    FlyoutBehavior="Disabled">
+
+    <TabBar>
+        <ShellContent
+            Title="Junk Cleanup"
+            ContentTemplate="{DataTemplate pages:JunkCleanupPage}"
+            Route="junk" />
+        <ShellContent
+            Title="Duplicates"
+            ContentTemplate="{DataTemplate pages:DuplicateFinderPage}"
+            Route="duplicates" />
+        <ShellContent
+            Title="Startup"
+            ContentTemplate="{DataTemplate pages:StartupManagerPage}"
+            Route="startup" />
+    </TabBar>
+
+</Shell>

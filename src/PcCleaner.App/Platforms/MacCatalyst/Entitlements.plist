@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <!-- See https://aka.ms/maui-publish-app-store#add-entitlements for more information about adding entitlements.-->
+    <dict>
+        <!--
+          App Sandbox is OFF and intentionally so: a system cleaner needs to read/delete cache & log files
+          belonging to other apps, manage LaunchAgents/LaunchDaemons outside its own container, and (with the
+          user's consent via Full Disk Access in System Settings) scan arbitrary folders for duplicates/large
+          files. None of that is possible inside the sandbox. This is standard for this app category (CleanMyMac,
+          DaisyDisk, OnyX are all unsandboxed) and means this app must be notarized and distributed directly,
+          NOT through the Mac App Store, which requires App Sandbox = true.
+        -->
+        <key>com.apple.security.app-sandbox</key>
+        <false/>
+    </dict>
+</plist>
+
