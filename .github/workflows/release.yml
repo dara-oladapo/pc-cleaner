@@ -1,0 +1,98 @@
+name: Release
+
+# Builds and publishes the Windows installer. Trigger by pushing a tag like `v0.2.0`, or run manually via
+# workflow_dispatch with an explicit version (useful for re-running a release without re-tagging).
+#
+# macOS packaging isn't included here yet — see issue #4 (Mac Catalyst has never been verified on real
+# hardware) and the macOS build instructions in README.md, which still need to be run and adapted for CI
+# on a macos-latest runner once that verification is done.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.2.0) — required for manual runs"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "No version resolved — pass 'version' on workflow_dispatch or push a vX.Y.Z tag." >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore src/PcCleaner.App/PcCleaner.App.csproj
+
+      - name: Run tests
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+
+      - name: Publish self-contained win-x64
+        run: >
+          dotnet publish src/PcCleaner.App/PcCleaner.App.csproj
+          -f net10.0-windows10.0.19041.0
+          -c Release
+          --self-contained
+          -o publish/win-x64
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk
+
+      - name: Pack installer
+        shell: bash
+        run: >
+          vpk pack
+          --packId PCCleaner
+          --packVersion "${{ steps.version.outputs.version }}"
+          --packDir publish/win-x64
+          --mainExe PcCleaner.App.exe
+          --icon publish/win-x64/appicon.ico
+          --packTitle "PC Cleaner"
+          --packAuthors "Dara Oladapo"
+          --outputDir releases/win
+          -y
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            releases/win/PCCleaner-win-Setup.exe \
+            "releases/win/PCCleaner-${{ steps.version.outputs.version }}-full.nupkg" \
+            releases/win/RELEASES \
+            releases/win/releases.win.json \
+            releases/win/assets.win.json \
+            --repo "${{ github.repository }}" \
+            --title "PC Cleaner v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --latest
