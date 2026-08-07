@@ -2,7 +2,9 @@ using Microsoft.Extensions.Logging;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Scanning;
 using PcCleaner.App.Pages;
+using PcCleaner.App.Services;
 using PcCleaner.App.ViewModels;
+using Velopack;
 #if WINDOWS
 using PcCleaner.App.Platforms.Windows;
 #elif MACCATALYST
@@ -15,6 +17,11 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        // Must run before anything else: intercepts install/update/uninstall lifecycle command-line
+        // hooks from the Velopack-generated installer and exits immediately for those, before any UI
+        // would otherwise start up. A no-op when launched normally (not via a Velopack-managed install).
+        VelopackApp.Build().Run();
+
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -55,6 +62,8 @@ public static class MauiProgram
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
 #endif
+
+        services.AddSingleton<UpdateService>();
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
@@ -67,5 +76,8 @@ public static class MauiProgram
 
         services.AddTransient<StartupManagerViewModel>();
         services.AddTransient<StartupManagerPage>();
+
+        services.AddTransient<AboutViewModel>();
+        services.AddTransient<AboutPage>();
     }
 }

@@ -7,6 +7,7 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 - **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), reports reclaimable size, deletes what you select.
 - **Duplicates & Large Files** — scans folders you choose (plus sensible defaults), groups duplicates by content hash, moves selected copies to the Recycle Bin / Trash (never a hard delete).
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.
+- **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.
 
 ## Architecture
 
@@ -16,6 +17,7 @@ src/
   PcCleaner.App/          .NET MAUI app (UI, MVVM, DI)
     Platforms/Windows/    Windows-specific: junk locations, Recycle Bin (SHFileOperation), registry startup items
     Platforms/MacCatalyst/  macOS-specific: junk locations, Trash (NSFileManager), LaunchAgent/Daemon management
+    Services/             UpdateService — wraps Velopack's UpdateManager (check/download/apply against GitHub Releases)
 tests/
   PcCleaner.Core.Tests/   xUnit tests for the cross-platform Core logic
 ```
@@ -48,6 +50,44 @@ Run tests:
 ```powershell
 dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj
 ```
+
+## Releases & auto-update
+
+Installers are built with [Velopack](https://velopack.io) (`vpk` CLI) — it packages a self-contained publish into a real installer (`Setup.exe` on Windows, `.pkg`/`.zip` on macOS) and is what `UpdateService` (`Services/UpdateService.cs`) talks to at runtime to check GitHub Releases for a newer version and apply it. `VelopackApp.Build().Run()` runs as the very first line of `MauiProgram.CreateMauiApp()` — it intercepts the installer's `--veloapp-install` / `--veloapp-uninstall` lifecycle hooks and exits immediately for those, before any UI would start.
+
+Install the CLI once: `dotnet tool install -g vpk`.
+
+**Windows** (verified working end-to-end — build, install, version detection, and clean uninstall all confirmed):
+
+```powershell
+dotnet publish src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-windows10.0.19041.0 -c Release --self-contained -o publish/win-x64
+
+vpk pack `
+  --packId PCCleaner --packVersion 1.0.0 `
+  --packDir publish/win-x64 --mainExe PcCleaner.App.exe `
+  --icon publish/win-x64/appicon.ico `
+  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" `
+  --outputDir releases/win
+```
+
+Produces `releases/win/PCCleaner-win-Setup.exe` plus the `.nupkg`/`RELEASES`/`releases.win.json` files `UpdateService` looks for.
+
+**macOS** (documented, not yet run — needs a Mac with Xcode; same gap as the Mac Catalyst build itself, see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)):
+
+```bash
+dotnet publish src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-maccatalyst -c Release --self-contained -o publish/osx
+
+vpk pack \
+  --packId PCCleaner --packVersion 1.0.0 --channel osx \
+  --packDir publish/osx --mainExe PcCleaner.App \
+  --icon Resources/AppIcon/appicon.icns \
+  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" \
+  --outputDir releases/osx
+```
+
+(`appicon.icns` doesn't exist yet — MAUI's Windows build auto-generates an `.ico` at publish time, but the macOS `.icns` needs to be produced separately, e.g. via `iconutil` on a Mac.)
+
+**Publishing a release:** create a GitHub Release tagged with the version (e.g. `v1.0.0`) on the repo and upload everything from `releases/win/` (and `releases/osx/` once that exists) as release assets — `UpdateService` points at `https://github.com/dara-oladapo/pc-cleaner` via Velopack's `GithubSource` and reads the release feed from there. Until a release is published, "Check for Updates" will always report up to date (there's nothing to compare against yet).
 
 ## macOS: App Sandbox is disabled on purpose
 

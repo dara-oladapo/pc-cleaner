@@ -20,6 +20,10 @@
             Title="Startup"
             ContentTemplate="{DataTemplate pages:StartupManagerPage}"
             Route="startup" />
+        <ShellContent
+            Title="About"
+            ContentTemplate="{DataTemplate pages:AboutPage}"
+            Route="about" />
     </TabBar>
 
 </Shell>
