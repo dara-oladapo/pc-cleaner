@@ -1,0 +1,1667 @@
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PC Cleaner — UI redesign prototype</title>
+
+<style>
+  /* ============================================================
+     Fonts. Loaded from the app's own Resources/Fonts folder so the
+     prototype and the built app render identical type.
+     ============================================================ */
+  @font-face {
+    font-family: "Display";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/SpaceGrotesk-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Display";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/SpaceGrotesk-Bold.ttf") format("truetype");
+    font-weight: 700;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Body";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/IBMPlexSans-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Body";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/IBMPlexSans-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Mono";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/JetBrainsMono-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Mono";
+    src: url("../../src/PcCleaner.App/Resources/Fonts/JetBrainsMono-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-display: swap;
+  }
+
+  /* ============================================================
+     Tokens. These are the exact values that go into
+     Resources/Styles/Colors.xaml and Tokens.xaml.
+     Light is the base; dark redefines tokens only.
+     ============================================================ */
+  :root {
+    --paper: #eef1f3;
+    --surface: #ffffff;
+    --sunken: #e4e9ec;
+    --ink-strong: #12181d;
+    --ink-muted: #5b6672;
+    --hairline: #d7dee3;
+    --signal: #0e7c7b;
+    --signal-muted: #e4f1ef;
+    --on-signal: #ffffff;
+    --attention: #b8863b;
+    --attention-muted: #f5ecdc;
+    --danger: #a8322d;
+    --danger-muted: #f7e7e5;
+    --on-danger: #ffffff;
+    /* Neutral fill for the "used" part of the drive — a slate with the
+       same blue bias as the paper, so it reads as chosen, not default grey. */
+    --occupied: #97a4b0;
+    --shadow: 0 1px 2px rgba(18, 24, 29, 0.06), 0 4px 12px rgba(18, 24, 29, 0.05);
+    --shadow-lift: 0 2px 4px rgba(18, 24, 29, 0.08), 0 12px 28px rgba(18, 24, 29, 0.1);
+
+    /* Prototype chrome only — not app tokens. */
+    --chrome-bg: #dfe4e8;
+    --chrome-ink: #47525d;
+
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 10px;
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 24px;
+    --s-6: 32px;
+    --s-7: 48px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #12161b;
+      --surface: #1a2027;
+      --sunken: #0d1116;
+      --ink-strong: #edf1f3;
+      --ink-muted: #8b99a6;
+      --hairline: #2a323b;
+      --signal: #4fd1cb;
+      --signal-muted: #17302e;
+      --on-signal: #0a1513;
+      --attention: #d9a857;
+      --attention-muted: #3a2f1c;
+      --danger: #e8756d;
+      --danger-muted: #3a1f1d;
+      --on-danger: #21100e;
+      --occupied: #46525f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.32);
+      --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.46), 0 12px 28px rgba(0, 0, 0, 0.42);
+      --chrome-bg: #0a0d11;
+      --chrome-ink: #8b99a6;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #12161b;
+    --surface: #1a2027;
+    --sunken: #0d1116;
+    --ink-strong: #edf1f3;
+    --ink-muted: #8b99a6;
+    --hairline: #2a323b;
+    --signal: #4fd1cb;
+    --signal-muted: #17302e;
+    --on-signal: #0a1513;
+    --attention: #d9a857;
+    --attention-muted: #3a2f1c;
+    --danger: #e8756d;
+    --danger-muted: #3a1f1d;
+    --on-danger: #21100e;
+    --occupied: #46525f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.32);
+    --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.46), 0 12px 28px rgba(0, 0, 0, 0.42);
+    --chrome-bg: #0a0d11;
+    --chrome-ink: #8b99a6;
+  }
+
+  /* ============================================================
+     Base
+     ============================================================ */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--chrome-bg);
+    color: var(--ink-strong);
+    font-family: "Body", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  /* ============================================================
+     Prototype chrome — deliberately plain so it never reads as
+     part of the app being designed.
+     ============================================================ */
+  .proto-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-5);
+    color: var(--chrome-ink);
+  }
+
+  .proto-bar h1 {
+    margin: 0;
+    font-family: "Display", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--chrome-ink);
+  }
+
+  .proto-bar .note {
+    font-size: 12px;
+    max-width: 46ch;
+  }
+
+  .proto-spacer { flex: 1 1 auto; }
+
+  .proto-toggle {
+    font: inherit;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid currentColor;
+    background: transparent;
+    color: var(--chrome-ink);
+    cursor: pointer;
+  }
+
+  .proto-toggle:hover { color: var(--ink-strong); }
+
+  .frame-wrap {
+    padding: 0 var(--s-5) var(--s-6);
+    overflow-x: auto;
+  }
+
+  /* The app window. Fixed at the real default size (1120×780) so
+     spacing decisions are judged at the size they'll actually ship. */
+  .window {
+    width: 1120px;
+    height: 780px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 216px 1fr;
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ============================================================
+     Nav rail
+     ============================================================ */
+  .rail {
+    background: var(--surface);
+    border-right: 1px solid var(--hairline);
+    display: flex;
+    flex-direction: column;
+    padding: var(--s-5) var(--s-3) var(--s-3);
+    gap: var(--s-1);
+  }
+
+  .rail-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 var(--s-3) var(--s-5);
+  }
+
+  .rail-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-sm);
+    background: var(--signal);
+    color: var(--on-signal);
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+
+  .rail-name {
+    font-family: "Display", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px var(--s-3);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--ink-muted);
+    font-family: "Display", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+
+  .nav-item svg { flex: none; }
+
+  .nav-item:hover { background: var(--sunken); color: var(--ink-strong); }
+
+  .nav-item[aria-current="page"] {
+    background: var(--signal-muted);
+    color: var(--signal);
+    font-weight: 700;
+  }
+
+
+
+  .rail-foot { margin-top: auto; }
+
+  /* ============================================================
+     Stage / screens
+     ============================================================ */
+  .stage { overflow: hidden; position: relative; }
+
+  .screen {
+    display: none;
+    height: 100%;
+    grid-template-rows: auto 1fr auto;
+    padding: var(--s-5) var(--s-6);
+    gap: var(--s-4);
+  }
+
+  .screen.is-active { display: grid; }
+
+  .screen-head { display: flex; align-items: flex-end; gap: var(--s-4); }
+
+  .eyebrow {
+    font-family: "Display", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .page-title {
+    margin: 2px 0 0;
+    font-family: "Display", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-number {
+    font-family: "Mono", monospace;
+    font-weight: 500;
+    font-size: 38px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--signal);
+  }
+
+  .hero-caption { font-size: 13px; color: var(--ink-muted); }
+
+  /* ============================================================
+     Capacity readout — the signature element.
+     One horizontal bar showing the real drive: occupied, the slice
+     we can reclaim, and free. The reclaimable slice sits against
+     the free segment because that is where it is about to go.
+     ============================================================ */
+  .capacity { display: flex; flex-direction: column; gap: var(--s-3); }
+
+  .capacity-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+  }
+
+  .capacity-drive {
+    font-family: "Mono", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .bar {
+    display: flex;
+    height: 46px;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--sunken);
+    border: 1px solid var(--hairline);
+  }
+
+  .seg { height: 100%; }
+  .seg-occupied { background: var(--occupied); }
+  .seg-free { background: var(--sunken); }
+
+  .seg-reclaim {
+    background: var(--signal);
+    position: relative;
+    transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Tick scale — the instrument tell. Quarters of the real capacity. */
+  .ticks {
+    display: flex;
+    justify-content: space-between;
+    font-family: "Mono", monospace;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .ticks span { position: relative; padding-top: 7px; }
+
+  .ticks span::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 4px;
+    background: var(--hairline);
+  }
+
+  .ticks span:last-child::before { left: auto; right: 0; }
+
+  .legend { display: flex; gap: var(--s-5); flex-wrap: wrap; }
+
+  .legend-item { display: flex; align-items: center; gap: var(--s-2); font-size: 12px; }
+
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: none;
+  }
+
+  .legend-value {
+    font-family: "Mono", monospace;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-strong);
+  }
+
+  .legend-label { color: var(--ink-muted); }
+
+  /* ============================================================
+     Buttons
+     ============================================================ */
+  .btn {
+    font-family: "Display", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 10px 16px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--hairline);
+    background: transparent;
+    color: var(--ink-strong);
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+
+  .btn:hover { background: var(--sunken); }
+
+  .btn-primary {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: var(--on-signal);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 11px 20px;
+  }
+
+  .btn-primary:hover { filter: brightness(1.08); background: var(--signal); }
+
+  .btn-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--on-danger);
+    font-weight: 700;
+  }
+
+  .btn-danger:hover { filter: brightness(1.08); background: var(--danger); }
+
+  .btn-inline {
+    font-size: 11px;
+    padding: 5px 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-link {
+    border: 0;
+    background: transparent;
+    padding: 4px 0;
+    color: var(--signal);
+    font-family: "Display", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .btn:disabled { opacity: 0.38; cursor: default; }
+
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* ============================================================
+     Cards / tool grid
+     ============================================================ */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-3);
+  }
+
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    font: inherit;
+    color: inherit;
+  }
+
+  .tool-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--signal);
+  }
+
+  .tool-card-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    color: var(--signal);
+  }
+
+  .tool-card-name {
+    font-family: "Display", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-strong);
+    letter-spacing: 0.01em;
+  }
+
+  .tool-card-value {
+    font-family: "Mono", monospace;
+    font-weight: 500;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .tool-card-meta { font-size: 12px; color: var(--ink-muted); }
+
+  /* ============================================================
+     Lists
+     ============================================================ */
+  .list-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding-bottom: var(--s-2);
+  }
+
+  .selected-count {
+    font-family: "Mono", monospace;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+    margin-left: auto;
+  }
+
+  .scroller {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    padding-right: var(--s-1);
+  }
+
+  .group-label {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-bottom: var(--s-2);
+  }
+
+  .group-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--hairline);
+  }
+
+  .group-total {
+    font-family: "Mono", monospace;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .rows { display: flex; flex-direction: column; gap: 6px; }
+
+  .row {
+    display: grid;
+    grid-template-columns: auto 1fr 132px auto;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+  }
+
+  .row:hover { border-color: var(--signal); }
+
+  .row-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+  .row-title {
+    font-weight: 600;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+
+  .row-path {
+    font-family: "Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-size {
+    font-family: "Mono", monospace;
+    font-weight: 500;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* Row meter — the same device as the capacity bar, at row scale.
+     Width is proportional to the largest item in the list. */
+  .meter {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--sunken);
+    overflow: hidden;
+  }
+
+  .meter-fill { height: 100%; background: var(--signal); border-radius: 2px; }
+
+  /* Checkbox */
+  .check {
+    appearance: none;
+    width: 17px;
+    height: 17px;
+    flex: none;
+    border: 1.5px solid var(--ink-muted);
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+
+  .check::after {
+    content: "";
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid var(--on-signal);
+    border-bottom: 2px solid var(--on-signal);
+    transform: rotate(-45deg) translate(1px, -1px) scale(0);
+    transition: transform 0.12s ease;
+  }
+
+  .check:checked {
+    background: var(--signal);
+    border-color: var(--signal);
+  }
+
+  .check:checked::after { transform: rotate(-45deg) translate(1px, -1px) scale(1); }
+
+  /* Pills */
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: var(--r-sm);
+    background: var(--signal-muted);
+    color: var(--signal);
+    font-family: "Display", sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pill-attention { background: var(--attention-muted); color: var(--attention); }
+  .pill-quiet { background: var(--sunken); color: var(--ink-muted); }
+
+  /* ============================================================
+     Progress — indeterminate, because the scanners report a file
+     count and not a percentage. Never fake a percentage.
+     ============================================================ */
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: 10px var(--s-4);
+    background: var(--signal-muted);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--sunken);
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    width: 34%;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--signal);
+    animation: sweep 1.4s ease-in-out infinite;
+  }
+
+  @keyframes sweep {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(320%); }
+  }
+
+  .progress-text {
+    font-family: "Mono", monospace;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  /* Determinate stepper — honest on the dashboard, where "2 of 4
+     tools finished" is a real fraction. */
+  .steps { display: flex; gap: 5px; }
+
+  .step {
+    width: 34px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--sunken);
+  }
+
+  .step.is-done { background: var(--signal); }
+
+  /* ============================================================
+     Empty & done states
+     ============================================================ */
+  .state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--s-3);
+    height: 100%;
+    max-width: 46ch;
+  }
+
+  .state-icon { color: var(--ink-muted); opacity: 0.7; }
+
+  .state-title {
+    font-family: "Display", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .state-body { color: var(--ink-muted); font-size: 13.5px; }
+
+  .state-done .state-icon { color: var(--signal); opacity: 1; }
+
+  /* ============================================================
+     Folder chips
+     ============================================================ */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 5px 6px 5px 10px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-sm);
+    font-family: "Mono", monospace;
+    font-size: 11px;
+  }
+
+  .chip button {
+    border: 0;
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  .chip button:hover { color: var(--danger); background: var(--danger-muted); }
+
+  /* ============================================================
+     Dialog — the confirmation that does not exist today
+     ============================================================ */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 18, 0.5);
+    display: none;
+    place-items: center;
+    padding: var(--s-5);
+    z-index: 10;
+  }
+
+  .scrim.is-open { display: grid; }
+
+  .dialog {
+    width: 440px;
+    max-width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lift);
+    padding: var(--s-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+
+  .dialog-title {
+    font-family: "Display", sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .dialog-body { font-size: 13.5px; color: var(--ink-muted); }
+
+  .dialog-body strong { color: var(--ink-strong); font-weight: 600; }
+
+  .dialog-manifest {
+    background: var(--sunken);
+    border-radius: var(--r-sm);
+    padding: 10px var(--s-3);
+    font-family: "Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+  }
+
+  /* ============================================================
+     About
+     ============================================================ */
+  .prose { max-width: 62ch; display: flex; flex-direction: column; gap: var(--s-5); }
+
+  .prose p { margin: 4px 0 0; color: var(--ink-muted); font-size: 13.5px; }
+
+  .mono-line {
+    font-family: "Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  /* ============================================================
+     Design notes below the frame
+     ============================================================ */
+  .notes {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: var(--s-6) var(--s-5) var(--s-7);
+    color: var(--chrome-ink);
+  }
+
+  .notes h2 {
+    font-family: "Display", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 var(--s-3);
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--s-5);
+  }
+
+  .notes h3 {
+    font-family: "Display", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--chrome-ink);
+  }
+
+  .notes p { margin: 0; font-size: 13px; line-height: 1.55; }
+
+  .notes code {
+    font-family: "Mono", monospace;
+    font-size: 12px;
+  }
+
+  @media (max-width: 1200px) {
+    .frame-wrap { padding-left: var(--s-3); padding-right: var(--s-3); }
+  }
+</style>
+
+<!-- Icon set. Geometric, single-weight strokes — the same visual family
+     as the app mark (three ascending bars). No icon-font dependency. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-dashboard" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+    <path d="M4 16v-4M10 16V8M16 16V4" />
+  </symbol>
+  <symbol id="i-junk" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.5 6h13M8 6V4h4v2M5.5 6l.8 10.2a1 1 0 0 0 1 .8h5.4a1 1 0 0 0 1-.8L14.5 6" />
+  </symbol>
+  <symbol id="i-duplicates" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M7.5 3.5h9v9M3.5 7.5h9v9h-9z" />
+  </symbol>
+  <symbol id="i-large" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M5 2.5h6.5L15.5 6.5v11h-11zM11.5 2.5v4h4" />
+    <path d="M7.5 13.5h5" stroke-linecap="round" />
+  </symbol>
+  <symbol id="i-startup" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <path d="M10 3v6.5M6.2 5.4a6.5 6.5 0 1 0 7.6 0" />
+  </symbol>
+  <symbol id="i-about" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <circle cx="10" cy="10" r="7.2" />
+    <path d="M10 9.2v4.4M10 6.4v.6" />
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 12.5l5.5 5.5L20 6.5" />
+  </symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="M15.5 15.5L21 21" />
+  </symbol>
+</svg>
+
+<div class="proto-bar">
+  <h1>PC Cleaner · redesign prototype</h1>
+  <span class="note">Design reference for the MAUI port. The rail switches screens; the Clean and Delete buttons open the real confirmation copy.</span>
+  <span class="proto-spacer"></span>
+  <button class="proto-toggle" id="themeToggle" type="button">Switch to dark</button>
+</div>
+
+<div class="frame-wrap">
+  <div class="window">
+
+    <!-- ============ NAV RAIL ============ -->
+    <nav class="rail" aria-label="Sections">
+      <div class="rail-brand">
+        <span class="rail-mark"><svg width="15" height="15" aria-hidden="true"><use href="#i-dashboard" /></svg></span>
+        <span class="rail-name">PC Cleaner</span>
+      </div>
+
+      <button class="nav-item" type="button" data-screen="dashboard" aria-current="page">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-dashboard" /></svg> Dashboard
+      </button>
+      <button class="nav-item" type="button" data-screen="junk">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-junk" /></svg> Junk Files
+      </button>
+      <button class="nav-item" type="button" data-screen="duplicates">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-duplicates" /></svg> Duplicates
+      </button>
+      <button class="nav-item" type="button" data-screen="large">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-large" /></svg> Large Files
+      </button>
+      <button class="nav-item" type="button" data-screen="startup">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-startup" /></svg> Startup
+      </button>
+
+      <div class="rail-foot">
+        <button class="nav-item" type="button" data-screen="about">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-about" /></svg> About
+        </button>
+      </div>
+    </nav>
+
+    <!-- ============ STAGE ============ -->
+    <main class="stage">
+
+      <!-- ---------- DASHBOARD ---------- -->
+      <section class="screen is-active" id="screen-dashboard">
+        <div>
+          <div class="eyebrow">This computer</div>
+          <h2 class="page-title">Windows (C:) · 476 GB drive</h2>
+        </div>
+
+        <div class="scroller" style="gap: var(--s-5)">
+          <!-- Signature element: the capacity readout -->
+          <div class="capacity">
+            <div class="capacity-head">
+              <div>
+                <div class="hero-number" id="reclaimValue">9.31 GB</div>
+                <div class="hero-caption" id="reclaimCaption">can be reclaimed from 55 items across 3 tools.</div>
+              </div>
+              <div class="capacity-drive">82.4 GB free of 476 GB</div>
+            </div>
+
+            <div class="bar" role="img" aria-label="Drive capacity: 384 GB occupied, 9.31 GB reclaimable, 82.4 GB free of 476 GB total">
+              <div class="seg seg-occupied" style="width: 80.7%"></div>
+              <div class="seg seg-reclaim" id="reclaimSeg" style="width: 2.0%"></div>
+              <div class="seg seg-free" style="width: 17.3%"></div>
+            </div>
+
+            <div class="ticks" aria-hidden="true">
+              <span>0</span><span>119 GB</span><span>238 GB</span><span>357 GB</span><span>476 GB</span>
+            </div>
+
+            <div class="legend">
+              <div class="legend-item">
+                <span class="swatch" style="background: var(--occupied)"></span>
+                <span class="legend-value">384 GB</span> <span class="legend-label">in use</span>
+              </div>
+              <div class="legend-item">
+                <span class="swatch" style="background: var(--signal)"></span>
+                <span class="legend-value">9.31 GB</span> <span class="legend-label">reclaimable</span>
+              </div>
+              <div class="legend-item">
+                <span class="swatch" style="background: var(--sunken); border: 1px solid var(--hairline)"></span>
+                <span class="legend-value">82.4 GB</span> <span class="legend-label">free</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live scan state, hidden until "Scan everything" runs -->
+          <div class="progress" id="dashProgress" style="display:none">
+            <div class="steps" aria-hidden="true">
+              <span class="step is-done"></span><span class="step is-done"></span><span class="step"></span><span class="step"></span>
+            </div>
+            <div class="progress-track"><div class="progress-bar"></div></div>
+            <div class="progress-text" id="dashProgressText">Large files · 2 of 4 finished · 41,206 files read</div>
+          </div>
+
+          <div>
+            <div class="eyebrow" style="margin-bottom: var(--s-3)">Last scan · 4 minutes ago</div>
+            <div class="tool-grid">
+              <button class="tool-card" type="button" data-screen="junk">
+                <span class="tool-card-head">
+                  <svg width="17" height="17" aria-hidden="true"><use href="#i-junk" /></svg>
+                  <span class="tool-card-name">Junk Files</span>
+                </span>
+                <span class="tool-card-value">2.41 GB</span>
+                <span class="tool-card-meta">14 locations · deleted permanently</span>
+              </button>
+
+              <button class="tool-card" type="button" data-screen="duplicates">
+                <span class="tool-card-head">
+                  <svg width="17" height="17" aria-hidden="true"><use href="#i-duplicates" /></svg>
+                  <span class="tool-card-name">Duplicates</span>
+                </span>
+                <span class="tool-card-value">812 MB</span>
+                <span class="tool-card-meta">23 groups · moved to Recycle Bin</span>
+              </button>
+
+              <button class="tool-card" type="button" data-screen="large">
+                <span class="tool-card-head">
+                  <svg width="17" height="17" aria-hidden="true"><use href="#i-large" /></svg>
+                  <span class="tool-card-name">Large Files</span>
+                </span>
+                <span class="tool-card-value">6.09 GB</span>
+                <span class="tool-card-meta">18 files over 100 MB</span>
+              </button>
+
+              <button class="tool-card" type="button" data-screen="startup">
+                <span class="tool-card-head">
+                  <svg width="17" height="17" aria-hidden="true"><use href="#i-startup" /></svg>
+                  <span class="tool-card-name">Startup</span>
+                </span>
+                <span class="tool-card-value">9 apps</span>
+                <span class="tool-card-meta">6 launch at login</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button" id="scanAll">Scan everything</button>
+          <button class="btn" type="button" id="cancelAll" style="display:none">Stop scan</button>
+          <span class="hero-caption">Reads every tool in one pass. Nothing is deleted until you choose it.</span>
+        </div>
+      </section>
+
+      <!-- ---------- JUNK FILES ---------- -->
+      <section class="screen" id="screen-junk">
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">Selected to remove</div>
+            <div class="hero-number">2.41 GB</div>
+            <div class="hero-caption">14 locations found. Junk is regenerated by the apps that made it.</div>
+          </div>
+        </div>
+
+        <div class="scroller">
+          <div class="list-head">
+            <button class="btn btn-inline" type="button">Select none</button>
+            <button class="btn btn-inline" type="button">Select all</button>
+            <span class="selected-count">14 of 14 selected · 2.41 GB</span>
+          </div>
+
+          <!-- Grouped by JunkCategory — the grouping is real, it comes
+               from the model, not from a desire for section headers. -->
+          <div>
+            <div class="group-label">
+              <span class="eyebrow">Browser cache</span>
+              <span class="group-rule"></span>
+              <span class="group-total">1.44 GB</span>
+            </div>
+            <div class="rows">
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="Chrome cache" />
+                <div class="row-main">
+                  <div class="row-title">Chrome cache</div>
+                  <div class="row-path">C:\Users\dara\AppData\Local\Google\Chrome\User Data\Default\Cache</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 100%"></div></div>
+                <div class="row-size">982 MB</div>
+              </div>
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="Edge cache" />
+                <div class="row-main">
+                  <div class="row-title">Edge cache</div>
+                  <div class="row-path">C:\Users\dara\AppData\Local\Microsoft\Edge\User Data\Default\Cache</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 48%"></div></div>
+                <div class="row-size">471 MB</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="group-label">
+              <span class="eyebrow">Temp files</span>
+              <span class="group-rule"></span>
+              <span class="group-total">648 MB</span>
+            </div>
+            <div class="rows">
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="User temp folder" />
+                <div class="row-main">
+                  <div class="row-title">User temp folder</div>
+                  <div class="row-path">C:\Users\dara\AppData\Local\Temp</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 44%"></div></div>
+                <div class="row-size">431 MB</div>
+              </div>
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="Windows temp folder" />
+                <div class="row-main">
+                  <div class="row-title">Windows temp folder</div>
+                  <div class="row-path">C:\Windows\Temp</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 22%"></div></div>
+                <div class="row-size">217 MB</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="group-label">
+              <span class="eyebrow">Package cache</span>
+              <span class="group-rule"></span>
+              <span class="group-total">338 MB</span>
+            </div>
+            <div class="rows">
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="npm cache" />
+                <div class="row-main">
+                  <div class="row-title">npm cache</div>
+                  <div class="row-path">C:\Users\dara\AppData\Local\npm-cache</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 21%"></div></div>
+                <div class="row-size">206 MB</div>
+              </div>
+              <div class="row">
+                <input class="check" type="checkbox" checked aria-label="NuGet package cache" />
+                <div class="row-main">
+                  <div class="row-title">NuGet package cache</div>
+                  <div class="row-path">C:\Users\dara\.nuget\packages</div>
+                </div>
+                <div class="meter"><div class="meter-fill" style="width: 13%"></div></div>
+                <div class="row-size">132 MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Scan again</button>
+          <button class="btn btn-danger" type="button" data-dialog="junk">Clean 2.41 GB</button>
+          <span class="hero-caption">These are deleted permanently, not moved to the Recycle Bin.</span>
+        </div>
+      </section>
+
+      <!-- ---------- DUPLICATES ---------- -->
+      <section class="screen" id="screen-duplicates">
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">Selected to remove</div>
+            <div class="hero-number">812 MB</div>
+            <div class="hero-caption">23 groups of identical files. One copy in each group is kept.</div>
+          </div>
+        </div>
+
+        <div class="scroller">
+          <div>
+            <div class="eyebrow" style="margin-bottom: var(--s-2)">Folders to scan</div>
+            <div class="chips">
+              <span class="chip">C:\Users\dara\Documents <button type="button" aria-label="Remove Documents">×</button></span>
+              <span class="chip">C:\Users\dara\Pictures <button type="button" aria-label="Remove Pictures">×</button></span>
+              <span class="chip">C:\Users\dara\Downloads <button type="button" aria-label="Remove Downloads">×</button></span>
+              <button class="btn btn-inline" type="button">Add folder…</button>
+            </div>
+          </div>
+
+          <div class="list-head">
+            <button class="btn btn-inline" type="button">Select none</button>
+            <span class="selected-count">23 of 46 copies selected · 812 MB</span>
+          </div>
+
+          <div class="rows">
+            <div class="row" style="grid-template-columns: 1fr 132px auto">
+              <div class="row-main">
+                <div class="row-title">2 copies · 214 MB each <span class="pill">Video</span></div>
+                <div class="row-path" style="color: var(--ink-strong)">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" aria-label="Keep this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Videos\shoot-final.mp4 <span class="pill pill-quiet">Kept</span>
+                  </label>
+                </div>
+                <div class="row-path">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" checked aria-label="Remove this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Downloads\shoot-final (1).mp4
+                  </label>
+                </div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 100%"></div></div>
+              <div class="row-size">214 MB</div>
+            </div>
+
+            <div class="row" style="grid-template-columns: 1fr 132px auto">
+              <div class="row-main">
+                <div class="row-title">3 copies · 48.2 MB each <span class="pill">Archive</span></div>
+                <div class="row-path" style="color: var(--ink-strong)">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" aria-label="Keep this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Documents\accounts-2025.zip <span class="pill pill-quiet">Kept</span>
+                  </label>
+                </div>
+                <div class="row-path">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" checked aria-label="Remove this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Downloads\accounts-2025.zip
+                  </label>
+                </div>
+                <div class="row-path">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" checked aria-label="Remove this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Desktop\accounts-2025 (copy).zip
+                  </label>
+                </div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 45%"></div></div>
+              <div class="row-size">96.4 MB</div>
+            </div>
+
+            <div class="row" style="grid-template-columns: 1fr 132px auto">
+              <div class="row-main">
+                <div class="row-title">2 copies · 31.7 MB each <span class="pill">Image</span></div>
+                <div class="row-path" style="color: var(--ink-strong)">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" aria-label="Keep this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Pictures\2025\wedding-raw-018.dng <span class="pill pill-quiet">Kept</span>
+                  </label>
+                </div>
+                <div class="row-path">
+                  <label style="display:flex;gap:8px;align-items:center">
+                    <input class="check" type="checkbox" checked aria-label="Remove this copy" style="width:15px;height:15px" />
+                    C:\Users\dara\Pictures\import\wedding-raw-018.dng
+                  </label>
+                </div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 15%"></div></div>
+              <div class="row-size">31.7 MB</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Scan again</button>
+          <button class="btn btn-danger" type="button" data-dialog="duplicates">Move 812 MB to Recycle Bin</button>
+        </div>
+      </section>
+
+      <!-- ---------- LARGE FILES (new surface) ---------- -->
+      <section class="screen" id="screen-large">
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">Selected to remove</div>
+            <div class="hero-number">6.09 GB</div>
+            <div class="hero-caption">18 files over 100 MB. Nothing here is junk — check before you remove it.</div>
+          </div>
+        </div>
+
+        <div class="scroller">
+          <div class="list-head">
+            <button class="btn btn-inline" type="button">Select none</button>
+            <span class="selected-count">3 of 18 selected · 6.09 GB</span>
+          </div>
+
+          <div class="rows">
+            <div class="row">
+              <input class="check" type="checkbox" checked aria-label="Select archive.tar.gz" />
+              <div class="row-main">
+                <div class="row-title">archive-2024.tar.gz</div>
+                <div class="row-path">C:\Users\dara\Downloads\archive-2024.tar.gz · last opened 14 Mar 2025</div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 100%"></div></div>
+              <div class="row-size">3.12 GB</div>
+            </div>
+            <div class="row">
+              <input class="check" type="checkbox" checked aria-label="Select ubuntu iso" />
+              <div class="row-main">
+                <div class="row-title">ubuntu-24.04-desktop-amd64.iso</div>
+                <div class="row-path">C:\Users\dara\Downloads\ubuntu-24.04-desktop-amd64.iso · last opened 2 Nov 2024</div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 68%"></div></div>
+              <div class="row-size">2.11 GB</div>
+            </div>
+            <div class="row">
+              <input class="check" type="checkbox" checked aria-label="Select screen recording" />
+              <div class="row-main">
+                <div class="row-title">screen-recording-2025-01-08.mov</div>
+                <div class="row-path">C:\Users\dara\Videos\screen-recording-2025-01-08.mov · last opened 8 Jan 2025</div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 27%"></div></div>
+              <div class="row-size">864 MB</div>
+            </div>
+            <div class="row">
+              <input class="check" type="checkbox" aria-label="Select project backup" />
+              <div class="row-main">
+                <div class="row-title">project-backup.7z</div>
+                <div class="row-path">C:\Users\dara\Documents\project-backup.7z · last opened 21 Jun 2025</div>
+              </div>
+              <div class="meter"><div class="meter-fill" style="width: 19%"></div></div>
+              <div class="row-size">598 MB</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Scan again</button>
+          <button class="btn btn-danger" type="button" data-dialog="large">Move 6.09 GB to Recycle Bin</button>
+        </div>
+      </section>
+
+      <!-- ---------- STARTUP ---------- -->
+      <section class="screen" id="screen-startup">
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">Launch at login</div>
+            <div class="hero-number">6 of 9</div>
+            <div class="hero-caption">apps start automatically. Disabling is reversible — nothing is uninstalled.</div>
+          </div>
+        </div>
+
+        <div class="scroller">
+          <div class="rows">
+            <div class="row" style="grid-template-columns: 1fr auto auto">
+              <div class="row-main">
+                <div class="row-title">Microsoft Teams <span class="pill">Registry (Run)</span></div>
+                <div class="row-path">C:\Users\dara\AppData\Local\Microsoft\Teams\Update.exe --processStart "Teams.exe"</div>
+              </div>
+              <span class="pill">Enabled</span>
+              <button class="btn btn-inline" type="button">Disable</button>
+            </div>
+            <div class="row" style="grid-template-columns: 1fr auto auto">
+              <div class="row-main">
+                <div class="row-title">Spotify <span class="pill">Startup Folder</span></div>
+                <div class="row-path">C:\Users\dara\AppData\Roaming\Spotify\Spotify.exe --autostart</div>
+              </div>
+              <span class="pill">Enabled</span>
+              <button class="btn btn-inline" type="button">Disable</button>
+            </div>
+            <div class="row" style="grid-template-columns: 1fr auto auto">
+              <div class="row-main">
+                <div class="row-title">
+                  Adobe Updater
+                  <span class="pill">Task Scheduler</span>
+                  <span class="pill pill-attention">Needs admin</span>
+                </div>
+                <div class="row-path">C:\Program Files (x86)\Common Files\Adobe\AdobeGCClient\AGSService.exe</div>
+              </div>
+              <span class="pill">Enabled</span>
+              <button class="btn btn-inline" type="button">Disable</button>
+            </div>
+            <div class="row" style="grid-template-columns: 1fr auto auto">
+              <div class="row-main">
+                <div class="row-title">Steam <span class="pill">Registry (Run)</span></div>
+                <div class="row-path">C:\Program Files (x86)\Steam\steam.exe -silent</div>
+              </div>
+              <span class="pill pill-quiet">Disabled</span>
+              <button class="btn btn-inline" type="button">Enable</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Reload</button>
+          <span class="hero-caption">Read from the registry and the Startup folder each time you reload.</span>
+        </div>
+      </section>
+
+      <!-- ---------- ABOUT ---------- -->
+      <section class="screen" id="screen-about">
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">PC Cleaner</div>
+            <div class="hero-number">0.1.0</div>
+            <div class="hero-caption">Up to date. Last checked a moment ago.</div>
+          </div>
+        </div>
+
+        <div class="scroller">
+          <div class="prose">
+            <div>
+              <div class="eyebrow">Free and unlocked</div>
+              <p>No paywall, no trial limits, no upsells. Every feature here — junk cleanup, duplicates, large files, startup — is fully functional.</p>
+            </div>
+            <div>
+              <div class="eyebrow">What gets deleted, and how</div>
+              <p>Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files — duplicates and large files — always go to the Recycle Bin instead, so you can get them back.</p>
+            </div>
+            <div>
+              <div class="eyebrow">Source</div>
+              <p class="mono-line">github.com/dara-oladapo/pc-cleaner</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Check for updates</button>
+        </div>
+      </section>
+
+      <!-- ---------- CONFIRM DIALOG ---------- -->
+      <div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+        <div class="dialog">
+          <div class="dialog-title" id="dialogTitle">Delete 14 locations permanently?</div>
+          <div class="dialog-body" id="dialogBody">
+            This frees <strong>2.41 GB</strong>. Junk files are rebuilt by the apps that made them, but they do not go to the Recycle Bin, so this cannot be undone.
+          </div>
+          <div class="dialog-manifest" id="dialogManifest">
+            <span>982 MB  Chrome cache</span>
+            <span>471 MB  Edge cache</span>
+            <span>431 MB  User temp folder</span>
+            <span>+ 11 more</span>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" data-close-dialog>Cancel</button>
+            <button class="btn btn-danger" type="button" id="dialogConfirm">Delete permanently</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>Design notes</h2>
+  <div class="notes-grid">
+    <div>
+      <h3>The capacity readout</h3>
+      <p>Avast and CleanMyMac both open on a circular gauge, so this goes the other way: one honest linear bar of the real drive, with the reclaimable slice sitting against the free segment because that is where it is about to go. It is the app's existing 3px row meter at hero scale, fed by <code>DriveInfo</code>.</p>
+    </div>
+    <div>
+      <h3>No invented percentages</h3>
+      <p>The scanners report a running file count, not a fraction, so scanning shows an indeterminate bar and the real count. The dashboard is the one place a determinate stepper is truthful — "2 of 4 tools finished" is a real fraction.</p>
+    </div>
+    <div>
+      <h3>One accent, one exception</h3>
+      <p>Teal stays the only accent, spent on reclaimable space and the primary action. Red is added for one job: destructive confirmation. Today Scan and Delete are the same teal button, so one colour means both "look" and "cannot be undone".</p>
+    </div>
+    <div>
+      <h3>Type</h3>
+      <p>Space Grotesk stays for labels and titles. Open Sans — the project template's default — is replaced by IBM Plex Sans, drawn for engineering documentation and a natural partner to JetBrains Mono, which continues to carry every figure and path.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var toggle = document.getElementById("themeToggle");
+
+    function currentlyDark() {
+      var stamped = root.getAttribute("data-theme");
+      if (stamped) return stamped === "dark";
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+
+    function syncToggleLabel() {
+      toggle.textContent = currentlyDark() ? "Switch to light" : "Switch to dark";
+    }
+
+    toggle.addEventListener("click", function () {
+      root.setAttribute("data-theme", currentlyDark() ? "light" : "dark");
+      syncToggleLabel();
+    });
+
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncToggleLabel);
+    syncToggleLabel();
+
+    // Screen switching, driven from both the rail and the dashboard cards.
+    function show(name) {
+      document.querySelectorAll(".screen").forEach(function (s) {
+        s.classList.toggle("is-active", s.id === "screen-" + name);
+      });
+      document.querySelectorAll(".nav-item").forEach(function (b) {
+        if (b.dataset.screen === name) {
+          b.setAttribute("aria-current", "page");
+        } else {
+          b.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    document.querySelectorAll("[data-screen]").forEach(function (b) {
+      b.addEventListener("click", function () { show(b.dataset.screen); });
+    });
+
+    // Confirmation dialog — copy differs by how destructive the action is.
+    var COPY = {
+      junk: {
+        title: "Delete 14 locations permanently?",
+        body: 'This frees <strong>2.41 GB</strong>. Junk files are rebuilt by the apps that made them, but they do not go to the Recycle Bin, so this cannot be undone.',
+        confirm: "Delete permanently",
+        manifest: ["982 MB  Chrome cache", "471 MB  Edge cache", "431 MB  User temp folder", "+ 11 more"]
+      },
+      duplicates: {
+        title: "Move 23 copies to the Recycle Bin?",
+        body: 'This frees <strong>812 MB</strong>. One copy of every file is kept, and anything you move can be restored from the Recycle Bin.',
+        confirm: "Move to Recycle Bin",
+        manifest: ["214 MB  shoot-final (1).mp4", "96.4 MB  accounts-2025.zip  ×2", "31.7 MB  wedding-raw-018.dng", "+ 19 more"]
+      },
+      large: {
+        title: "Move 3 files to the Recycle Bin?",
+        body: 'This frees <strong>6.09 GB</strong>. These are your own files, not junk — they can be restored from the Recycle Bin.',
+        confirm: "Move to Recycle Bin",
+        manifest: ["3.12 GB  archive-2024.tar.gz", "2.11 GB  ubuntu-24.04-desktop-amd64.iso", "864 MB  screen-recording-2025-01-08.mov"]
+      }
+    };
+
+    var scrim = document.getElementById("scrim");
+    var lastFocus = null;
+
+    function openDialog(kind) {
+      var c = COPY[kind];
+      document.getElementById("dialogTitle").textContent = c.title;
+      document.getElementById("dialogBody").innerHTML = c.body;
+      document.getElementById("dialogConfirm").textContent = c.confirm;
+      document.getElementById("dialogManifest").innerHTML =
+        c.manifest.map(function (l) { return "<span>" + l + "</span>"; }).join("");
+      scrim.classList.add("is-open");
+      document.getElementById("dialogConfirm").focus();
+    }
+
+    function closeDialog() {
+      scrim.classList.remove("is-open");
+      if (lastFocus) lastFocus.focus();
+    }
+
+    document.querySelectorAll("[data-dialog]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        lastFocus = b;
+        openDialog(b.dataset.dialog);
+      });
+    });
+
+    document.querySelectorAll("[data-close-dialog]").forEach(function (b) {
+      b.addEventListener("click", closeDialog);
+    });
+
+    document.getElementById("dialogConfirm").addEventListener("click", closeDialog);
+
+    scrim.addEventListener("click", function (e) { if (e.target === scrim) closeDialog(); });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && scrim.classList.contains("is-open")) closeDialog();
+    });
+
+    // "Scan everything" — shows the aggregate progress state, then settles.
+    var scanBtn = document.getElementById("scanAll");
+    var cancelBtn = document.getElementById("cancelAll");
+    var progress = document.getElementById("dashProgress");
+    var progressText = document.getElementById("dashProgressText");
+    var seg = document.getElementById("reclaimSeg");
+    var value = document.getElementById("reclaimValue");
+    var caption = document.getElementById("reclaimCaption");
+    var timers = [];
+
+    var PHASES = [
+      { label: "Junk files · 1 of 4 finished", files: "8,412", steps: 1, gb: 2.41, pct: 0.51 },
+      { label: "Duplicates · 2 of 4 finished", files: "26,905", steps: 2, gb: 3.22, pct: 0.68 },
+      { label: "Large files · 3 of 4 finished", files: "41,206", steps: 3, gb: 9.31, pct: 1.96 },
+      { label: "Startup · 4 of 4 finished", files: "41,206", steps: 4, gb: 9.31, pct: 1.96 }
+    ];
+
+    function setSteps(n) {
+      document.querySelectorAll("#dashProgress .step").forEach(function (s, i) {
+        s.classList.toggle("is-done", i < n);
+      });
+    }
+
+    function stop() {
+      timers.forEach(clearTimeout);
+      timers = [];
+      progress.style.display = "none";
+      cancelBtn.style.display = "none";
+      scanBtn.disabled = false;
+    }
+
+    scanBtn.addEventListener("click", function () {
+      scanBtn.disabled = true;
+      cancelBtn.style.display = "";
+      progress.style.display = "";
+      seg.style.width = "0%";
+      value.textContent = "0 B";
+      caption.textContent = "Reading every tool…";
+      setSteps(0);
+
+      PHASES.forEach(function (p, i) {
+        timers.push(setTimeout(function () {
+          setSteps(p.steps);
+          progressText.textContent = p.label + " · " + p.files + " files read";
+          seg.style.width = p.pct + "%";
+          value.textContent = p.gb.toFixed(2) + " GB";
+          if (i === PHASES.length - 1) {
+            caption.textContent = "can be reclaimed from 55 items across 3 tools.";
+            timers.push(setTimeout(stop, 700));
+          }
+        }, 700 * (i + 1)));
+      });
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      stop();
+      caption.textContent = "Scan stopped. Partial results are shown.";
+    });
+  })();
+</script>

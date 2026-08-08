@@ -27,8 +27,13 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
             {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                // Aliases are named by role, not by vendor, so swapping a face is a one-line change here
+                // rather than a find-and-replace across every style. Body was Open Sans — the MAUI project
+                // template's default, and the most anonymous UI face available. IBM Plex Sans was drawn for
+                // technical documentation and sits naturally beside JetBrains Mono, which carries every
+                // figure and path in the app.
+                fonts.AddFont("IBMPlexSans-Regular.ttf", "BodyRegular");
+                fonts.AddFont("IBMPlexSans-SemiBold.ttf", "BodySemibold");
                 fonts.AddFont("SpaceGrotesk-Medium.ttf", "DisplayMedium");
                 fonts.AddFont("SpaceGrotesk-Bold.ttf", "DisplayBold");
                 fonts.AddFont("JetBrainsMono-Regular.ttf", "MonoRegular");
@@ -51,30 +56,42 @@ public static class MauiProgram
         services.AddSingleton<ILargeFileScanner, LargeFileScanner>();
         services.AddSingleton<IDuplicateFileScanner, DuplicateFileScanner>();
         services.AddSingleton<IJunkCleaner, JunkCleaner>();
+        services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
-        // Platform-specific: where junk lives, how autostart works, how the trash/recycle bin works.
+        // Platform-specific: where junk lives, how autostart works, how the trash/recycle bin works,
+        // and how the OS asks the user to pick a folder.
 #if WINDOWS
         services.AddSingleton<IJunkScanner, WindowsJunkScanner>();
         services.AddSingleton<IStartupItemManager, WindowsStartupManager>();
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
+        services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
+        services.AddSingleton<IFolderPickerService, MacFolderPicker>();
 #endif
 
+        services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<UpdateService>();
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
     {
-        services.AddTransient<JunkCleanupViewModel>();
+        // The four tool view models are singletons, not transients, and that is load-bearing: the dashboard
+        // composes these same instances, so a scan started from "Scan everything" is the scan you see when
+        // you open the tool, and ticking a box on a tool moves the dashboard's combined figure. Making them
+        // transient again would give each page its own private copy and quietly break both.
+        services.AddSingleton<JunkCleanupViewModel>();
+        services.AddSingleton<DuplicateFinderViewModel>();
+        services.AddSingleton<LargeFilesViewModel>();
+        services.AddSingleton<StartupManagerViewModel>();
+        services.AddSingleton<DashboardViewModel>();
+
+        services.AddTransient<DashboardPage>();
         services.AddTransient<JunkCleanupPage>();
-
-        services.AddTransient<DuplicateFinderViewModel>();
         services.AddTransient<DuplicateFinderPage>();
-
-        services.AddTransient<StartupManagerViewModel>();
+        services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
 
         services.AddTransient<AboutViewModel>();

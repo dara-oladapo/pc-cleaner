@@ -1,20 +1,20 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PcCleaner.App.Services;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.App.ViewModels;
 
-public sealed partial class DuplicateFinderViewModel : ObservableObject
+public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
 {
     private const long MinFileSizeBytes = 4 * 1024;
 
     private readonly IDuplicateFileScanner _scanner;
     private readonly IFileTrasher _trasher;
+    private readonly IDialogService _dialogs;
     private CancellationTokenSource? _scanCts;
-
-    public ObservableCollection<string> RootPaths { get; } = [];
 
     public ObservableCollection<DuplicateGroupViewModel> Groups { get; } = [];
 
@@ -24,65 +24,35 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsDeleting { get; set; }
 
+    /// <summary>Drives the swap from the "nothing scanned yet" invitation to the results list.</summary>
+    [ObservableProperty]
+    public partial bool HasScanned { get; set; }
+
     [ObservableProperty]
     public partial string ReclaimableText { get; set; } = "0 B";
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Add folders, then scan for duplicate files.";
+    public partial string SelectionSummary { get; set; } = "Nothing selected";
 
     [ObservableProperty]
-    public partial string NewFolderPath { get; set; } = string.Empty;
+    public partial string StatusText { get; set; } = "Scan the folders below for files with identical contents.";
 
-    public DuplicateFinderViewModel(IDuplicateFileScanner scanner, IFileTrasher trasher)
+    /// <summary>Read by the dashboard for the combined reclaimable figure and the capacity bar.</summary>
+    public long ReclaimableBytesSelected => Groups.Sum(g => g.ReclaimableBytesSelected);
+
+    public DuplicateFinderViewModel(
+        IDuplicateFileScanner scanner,
+        IFileTrasher trasher,
+        IDialogService dialogs,
+        IFolderPickerService folderPicker)
+        : base(folderPicker)
     {
         _scanner = scanner;
         _trasher = trasher;
-
-        foreach (string folder in DefaultFolders())
-        {
-            RootPaths.Add(folder);
-        }
+        _dialogs = dialogs;
     }
 
-    private static IEnumerable<string> DefaultFolders()
-    {
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string[] candidates =
-        [
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-            Path.Combine(home, "Downloads"),
-            Path.Combine(home, "Desktop"),
-        ];
-
-        return candidates.Where(Directory.Exists).Distinct();
-    }
-
-    [RelayCommand]
-    private void AddFolder()
-    {
-        string path = NewFolderPath.Trim();
-        if (path.Length == 0)
-        {
-            return;
-        }
-
-        if (!Directory.Exists(path))
-        {
-            StatusText = $"'{path}' isn't a folder that exists.";
-            return;
-        }
-
-        if (!RootPaths.Contains(path))
-        {
-            RootPaths.Add(path);
-        }
-
-        NewFolderPath = string.Empty;
-    }
-
-    [RelayCommand]
-    private void RemoveFolder(string path) => RootPaths.Remove(path);
+    protected override void ReportRootPathProblem(string message) => StatusText = message;
 
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task ScanAsync()
@@ -119,16 +89,18 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
             }
 
             StatusText = Groups.Count == 0
-                ? "No duplicates found."
-                : $"Found {Groups.Count} duplicate group(s).";
+                ? "No duplicates found in these folders."
+                : $"Found {Groups.Count} group(s) of identical files.";
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Scan cancelled.";
+            StatusText = "Scan stopped. Partial results are shown.";
         }
         finally
         {
             IsScanning = false;
+            HasScanned = true;
+            UpdateReclaimable();
             DeleteSelectedCommand.NotifyCanExecuteChanged();
         }
     }
@@ -138,6 +110,16 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
     [RelayCommand]
     private void CancelScan() => _scanCts?.Cancel();
 
+    /// <summary>Deselects every copy, which leaves all of them on disk — the "I'll pick these myself" escape hatch.</summary>
+    [RelayCommand]
+    private void SelectNone()
+    {
+        foreach (var file in Groups.SelectMany(g => g.Files))
+        {
+            file.IsSelected = false;
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanDeleteSelected))]
     private async Task DeleteSelectedAsync()
     {
@@ -146,6 +128,18 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
             .ToList();
 
         if (pathsToDelete.Count == 0)
+        {
+            return;
+        }
+
+        long bytes = ReclaimableBytesSelected;
+
+        bool confirmed = await _dialogs.ConfirmAsync(
+            title: $"Move {pathsToDelete.Count} copy/copies to the Recycle Bin?",
+            message: $"This frees {ByteSizeFormatter.Format(bytes)}. At least one copy of every file stays where it is, and anything moved can be restored from the Recycle Bin.",
+            acceptText: "Move to Recycle Bin");
+
+        if (!confirmed)
         {
             return;
         }
@@ -166,7 +160,7 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
         }
 
         StatusText = result.AllSucceeded
-            ? $"Moved {result.SucceededPaths.Count} file(s) to Trash — freed {ByteSizeFormatter.Format(result.BytesFreed)}."
+            ? $"Moved {result.SucceededPaths.Count} file(s) to the Recycle Bin — freed {ByteSizeFormatter.Format(result.BytesFreed)}."
             : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} file(s) could not be removed.";
 
         IsDeleting = false;
@@ -199,8 +193,14 @@ public sealed partial class DuplicateFinderViewModel : ObservableObject
 
     private void UpdateReclaimable()
     {
-        long total = Groups.Sum(g => g.ReclaimableBytesSelected);
+        long total = ReclaimableBytesSelected;
+        int selectedCopies = Groups.Sum(g => g.Files.Count(f => f.IsSelected));
+        int totalCopies = Groups.Sum(g => g.Files.Count);
+
         ReclaimableText = ByteSizeFormatter.Format(total);
+        SelectionSummary = $"{selectedCopies} of {totalCopies} copies selected · {ByteSizeFormatter.Format(total)}";
+
+        OnPropertyChanged(nameof(ReclaimableBytesSelected));
     }
 
     private void UpdateShares()

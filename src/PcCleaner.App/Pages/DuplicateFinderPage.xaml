@@ -4,75 +4,112 @@
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
              x:Class="PcCleaner.App.Pages.DuplicateFinderPage"
              x:DataType="vm:DuplicateFinderViewModel"
-             Title="Duplicates &amp; Large Files">
+             Title="Duplicates"
+             Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="24,20" RowSpacing="16">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
-        <!-- Hero -->
         <VerticalStackLayout Grid.Row="0" Spacing="2">
-            <Label Style="{StaticResource Eyebrow}" Text="Reclaimable from selected copies" />
+            <Label Style="{StaticResource Eyebrow}" Text="Selected to remove" />
             <Label Style="{StaticResource HeroNumber}" Text="{Binding ReclaimableText}" />
             <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
         </VerticalStackLayout>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="8">
+        <VerticalStackLayout Grid.Row="1" Spacing="{StaticResource Space2}">
             <Label Style="{StaticResource Eyebrow}" Text="Folders to scan" />
             <CollectionView ItemsSource="{Binding RootPaths}" HeightRequest="84">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
                         <Grid ColumnDefinitions="*,Auto" Padding="0,5">
-                            <Label Grid.Column="0" Style="{StaticResource Mono}" Text="{Binding .}" LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
-                            <Button Grid.Column="1" Text="Remove" Style="{StaticResource InlineButton}" Clicked="OnRemoveFolderClicked" />
+                            <Label Grid.Column="0" Style="{StaticResource Mono}" Text="{Binding .}"
+                                   LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
+                            <!-- RemoveFolderCommand already takes the path, so the row reaches the page's view
+                                 model directly instead of routing through a Clicked handler in code-behind. -->
+                            <Button Grid.Column="1" Text="Remove" Style="{StaticResource InlineButton}"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DuplicateFinderViewModel}}, Path=RemoveFolderCommand}"
+                                    CommandParameter="{Binding .}" />
                         </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Entry Grid.Column="0" Placeholder="Paste a folder path..." Text="{Binding NewFolderPath}" />
-                <Button Grid.Column="1" Text="Add" Command="{Binding AddFolderCommand}" />
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}">
+                <Button Grid.Column="0" Text="Browse…" Command="{Binding BrowseFolderCommand}" />
+                <Entry Grid.Column="1" Placeholder="…or type a folder path" Text="{Binding NewFolderPath}" />
+                <Button Grid.Column="2" Text="Add" Command="{Binding AddFolderCommand}" />
             </Grid>
         </VerticalStackLayout>
 
-        <HorizontalStackLayout Grid.Row="2" Spacing="10">
-            <Button Text="Scan" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" />
-            <Button Text="Cancel" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
-            <ActivityIndicator IsRunning="{Binding IsScanning}" IsVisible="{Binding IsScanning}" />
-        </HorizontalStackLayout>
+        <Border Grid.Row="2" Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsScanning}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space3}">
+                <ActivityIndicator Grid.Column="0" IsRunning="{Binding IsScanning}" HeightRequest="16" WidthRequest="16" />
+                <Label Grid.Column="1" Style="{StaticResource ProgressText}" Text="{Binding StatusText}" />
+            </Grid>
+        </Border>
 
-        <CollectionView Grid.Row="3" ItemsSource="{Binding Groups}">
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space2}" IsVisible="{Binding HasScanned}">
+            <Button Grid.Column="0" Text="Select none" Style="{StaticResource InlineButton}" Command="{Binding SelectNoneCommand}" />
+            <Label Grid.Column="1" Style="{StaticResource Mono}" Text="{Binding SelectionSummary}"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" />
+        </Grid>
+
+        <CollectionView Grid.Row="4" ItemsSource="{Binding Groups}">
+
             <CollectionView.EmptyView>
-                <Label Style="{StaticResource Caption}" Text="No results yet. Tap Scan to look for duplicate files in the folders above." Margin="0,24" />
+                <VerticalStackLayout Spacing="{StaticResource Space3}" VerticalOptions="Center" HorizontalOptions="Start" Padding="0,32">
+                    <Path Data="{StaticResource IconDuplicates}"
+                          Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                          StrokeThickness="1.5" StrokeLineJoin="Round" Aspect="Uniform"
+                          HeightRequest="28" WidthRequest="28" HorizontalOptions="Start" Opacity="0.7" />
+                    <Label Style="{StaticResource EmptyStateTitle}" Text="Nothing scanned yet" />
+                    <Label Style="{StaticResource EmptyStateBody}"
+                           Text="Scan to group files with identical contents. One copy in each group is always left unselected, so you keep at least one." />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
+
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:DuplicateGroupViewModel">
-                    <Border Padding="14" Margin="0,5">
-                        <VerticalStackLayout Spacing="8">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Grid.Column="0" Style="{StaticResource RowTitle}" Text="{Binding SizeEachText, StringFormat='{0} each, duplicated'}" />
+                    <Border Style="{StaticResource Card}" Margin="0,4">
+                        <VerticalStackLayout Spacing="{StaticResource Space2}">
+
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+                                <Label Grid.Column="0" Style="{StaticResource RowTitle}"
+                                       Text="{Binding SizeEachText, StringFormat='{0} each, duplicated'}" VerticalOptions="Center" />
+                                <Grid Grid.Column="1" HorizontalOptions="Start" VerticalOptions="Center">
+                                    <BoxView Style="{StaticResource MeterTrack}" />
+                                    <BoxView Style="{StaticResource MeterFill}"
+                                             WidthRequest="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
+                                </Grid>
+                                <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeEachText}"
+                                       VerticalOptions="Center" MinimumWidthRequest="72" />
                             </Grid>
-                            <Grid HorizontalOptions="Start">
-                                <BoxView Style="{StaticResource MeterTrack}" WidthRequest="120" />
-                                <BoxView Style="{StaticResource MeterFill}"
-                                         WidthRequest="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter='120'}" />
-                            </Grid>
+
+                            <BoxView Style="{StaticResource RowDivider}" />
+
                             <CollectionView ItemsSource="{Binding Files}">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FileEntryViewModel">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,4" ColumnSpacing="10">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,4" ColumnSpacing="{StaticResource Space2}">
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Center" />
-                                            <Label Grid.Column="1" Style="{StaticResource Mono}" Text="{Binding Path}" LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
-                                            <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Style="{StaticResource Mono}" Text="{Binding Path}"
+                                                   LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
+                                            <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}"
+                                                   VerticalOptions="Center" MinimumWidthRequest="72" />
                                         </Grid>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
+
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <Button Grid.Row="4" Text="Delete Selected" Style="{StaticResource PrimaryButton}" Command="{Binding DeleteSelectedCommand}" HorizontalOptions="Fill" />
+        <HorizontalStackLayout Grid.Row="5" Spacing="{StaticResource Space3}">
+            <Button Text="Scan" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" />
+            <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+            <Button Text="Move selected to Recycle Bin" Style="{StaticResource DangerButton}" Command="{Binding DeleteSelectedCommand}" />
+        </HorizontalStackLayout>
 
     </Grid>
 </ContentPage>

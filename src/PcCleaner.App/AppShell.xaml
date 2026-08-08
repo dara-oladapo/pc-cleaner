@@ -4,26 +4,118 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:PcCleaner.App.Pages"
+    xmlns:controls="clr-namespace:PcCleaner.App.Controls"
     Title="PC Cleaner"
-    FlyoutBehavior="Disabled">
+    FlyoutBehavior="Locked"
+    FlyoutWidth="{StaticResource RailWidth}"
+    FlyoutBackgroundColor="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}">
 
-    <TabBar>
-        <ShellContent
-            Title="Junk Cleanup"
-            ContentTemplate="{DataTemplate pages:JunkCleanupPage}"
-            Route="junk" />
-        <ShellContent
-            Title="Duplicates"
-            ContentTemplate="{DataTemplate pages:DuplicateFinderPage}"
-            Route="duplicates" />
-        <ShellContent
-            Title="Startup"
-            ContentTemplate="{DataTemplate pages:StartupManagerPage}"
-            Route="startup" />
-        <ShellContent
-            Title="About"
-            ContentTemplate="{DataTemplate pages:AboutPage}"
-            Route="about" />
-    </TabBar>
+    <!--
+      A locked flyout, not a TabBar. The old bottom tab bar is a phone pattern: on a 1120px desktop
+      window it wasted the full width on four labels and gave no room to name a fifth tool. A rail also
+      lets the app open on a Dashboard without that landing screen costing a tab.
+    -->
+
+    <Shell.FlyoutHeader>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Padding="24,24,16,24">
+            <Border Grid.Column="0"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                    Stroke="Transparent"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 4"
+                    HeightRequest="26"
+                    WidthRequest="26"
+                    Padding="0">
+                <Path Data="{StaticResource IconDashboard}"
+                      Stroke="{AppThemeBinding Light={StaticResource OnSignal}, Dark={StaticResource OnSignalDark}}"
+                      StrokeThickness="1.8"
+                      StrokeLineCap="Round"
+                      Aspect="Uniform"
+                      HeightRequest="{StaticResource IconSizeSmall}"
+                      WidthRequest="{StaticResource IconSizeSmall}"
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center" />
+            </Border>
+            <Label Grid.Column="1"
+                   Text="PC Cleaner"
+                   FontFamily="DisplayBold"
+                   FontSize="{StaticResource FontBody}"
+                   VerticalOptions="Center" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!--
+      Selection is shown as a tinted background on the row. MAUI hands the "Selected" visual state to the
+      template's root element only, and its VSM setters can't reach a child, so the icon and label keep a
+      single colour rather than tinting with the row. The tint alone is unambiguous.
+    -->
+    <Shell.ItemTemplate>
+        <DataTemplate x:DataType="controls:IconFlyoutItem">
+            <Border Margin="8,1"
+                    Padding="12,9"
+                    Stroke="Transparent"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 4"
+                    BackgroundColor="Transparent">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Path Grid.Column="0"
+                          Data="{Binding IconData}"
+                          Stroke="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}"
+                          StrokeThickness="1.5"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Aspect="Uniform"
+                          HeightRequest="{StaticResource IconSize}"
+                          WidthRequest="{StaticResource IconSize}"
+                          VerticalOptions="Center" />
+                    <Label Grid.Column="1"
+                           Text="{Binding Title}"
+                           Style="{StaticResource NavItemLabel}" />
+                </Grid>
+
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroupList>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="Selected">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SignalMuted}, Dark={StaticResource SignalMutedDark}}" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateGroupList>
+                </VisualStateManager.VisualStateGroups>
+            </Border>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+    <controls:IconFlyoutItem Title="Dashboard" Route="dashboard" IconData="{StaticResource IconDashboard}">
+        <ShellContent ContentTemplate="{DataTemplate pages:DashboardPage}" />
+    </controls:IconFlyoutItem>
+
+    <controls:IconFlyoutItem Title="Junk Files" Route="junk" IconData="{StaticResource IconJunk}">
+        <ShellContent ContentTemplate="{DataTemplate pages:JunkCleanupPage}" />
+    </controls:IconFlyoutItem>
+
+    <controls:IconFlyoutItem Title="Duplicates" Route="duplicates" IconData="{StaticResource IconDuplicates}">
+        <ShellContent ContentTemplate="{DataTemplate pages:DuplicateFinderPage}" />
+    </controls:IconFlyoutItem>
+
+    <controls:IconFlyoutItem Title="Large Files" Route="large" IconData="{StaticResource IconLargeFiles}">
+        <ShellContent ContentTemplate="{DataTemplate pages:LargeFilesPage}" />
+    </controls:IconFlyoutItem>
+
+    <controls:IconFlyoutItem Title="Startup" Route="startup" IconData="{StaticResource IconStartup}">
+        <ShellContent ContentTemplate="{DataTemplate pages:StartupManagerPage}" />
+    </controls:IconFlyoutItem>
+
+    <controls:IconFlyoutItem Title="About" Route="about" IconData="{StaticResource IconAbout}">
+        <ShellContent ContentTemplate="{DataTemplate pages:AboutPage}" />
+    </controls:IconFlyoutItem>
 
 </Shell>

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             x:Class="PcCleaner.App.Pages.DashboardPage"
+             x:DataType="vm:DashboardViewModel"
+             Title="Dashboard"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Style="{StaticResource Eyebrow}" Text="This computer" />
+            <Label Style="{StaticResource PageTitle}" Text="{Binding DriveNameText}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="{StaticResource Space5}">
+
+                <!--
+                  The capacity readout. Avast and CleanMyMac both open on a circular gauge; this goes the
+                  other way and draws the actual drive as one honest bar. The reclaimable slice sits against
+                  the free segment because that is where it is about to go.
+                -->
+                <VerticalStackLayout Spacing="{StaticResource Space3}" IsVisible="{Binding HasDriveInfo}">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Style="{StaticResource HeroNumber}" Text="{Binding ReclaimableText}" />
+                            <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Style="{StaticResource Mono}"
+                               Text="{Binding CapacityText}"
+                               VerticalOptions="End" />
+                    </Grid>
+
+                    <Border Style="{StaticResource CapacityBar}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{Binding OccupiedShare, Converter={StaticResource ShareToStarLengthConverter}}" />
+                                <ColumnDefinition Width="{Binding ReclaimableShare, Converter={StaticResource ShareToStarLengthConverter}}" />
+                                <ColumnDefinition Width="{Binding FreeShare, Converter={StaticResource ShareToStarLengthConverter}}" />
+                            </Grid.ColumnDefinitions>
+                            <BoxView Grid.Column="0" Style="{StaticResource SegmentOccupied}" />
+                            <BoxView Grid.Column="1" Style="{StaticResource SegmentReclaimable}" />
+                            <BoxView Grid.Column="2" Style="{StaticResource SegmentFree}" />
+                        </Grid>
+                    </Border>
+
+                    <HorizontalStackLayout Spacing="{StaticResource Space5}">
+                        <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                            <BoxView Style="{StaticResource LegendSwatch}"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource Occupied}, Dark={StaticResource OccupiedDark}}" />
+                            <Label Style="{StaticResource MonoNumber}" Text="{Binding OccupiedText}" />
+                            <Label Style="{StaticResource Caption}" Text="in use" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                            <BoxView Style="{StaticResource LegendSwatch}"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                            <Label Style="{StaticResource MonoNumber}" Text="{Binding ReclaimableText}" />
+                            <Label Style="{StaticResource Caption}" Text="reclaimable" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                            <BoxView Style="{StaticResource LegendSwatch}"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+                            <Label Style="{StaticResource MonoNumber}" Text="{Binding FreeText}" />
+                            <Label Style="{StaticResource Caption}" Text="free" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Fallback when the drive can't be read: still report the figure, just without the bar. -->
+                <VerticalStackLayout Spacing="2" IsVisible="{Binding HasDriveInfo, Converter={StaticResource InvertedBoolConverter}}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Reclaimable" />
+                    <Label Style="{StaticResource HeroNumber}" Text="{Binding ReclaimableText}" />
+                    <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
+                </VerticalStackLayout>
+
+                <!--
+                  Progress. "N of 4 tools finished" is a real fraction, so the dashboard is the one screen
+                  that earns a determinate marker; the file count beside it stays a count.
+                -->
+                <Border Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsScanning}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
+                        <HorizontalStackLayout Grid.Column="0" Spacing="5" VerticalOptions="Center">
+                            <BoxView Style="{StaticResource StepMarker}">
+                                <BoxView.Triggers>
+                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step1Done}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </BoxView.Triggers>
+                            </BoxView>
+                            <BoxView Style="{StaticResource StepMarker}">
+                                <BoxView.Triggers>
+                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step2Done}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </BoxView.Triggers>
+                            </BoxView>
+                            <BoxView Style="{StaticResource StepMarker}">
+                                <BoxView.Triggers>
+                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step3Done}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </BoxView.Triggers>
+                            </BoxView>
+                            <BoxView Style="{StaticResource StepMarker}">
+                                <BoxView.Triggers>
+                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step4Done}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </BoxView.Triggers>
+                            </BoxView>
+                        </HorizontalStackLayout>
+                        <Label Grid.Column="1" Style="{StaticResource ProgressText}" Text="{Binding ProgressText}" />
+                    </Grid>
+                </Border>
+
+                <!-- Tool summary cards. Four fixed destinations, so they're laid out, not templated. -->
+                <VerticalStackLayout Spacing="{StaticResource Space3}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Tools" />
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="{StaticResource Space3}">
+
+                        <Border Grid.Column="0" Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="junk" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="{StaticResource Space2}">
+                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                    <Path Data="{StaticResource IconJunk}"
+                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
+                                    <Label Text="Junk Files" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Style="{StaticResource StatValue}" Text="{Binding Junk.SelectedSizeText}" />
+                                <Label Style="{StaticResource Caption}" Text="Deleted permanently" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="duplicates" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="{StaticResource Space2}">
+                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                    <Path Data="{StaticResource IconDuplicates}"
+                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
+                                    <Label Text="Duplicates" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Style="{StaticResource StatValue}" Text="{Binding Duplicates.ReclaimableText}" />
+                                <Label Style="{StaticResource Caption}" Text="Moved to the Recycle Bin" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="large" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="{StaticResource Space2}">
+                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                    <Path Data="{StaticResource IconLargeFiles}"
+                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
+                                    <Label Text="Large Files" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Style="{StaticResource StatValue}" Text="{Binding LargeFiles.SelectedSizeText}" />
+                                <Label Style="{StaticResource Caption}" Text="Files over 100 MB" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Grid.Column="3" Style="{StaticResource Card}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="startup" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="{StaticResource Space2}">
+                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                    <Path Data="{StaticResource IconStartup}"
+                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
+                                    <Label Text="Startup" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Style="{StaticResource StatValue}" Text="{Binding Startup.ItemCountText}" />
+                                <Label Style="{StaticResource Caption}" Text="{Binding StartupSummaryText}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                    </Grid>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <HorizontalStackLayout Grid.Row="2" Spacing="{StaticResource Space3}">
+            <Button Text="Scan everything" Style="{StaticResource PrimaryButton}" Command="{Binding ScanEverythingCommand}" />
+            <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+            <Label Style="{StaticResource HeroCaption}"
+                   Text="Reads every tool in one pass. Nothing is deleted until you choose it."
+                   VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+    </Grid>
+</ContentPage>

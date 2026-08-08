@@ -13,12 +13,13 @@ public partial class App : Application
 	{
 		return new Window(new AppShell())
 		{
-			Width = 980,
-			Height = 760,
-			// Floor the window size so the three-column row layout (checkbox / content / size) and the
-			// hero stat never get crushed — below this the app is still usable, just no smaller.
-			MinimumWidth = 720,
-			MinimumHeight = 520,
+			Width = 1120,
+			Height = 780,
+			// Floor the window size so the 216px navigation rail, the four-across dashboard cards, and the
+			// row layout (checkbox / content / meter / size) all still fit. Below this the app is still
+			// usable, just no smaller.
+			MinimumWidth = 900,
+			MinimumHeight = 600,
 		};
 	}
 }

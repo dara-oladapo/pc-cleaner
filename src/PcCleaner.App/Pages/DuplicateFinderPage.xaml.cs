@@ -9,12 +9,4 @@ public partial class DuplicateFinderPage : ContentPage
         InitializeComponent();
         BindingContext = viewModel;
     }
-
-    private void OnRemoveFolderClicked(object? sender, EventArgs e)
-    {
-        if (sender is Button { BindingContext: string path } && BindingContext is DuplicateFinderViewModel vm)
-        {
-            vm.RemoveFolderCommand.Execute(path);
-        }
-    }
 }

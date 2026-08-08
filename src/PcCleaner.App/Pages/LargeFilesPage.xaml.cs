@@ -2,9 +2,9 @@ using PcCleaner.App.ViewModels;
 
 namespace PcCleaner.App.Pages;
 
-public partial class StartupManagerPage : ContentPage
+public partial class LargeFilesPage : ContentPage
 {
-    public StartupManagerPage(StartupManagerViewModel viewModel)
+    public LargeFilesPage(LargeFilesViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

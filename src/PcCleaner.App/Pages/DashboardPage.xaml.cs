@@ -2,9 +2,9 @@ using PcCleaner.App.ViewModels;
 
 namespace PcCleaner.App.Pages;
 
-public partial class StartupManagerPage : ContentPage
+public partial class DashboardPage : ContentPage
 {
-    public StartupManagerPage(StartupManagerViewModel viewModel)
+    public DashboardPage(DashboardViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

@@ -4,33 +4,45 @@
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
              x:Class="PcCleaner.App.Pages.AboutPage"
              x:DataType="vm:AboutViewModel"
-             Title="About">
+             Title="About"
+             Shell.NavBarIsVisible="False">
 
-    <VerticalStackLayout Padding="24,20" Spacing="16">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
-        <VerticalStackLayout Spacing="2">
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
             <Label Style="{StaticResource Eyebrow}" Text="PC Cleaner" />
             <Label Style="{StaticResource HeroNumber}" Text="{Binding VersionText}" />
             <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
         </VerticalStackLayout>
 
-        <HorizontalStackLayout Spacing="10">
-            <Button Text="Check for Updates" Style="{StaticResource PrimaryButton}" Command="{Binding CheckForUpdatesCommand}" />
-            <Button Text="Download &amp; Restart" Style="{StaticResource PrimaryButton}" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="{StaticResource Space5}" MaximumWidthRequest="620" HorizontalOptions="Start">
+
+                <VerticalStackLayout Spacing="{StaticResource Space1}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Free and unlocked" />
+                    <Label Style="{StaticResource EmptyStateBody}"
+                           Text="No paywall, no trial limits, no upsells. Every feature here — junk cleanup, duplicates, large files, startup — is fully functional." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="{StaticResource Space1}">
+                    <Label Style="{StaticResource Eyebrow}" Text="What gets deleted, and how" />
+                    <Label Style="{StaticResource EmptyStateBody}"
+                           Text="Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files — duplicates and large files — always go to the Recycle Bin instead, so you can get them back." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="{StaticResource Space1}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Source" />
+                    <Label Style="{StaticResource Mono}" Text="github.com/dara-oladapo/pc-cleaner" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <HorizontalStackLayout Grid.Row="2" Spacing="{StaticResource Space3}">
+            <Button Text="Check for updates" Style="{StaticResource PrimaryButton}" Command="{Binding CheckForUpdatesCommand}" />
+            <Button Text="Download and restart" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" VerticalOptions="Center" />
         </HorizontalStackLayout>
 
-        <BoxView HeightRequest="1" Opacity="0.6" Margin="0,10" />
-
-        <VerticalStackLayout Spacing="4">
-            <Label Style="{StaticResource Eyebrow}" Text="Free and unlocked" />
-            <Label Style="{StaticResource Caption}" Text="No paywall, no trial limits, no upsells. Every feature in this app — junk cleanup, duplicate/large file finder, startup manager — is fully functional." />
-        </VerticalStackLayout>
-
-        <VerticalStackLayout Spacing="4">
-            <Label Style="{StaticResource Eyebrow}" Text="Source" />
-            <Label Style="{StaticResource Mono}" Text="github.com/dara-oladapo/pc-cleaner" />
-        </VerticalStackLayout>
-
-    </VerticalStackLayout>
+    </Grid>
 </ContentPage>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!--
+      Non-color tokens. Before this file, spacing, radii and type sizes were hardcoded literals
+      repeated across every page ("24,20", "16", "4", "6"), so a change to page rhythm meant editing
+      four files and hoping they stayed in step. Colors live in Colors.xaml; this is everything else.
+    -->
+
+    <!-- ===================== Spacing scale ===================== -->
+    <!-- A 4px base. Stay on the scale; if a gap wants a value that isn't here, the layout is the problem. -->
+    <x:Double x:Key="Space1">4</x:Double>
+    <x:Double x:Key="Space2">8</x:Double>
+    <x:Double x:Key="Space3">12</x:Double>
+    <x:Double x:Key="Space4">16</x:Double>
+    <x:Double x:Key="Space5">24</x:Double>
+    <x:Double x:Key="Space6">32</x:Double>
+
+    <!-- ===================== Page rhythm ===================== -->
+    <Thickness x:Key="PagePadding">32,24</Thickness>
+    <Thickness x:Key="CardPadding">16</Thickness>
+    <Thickness x:Key="RowPadding">16,12</Thickness>
+    <Thickness x:Key="PillPadding">7,3</Thickness>
+
+    <!-- ===================== Type scale ===================== -->
+    <!-- Six steps, no more. Hero is the only oversized figure on a screen. -->
+    <x:Double x:Key="FontHero">38</x:Double>
+    <x:Double x:Key="FontTitle">22</x:Double>
+    <x:Double x:Key="FontStat">20</x:Double>
+    <x:Double x:Key="FontSubtitle">17</x:Double>
+    <x:Double x:Key="FontBody">14</x:Double>
+    <x:Double x:Key="FontRowTitle">13.5</x:Double>
+    <x:Double x:Key="FontControl">13</x:Double>
+    <x:Double x:Key="FontCaption">12</x:Double>
+    <x:Double x:Key="FontMono">11.5</x:Double>
+    <x:Double x:Key="FontEyebrow">11</x:Double>
+    <x:Double x:Key="FontPill">10</x:Double>
+
+    <!-- ===================== Component sizes ===================== -->
+    <x:Double x:Key="RailWidth">216</x:Double>
+    <x:Double x:Key="IconSize">18</x:Double>
+    <x:Double x:Key="IconSizeSmall">15</x:Double>
+    <x:Double x:Key="CapacityBarHeight">46</x:Double>
+    <x:Double x:Key="MeterHeight">4</x:Double>
+    <x:Double x:Key="MeterWidth">132</x:Double>
+    <x:Double x:Key="CheckBoxSize">32</x:Double>
+
+    <!-- ===================== Tracking ===================== -->
+    <x:Double x:Key="TrackEyebrow">1.2</x:Double>
+    <x:Double x:Key="TrackControl">0.4</x:Double>
+    <x:Double x:Key="TrackPrimary">0.6</x:Double>
+
+</ResourceDictionary>
