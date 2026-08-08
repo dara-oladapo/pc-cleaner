@@ -5,6 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:PcCleaner.App.Pages"
     xmlns:controls="clr-namespace:PcCleaner.App.Controls"
+    xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+    xmlns:services="clr-namespace:PcCleaner.App.Services"
     Title="PC Cleaner"
     FlyoutBehavior="Locked"
     FlyoutWidth="{StaticResource RailWidth}"
@@ -43,6 +45,98 @@
                    VerticalOptions="Center" />
         </Grid>
     </Shell.FlyoutHeader>
+
+    <!--
+      Theme switcher. Lives in the rail footer because it is a setting you set once and then stop thinking
+      about — it should be reachable from anywhere without spending a nav destination on it.
+    -->
+    <Shell.FlyoutFooter>
+        <Grid x:Name="FlyoutFooterRoot" x:DataType="vm:ThemeViewModel" Padding="12,8,12,16" RowSpacing="6" RowDefinitions="Auto,Auto">
+
+            <Label Grid.Row="0" Style="{StaticResource Eyebrow}" Text="Appearance" Margin="3,0,0,0" />
+
+            <Border Grid.Row="1" Style="{StaticResource ThemeSwitcher}">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="2">
+
+                    <Border Grid.Column="0" Style="{StaticResource ThemeSegment}">
+                        <Grid>
+                            <Path Data="{StaticResource IconThemeSystem}"
+                                  Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                                  StrokeThickness="1.4" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                  HeightRequest="16" WidthRequest="16"
+                                  HorizontalOptions="Center" VerticalOptions="Center">
+                                <Path.Triggers>
+                                    <DataTrigger TargetType="Path" Binding="{Binding IsSystem}" Value="True">
+                                        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </Path.Triggers>
+                            </Path>
+                            <Button Style="{StaticResource ThemeSegmentHit}"
+                                    Command="{Binding ChooseCommand}"
+                                    CommandParameter="{x:Static services:ThemePreference.System}"
+                                    SemanticProperties.Description="Match the system theme" />
+                        </Grid>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSystem}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource ThemeSegment}">
+                        <Grid>
+                            <Path Data="{StaticResource IconThemeLight}"
+                                  Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                                  StrokeThickness="1.4" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                  HeightRequest="16" WidthRequest="16"
+                                  HorizontalOptions="Center" VerticalOptions="Center">
+                                <Path.Triggers>
+                                    <DataTrigger TargetType="Path" Binding="{Binding IsLight}" Value="True">
+                                        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </Path.Triggers>
+                            </Path>
+                            <Button Style="{StaticResource ThemeSegmentHit}"
+                                    Command="{Binding ChooseCommand}"
+                                    CommandParameter="{x:Static services:ThemePreference.Light}"
+                                    SemanticProperties.Description="Always use the light theme" />
+                        </Grid>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsLight}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource ThemeSegment}">
+                        <Grid>
+                            <Path Data="{StaticResource IconThemeDark}"
+                                  Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                                  StrokeThickness="1.4" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                  HeightRequest="16" WidthRequest="16"
+                                  HorizontalOptions="Center" VerticalOptions="Center">
+                                <Path.Triggers>
+                                    <DataTrigger TargetType="Path" Binding="{Binding IsDark}" Value="True">
+                                        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                    </DataTrigger>
+                                </Path.Triggers>
+                            </Path>
+                            <Button Style="{StaticResource ThemeSegmentHit}"
+                                    Command="{Binding ChooseCommand}"
+                                    CommandParameter="{x:Static services:ThemePreference.Dark}"
+                                    SemanticProperties.Description="Always use the dark theme" />
+                        </Grid>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsDark}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                    </Border>
+
+                </Grid>
+            </Border>
+        </Grid>
+    </Shell.FlyoutFooter>
 
     <!--
       Selection is shown as a tinted background on the row. MAUI hands the "Selected" visual state to the

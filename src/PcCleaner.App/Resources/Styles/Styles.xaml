@@ -371,6 +371,39 @@
     </Style>
 
 
+    <!-- ===================== Theme switcher ===================== -->
+    <!-- Three segments — System, Light, Dark — in one recessed track, so it reads as a choice between
+         three rather than an on/off. System is the default and stays selected until the user says otherwise. -->
+
+    <Style TargetType="Border" x:Key="ThemeSwitcher">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="Padding" Value="3" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <Style TargetType="Border" x:Key="ThemeSegment">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 4" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HeightRequest" Value="28" />
+    </Style>
+
+    <!-- Sits transparent over the icon purely so the segment is reachable and focusable by keyboard;
+         a Border with a TapGestureRecognizer would be mouse-only. -->
+    <Style TargetType="Button" x:Key="ThemeSegmentHit">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinimumHeightRequest" Value="28" />
+        <Setter Property="MinimumWidthRequest" Value="0" />
+    </Style>
+
     <!-- ===================== Progress ===================== -->
     <!-- The scanners report a running file count, never a percentage, so scanning shows an
          indeterminate bar plus the real count. Do not add a fake ProgressBar value here. -->

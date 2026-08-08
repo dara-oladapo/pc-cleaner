@@ -82,6 +82,16 @@ Selection shows as a tinted row background. MAUI hands the `Selected` visual sta
 - **`ProgressPanel`** / **`StepMarker`** — see below.
 - **`Mono`** / **`MonoNumber`** — paths and figures respectively. `MonoNumber` is right-aligned for scanning down a column.
 
+## Theme
+
+Three states, not two: **System (the default), Light, Dark**. The switcher is a three-segment control in the navigation rail footer — a setting you choose once and stop thinking about, so it shouldn't cost a nav destination.
+
+System is not "whatever the OS said at launch". It maps to MAUI's `AppTheme.Unspecified`, which keeps following the OS, so a user on System sees the app change when their desktop switches at sunset. Choosing Light or Dark explicitly freezes it against the OS — that is the point of the override.
+
+The choice is persisted in `Preferences` (registry on Windows, `NSUserDefaults` on macOS) and re-applied in the `App` constructor before the first window exists, so the app opens in the chosen theme rather than flashing the system one and correcting itself. An unreadable or unknown stored value falls back to System instead of throwing.
+
+Because every colour already goes through `AppThemeBinding`, nothing else needs to know the theme changed. Keep it that way: a new screen that hardcodes a hex value will look correct in one theme and wrong in the other, and the switcher makes that trivially easy for a user to find.
+
 ## Progress, honestly
 
 The scanners report a **running file count**, never a percentage — `IProgress<int>` is a count of files walked so far, with no denominator. So every scanning state pairs an indeterminate indicator with the real number, and no screen shows a progress fraction it cannot compute.

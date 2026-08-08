@@ -1,17 +1,26 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using PcCleaner.App.Services;
 
 namespace PcCleaner.App;
 
 public partial class App : Application
 {
-	public App()
+	private readonly IServiceProvider _services;
+
+	public App(IServiceProvider services, IThemeService themeService)
 	{
+		_services = services;
+
 		InitializeComponent();
+
+		// Before the first window exists, so the app opens in the theme the user chose last time instead
+		// of flashing the system theme and correcting itself.
+		themeService.ApplyStored();
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		return new Window(new AppShell())
+		return new Window(_services.GetRequiredService<AppShell>())
 		{
 			Width = 1120,
 			Height = 780,

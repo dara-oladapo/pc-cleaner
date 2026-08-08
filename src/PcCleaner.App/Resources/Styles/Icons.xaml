@@ -37,4 +37,10 @@
     <!-- Empty-state illustration -->
     <PathGeometry x:Key="IconSearch" Figures="M3.5,9 A5.5,5.5 0 0 1 14.5,9 A5.5,5.5 0 0 1 3.5,9 M13,13 L17,17" />
 
+    <!-- Theme switcher. A display for "follow the system", then sun and moon for the two overrides. -->
+    <PathGeometry x:Key="IconThemeSystem" Figures="M3,4.5 L17,4.5 L17,13.5 L3,13.5 Z M10,13.5 L10,16.5 M7.5,16.5 L12.5,16.5" />
+    <PathGeometry x:Key="IconThemeLight" Figures="M6,10 A4,4 0 0 1 14,10 A4,4 0 0 1 6,10 M10,2.4 L10,3.9 M10,16.1 L10,17.6 M2.4,10 L3.9,10 M16.1,10 L17.6,10 M4.6,4.6 L5.7,5.7 M14.3,14.3 L15.4,15.4 M15.4,4.6 L14.3,5.7 M5.7,14.3 L4.6,15.4" />
+    <!-- Crescent as two arcs with opposite sweeps, so the direction is unambiguous. -->
+    <PathGeometry x:Key="IconThemeDark" Figures="M12,3.2 A7,7 0 1 0 12,16.8 A5.6,5.6 0 1 1 12,3.2 Z" />
+
 </ResourceDictionary>

@@ -190,18 +190,15 @@
 
   .proto-spacer { flex: 1 1 auto; }
 
-  .proto-toggle {
-    font: inherit;
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: var(--r-sm);
-    border: 1px solid currentColor;
-    background: transparent;
-    color: var(--chrome-ink);
-    cursor: pointer;
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
-
-  .proto-toggle:hover { color: var(--ink-strong); }
 
   .frame-wrap {
     padding: 0 var(--s-5) var(--s-6);
@@ -292,7 +289,51 @@
 
 
 
-  .rail-foot { margin-top: auto; }
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--s-3); }
+
+  /* Theme switcher. Three segments in one recessed track, so it reads as a
+     choice between three rather than an on/off. System is the default. */
+  .theme-block { display: flex; flex-direction: column; gap: 6px; padding: 0 3px 4px; }
+
+  .theme-label {
+    font-family: "Display", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    padding-left: 3px;
+  }
+
+  .theme-switch {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding: 3px;
+    background: var(--sunken);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+  }
+
+  .theme-seg {
+    display: grid;
+    place-items: center;
+    height: 28px;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+
+  .theme-seg:hover { color: var(--ink-strong); }
+
+  .theme-seg[aria-checked="true"] {
+    background: var(--surface);
+    color: var(--signal);
+    box-shadow: var(--shadow);
+  }
 
   /* ============================================================
      Stage / screens
@@ -948,13 +989,22 @@
     <circle cx="10.5" cy="10.5" r="6.5" />
     <path d="M15.5 15.5L21 21" />
   </symbol>
+  <symbol id="i-theme-system" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 4.5h14v9H3zM10 13.5v3M7.5 16.5h5" />
+  </symbol>
+  <symbol id="i-theme-light" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+    <circle cx="10" cy="10" r="4" />
+    <path d="M10 2.4v1.5M10 16.1v1.5M2.4 10h1.5M16.1 10h1.5M4.6 4.6l1.1 1.1M14.3 14.3l1.1 1.1M15.4 4.6l-1.1 1.1M5.7 14.3l-1.1 1.1" />
+  </symbol>
+  <symbol id="i-theme-dark" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M12 3.2a7 7 0 1 0 0 13.6 5.6 5.6 0 1 1 0-13.6z" />
+  </symbol>
 </svg>
 
 <div class="proto-bar">
   <h1>PC Cleaner · redesign prototype</h1>
   <span class="note">Design reference for the MAUI port. The rail switches screens; the Clean and Delete buttons open the real confirmation copy.</span>
   <span class="proto-spacer"></span>
-  <button class="proto-toggle" id="themeToggle" type="button">Switch to dark</button>
 </div>
 
 <div class="frame-wrap">
@@ -987,6 +1037,24 @@
         <button class="nav-item" type="button" data-screen="about">
           <svg width="18" height="18" aria-hidden="true"><use href="#i-about" /></svg> About
         </button>
+
+        <div class="theme-block">
+          <span class="theme-label" id="themeLabel">Appearance</span>
+          <div class="theme-switch" role="radiogroup" aria-labelledby="themeLabel">
+            <button class="theme-seg" type="button" role="radio" data-theme-choice="system" aria-checked="true" title="Match the system theme">
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-theme-system" /></svg>
+              <span class="sr-only">Match the system theme</span>
+            </button>
+            <button class="theme-seg" type="button" role="radio" data-theme-choice="light" aria-checked="false" title="Always use the light theme">
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-theme-light" /></svg>
+              <span class="sr-only">Always use the light theme</span>
+            </button>
+            <button class="theme-seg" type="button" role="radio" data-theme-choice="dark" aria-checked="false" title="Always use the dark theme">
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-theme-dark" /></svg>
+              <span class="sr-only">Always use the dark theme</span>
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
 
@@ -1507,25 +1575,45 @@
 <script>
   (function () {
     var root = document.documentElement;
-    var toggle = document.getElementById("themeToggle");
 
-    function currentlyDark() {
-      var stamped = root.getAttribute("data-theme");
-      if (stamped) return stamped === "dark";
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    // Three states, not two. "system" stamps nothing on the root, so the page keeps following
+    // prefers-color-scheme and changes with the desktop; light and dark stamp an explicit override.
+    // The choice persists, matching the app, which stores it in Preferences.
+    var STORE_KEY = "pc-cleaner-theme";
+
+    function readStored() {
+      try {
+        var v = window.localStorage.getItem(STORE_KEY);
+        return v === "light" || v === "dark" || v === "system" ? v : "system";
+      } catch (e) {
+        return "system";
+      }
     }
 
-    function syncToggleLabel() {
-      toggle.textContent = currentlyDark() ? "Switch to light" : "Switch to dark";
+    function writeStored(choice) {
+      try { window.localStorage.setItem(STORE_KEY, choice); } catch (e) { /* private mode: session-only */ }
     }
 
-    toggle.addEventListener("click", function () {
-      root.setAttribute("data-theme", currentlyDark() ? "light" : "dark");
-      syncToggleLabel();
+    function applyTheme(choice) {
+      if (choice === "system") {
+        root.removeAttribute("data-theme");
+      } else {
+        root.setAttribute("data-theme", choice);
+      }
+      document.querySelectorAll("[data-theme-choice]").forEach(function (b) {
+        b.setAttribute("aria-checked", String(b.dataset.themeChoice === choice));
+      });
+    }
+
+    document.querySelectorAll("[data-theme-choice]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var choice = b.dataset.themeChoice;
+        writeStored(choice);
+        applyTheme(choice);
+      });
     });
 
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncToggleLabel);
-    syncToggleLabel();
+    applyTheme(readStored());
 
     // Screen switching, driven from both the rail and the dashboard cards.
     function show(name) {

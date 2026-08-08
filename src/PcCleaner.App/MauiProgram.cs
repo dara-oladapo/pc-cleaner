@@ -73,6 +73,7 @@ public static class MauiProgram
 #endif
 
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<UpdateService>();
     }
 
@@ -87,6 +88,11 @@ public static class MauiProgram
         services.AddSingleton<LargeFilesViewModel>();
         services.AddSingleton<StartupManagerViewModel>();
         services.AddSingleton<DashboardViewModel>();
+
+        // The shell and its theme switcher live for the life of the app, so the selected segment stays
+        // correct without having to be re-read every time a page changes.
+        services.AddSingleton<ThemeViewModel>();
+        services.AddSingleton<AppShell>();
 
         services.AddTransient<DashboardPage>();
         services.AddTransient<JunkCleanupPage>();
