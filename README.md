@@ -66,6 +66,10 @@ Installers are built with [Velopack](https://velopack.io) (`vpk` CLI) — it pac
 
 Install the CLI once: `dotnet tool install -g vpk`.
 
+### Continuous integration
+
+`.github/workflows/ci.yml` builds the Windows target and runs the Core tests on every pull request and every push to `main`. The build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime. `.github/workflows/release.yml` is separate and only runs on tags.
+
 **Windows** (verified working end-to-end — build, install, version detection, and clean uninstall all confirmed):
 
 ```powershell
@@ -106,6 +110,5 @@ vpk pack \
 
 - **Linux has no path here.** Standard .NET MAUI does not support Linux as a target at all — there's no workload for it. `PcCleaner.Core` was deliberately kept 100% platform-agnostic so it can be reused; getting to Linux means pairing it with a different UI layer (e.g. Avalonia) and writing a `Platforms/Linux`-equivalent set of services (junk paths, trash via `gio trash`/freedesktop trash spec, systemd user units / XDG autostart for the startup manager).
 - **Folder picking** uses the native OS browser (`Windows.Storage.Pickers.FolderPicker` on Windows, `UIDocumentPickerViewController` on macOS) via `IFolderPickerService`, with the typed-path entry kept as a fallback. `CommunityToolkit.Maui`'s `FolderPicker` is still unusable here — its current version requires a newer `Microsoft.Maui.Controls` than this SDK's `maui-windows`/`maccatalyst` workload ships, causing a version-downgrade conflict — hence the hand-rolled platform services.
-- **No pull-request build.** `.github/workflows/release.yml` only runs on tags, so UI changes get no compile check before merge. A `windows-latest` job on `pull_request` would catch XAML errors that `MauiXamlInflator=SourceGen` surfaces at build time.
 - **Recycle Bin / Trash failures on system-owned junk paths** (e.g. `C:\Windows\SoftwareDistribution\Download`, `/Library/Caches`) are expected without elevated privileges — the cleaner reports these as partial failures rather than crashing, but doesn't yet prompt for elevation.
 - Startup item disabling for **system-scope** entries (`HKLM` Run keys on Windows, `/Library/LaunchAgents`, `/Library/LaunchDaemons` on macOS) requires admin/root and will throw; the UI surfaces the error but doesn't yet offer an elevation prompt.

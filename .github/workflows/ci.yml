@@ -1,0 +1,61 @@
+name: CI
+
+# Compiles the app and runs the Core tests on every pull request and every push to main.
+#
+# This exists because the release workflow only runs on tags, so until now a change could be merged
+# without ever being compiled. That matters more here than in most projects: `MauiXamlInflator=SourceGen`
+# turns the XAML into C# at build time, so a mistyped StaticResource key or a binding path that doesn't
+# exist on its x:DataType is a *build* error — the kind of mistake a human reviewer reading a diff will
+# not catch, and that no test can reach.
+#
+# Windows only. Mac Catalyst has never been built on real hardware (see issue #4 and README), so adding a
+# macos-latest job here would mean wiring up a target nobody has verified by hand yet; that belongs with
+# that verification, not before it.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Superseded runs on the same branch are pointless once a newer commit exists.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      # Core is plain net10.0 and needs no workload, so it builds and tests even if the MAUI install
+      # above is the thing that breaks — which keeps the failure readable.
+      - name: Test Core
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+
+      # The real check. -f is required: a plain build would also try the Mac Catalyst target, which this
+      # runner has no toolchain for.
+      #
+      # Deliberately not -warnaserror. The point of this job is to catch things that are actually broken;
+      # a gate that also fails on, say, a framework deprecation warning would be red on arrival and get
+      # ignored or switched off, which is worse than not having it. Tighten it once the build is known
+      # to be warning-clean.
+      - name: Build app (compiles XAML)
+        run: >
+          dotnet build src/PcCleaner.App/PcCleaner.App.csproj
+          -f net10.0-windows10.0.19041.0
+          -c Release
