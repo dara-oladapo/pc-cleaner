@@ -51,10 +51,10 @@ jobs:
       # Explicit project paths, not the solution: PcCleaner.App has no valid TargetFramework on Linux,
       # so anything that touches it fails here for reasons that have nothing to do with the change.
       - name: Build Core
-        run: dotnet build src/PcCleaner.Core/PcCleaner.Core.csproj --configuration Release
+        run: dotnet build src/PcCleaner.Core/PcCleaner.Core.csproj --configuration Release -warnaserror
 
       - name: Test Core
-        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
 
       # Stub. PcCleaner.Core was deliberately kept 100% platform-agnostic so a Linux port is possible;
       # what's missing is a UI layer (MAUI has no Linux target — Avalonia is the likely answer) and a
@@ -82,20 +82,24 @@ jobs:
       # Core first: it needs no workload, so if the workload install is what's broken, the failure
       # stays readable instead of looking like a code problem.
       - name: Test Core
-        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
 
       # The real check. -f is required: a plain build would also try the Mac Catalyst target, which this
       # runner has no toolchain for.
       #
-      # Deliberately not -warnaserror. The point of this job is to catch things that are actually broken;
-      # a gate that also fails on, say, a framework deprecation warning would be red on arrival and get
-      # ignored or switched off, which is worse than not having it. Tighten it once the build is known
-      # to be warning-clean.
+      # -warnaserror is safe now: the build reports 0 warnings on every platform. It was deliberately
+      # left off until that was true, because a gate that is red on arrival gets ignored or switched off.
+      #
+      # If a future SDK introduces an unrelated warning, suppress that specific code (-nowarn:XXXX) with
+      # a comment saying why, rather than dropping the flag. Removing it silently re-opens the door: the
+      # last warning to appear here (CS0618, an obsolete DisplayAlert) marked a real design problem — the
+      # app was using the OS's dialog instead of its own.
       - name: Build app (compiles XAML)
         run: >
           dotnet build src/PcCleaner.App/PcCleaner.App.csproj
           -f net10.0-windows10.0.19041.0
           -c Release
+          -warnaserror
 
   macos:
     name: Build and test (macOS)
@@ -115,13 +119,14 @@ jobs:
         run: dotnet workload install maui-maccatalyst
 
       - name: Test Core
-        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
 
       - name: Build app (Mac Catalyst)
         run: >
           dotnet build src/PcCleaner.App/PcCleaner.App.csproj
           -f net10.0-maccatalyst
           -c Release
+          -warnaserror
 
   # One check to require in branch protection instead of three. It also catches a job that was skipped
   # or cancelled, which a plain "needs" would let through green.
