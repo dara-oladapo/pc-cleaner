@@ -1,0 +1,81 @@
+name: Something was deleted that shouldn't have been
+description: PC Cleaner removed, or offered to remove, a file you needed. Highest priority — please file this even if you're not sure.
+title: "[Data loss] "
+labels: ["data-loss", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most serious thing that can go wrong in a cleaning tool, so it gets its own form and jumps the queue.
+
+        **First, if the file mattered:** files found by Duplicates and Large Files go to the Recycle Bin / Trash, so check there before anything else — they can usually be restored. Junk cleaning deletes permanently and does not use the Recycle Bin, so those are not recoverable from within the app.
+
+        Report it even if you only *noticed* a risky item in the list and didn't clean it. A scanner offering up something it shouldn't is the same bug caught one step earlier, and it's much easier to fix before someone loses data.
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool
+      options:
+        - Junk Files (permanent delete)
+        - Duplicates (Recycle Bin)
+        - Large Files (Recycle Bin)
+        - Dashboard "Scan everything"
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: What happened
+      options:
+        - It was deleted
+        - It was listed and pre-selected, but I caught it in time
+        - It was listed but not selected
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What was the file or folder?
+      description: What it was for, and why it shouldn't have been touched. Redact anything private.
+      placeholder: |
+        A folder my editor keeps its licence file in. It was reported under "Package Cache" but nothing
+        in it is regenerable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: path
+    attributes:
+      label: Path it was reported under
+      description: Redact your username if you'd rather. The shape of the path is usually the important part.
+      render: text
+      placeholder: C:\Users\<me>\AppData\Local\SomeApp\Licence
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and version
+      placeholder: Windows 11 24H2 / macOS 15.2
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: PC Cleaner version
+      description: Shown on the About screen.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: Whether it's reproducible, and whether you'd sent the app down an unusual path first.

@@ -1,0 +1,54 @@
+name: Feature request
+description: Something PC Cleaner should do that it doesn't.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Worth knowing before you write: PC Cleaner is free with no paid tier, so "what would people pay for" is never the argument for a feature. The one that works is that it saves someone real time or real disk space, or stops them losing a file.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you're in, not the feature you have in mind. The best solution often isn't the first one either of us thinks of.
+      placeholder: |
+        I keep the same photo library on two drives and want to compare them, but adding both roots
+        just reports every file as a duplicate of itself across the pair.
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What do you do about it today?
+      description: Including "nothing, I live with it" — that's useful signal about how much it costs you.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Optional. Skip it if you'd rather just describe the problem.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which platform matters to you
+      options:
+        - Windows
+        - macOS
+        - Both
+        - Linux (not currently supported — see the README)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This isn't Linux support. Standard MAUI has no Linux target at all; getting there means a different UI layer, which is tracked in the README rather than per-feature.
+        - label: I've searched existing issues for the same idea.
