@@ -100,12 +100,16 @@ The dashboard is the single exception: "2 of 4 tools finished" is a real fractio
 
 ## Destructive actions
 
+**Every prompt, dialog, and alert is app UI.** No screen ever calls `DisplayAlert` or any other platform dialog. An OS alert ignores the design system, renders differently on Windows and Mac Catalyst, can't show what is about to be deleted, and reads as a system warning rather than part of this app — which would make the most consequential moment in the product the least consistent one. `Controls/DialogHost.xaml` is the app's own dialog: a scrim plus a centred card, hosted in every page's outer `Grid` and invisible until a view model asks for one. (It's also why the build no longer emits CS0618 — `Page.DisplayAlert` is obsolete in .NET 10.)
+
 Every delete goes through `IDialogService.ConfirmAsync` before anything is touched. The copy differs by consequence:
 
 - Junk cleaning is a **permanent** delete (`IJunkCleaner` deliberately bypasses the Recycle Bin, since caches are regenerable and filling the bin with them defeats the point). Its dialog says so, names the size, and its affirmative is `Danger`.
 - Duplicates and large files are the user's own files and go to the Recycle Bin. Their dialogs name the destination and say it can be restored.
 
-`ConfirmAsync` returns `false` when there is no page to ask on — "couldn't ask" must never be read as "user said yes".
+Destructive confirmations also carry a **manifest**: the largest few items with their sizes, and a `+ N more` line, built by `Services/DialogManifest.cs`. A dialog that says only "delete 14 items?" gets dismissed reflexively because there's nothing in it to check against; naming the biggest entries is what lets someone spot the one that shouldn't be there. Capped at four lines — a dialog listing forty paths is as unreadable as one listing none.
+
+Cancelling, dismissing, tapping the scrim, and "we couldn't ask" all resolve to `false`. Anything other than a deliberate yes must never be read as one.
 
 ## Extending this
 

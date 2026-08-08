@@ -92,6 +92,10 @@ public static class MauiProgram
         // The shell and its theme switcher live for the life of the app, so the selected segment stays
         // correct without having to be re-read every time a page changes.
         services.AddSingleton<ThemeViewModel>();
+
+        // Singleton: every page hosts a DialogHost, and they all share this one state so whichever page
+        // is on screen shows the request. IDialogService drives it.
+        services.AddSingleton<DialogHostViewModel>();
         services.AddSingleton<AppShell>();
 
         services.AddTransient<DashboardPage>();

@@ -371,6 +371,29 @@
     </Style>
 
 
+    <!-- ===================== Dialog ===================== -->
+    <!-- The app's own confirmation, not the OS's. Centred card over a scrim; the manifest well lists
+         what is actually about to be removed. -->
+
+    <Style TargetType="Border" x:Key="DialogCard">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="24" />
+        <Setter Property="WidthRequest" Value="460" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style TargetType="Border" x:Key="DialogManifest">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 4" />
+        <Setter Property="Padding" Value="12,10" />
+    </Style>
+
     <!-- ===================== Theme switcher ===================== -->
     <!-- Three segments — System, Light, Dark — in one recessed track, so it reads as a choice between
          three rather than an on/off. System is the default and stays selected until the user says otherwise. -->

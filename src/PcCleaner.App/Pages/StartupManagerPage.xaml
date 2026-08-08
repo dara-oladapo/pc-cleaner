@@ -2,10 +2,13 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.StartupManagerPage"
              x:DataType="vm:StartupManagerViewModel"
              Title="Startup"
              Shell.NavBarIsVisible="False">
+
+    <Grid>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
@@ -89,6 +92,11 @@
                    Text="Read fresh from the registry and the Startup folder each time you reload."
                    VerticalOptions="Center" />
         </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>

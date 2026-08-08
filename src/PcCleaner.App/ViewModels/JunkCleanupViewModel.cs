@@ -120,7 +120,10 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         bool confirmed = await _dialogs.ConfirmAsync(
             title: $"Delete {selected.Count} location(s) permanently?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. Junk files are rebuilt by the apps that made them, but they do not go to the Recycle Bin, so this cannot be undone.",
-            acceptText: "Delete permanently");
+            acceptText: "Delete permanently",
+            cancelText: "Cancel",
+            isDestructive: true,
+            details: DialogManifest.Build(selected.Select(s => (s.Model.SizeBytes, s.Description))));
 
         if (!confirmed)
         {

@@ -2,10 +2,13 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.DuplicateFinderPage"
              x:DataType="vm:DuplicateFinderViewModel"
              Title="Duplicates"
              Shell.NavBarIsVisible="False">
+
+    <Grid>
 
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
@@ -110,6 +113,11 @@
             <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
             <Button Text="Move selected to Recycle Bin" Style="{StaticResource DangerButton}" Command="{Binding DeleteSelectedCommand}" />
         </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>

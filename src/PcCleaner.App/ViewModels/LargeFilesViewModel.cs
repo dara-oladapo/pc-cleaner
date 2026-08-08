@@ -139,7 +139,10 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         bool confirmed = await _dialogs.ConfirmAsync(
             title: $"Move {selected.Count} file(s) to the Recycle Bin?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. These are your own files, not junk — you can restore them from the Recycle Bin.",
-            acceptText: "Move to Recycle Bin");
+            acceptText: "Move to Recycle Bin",
+            cancelText: "Cancel",
+            isDestructive: true,
+            details: DialogManifest.Build(selected.Select(f => (f.Model.SizeBytes, System.IO.Path.GetFileName(f.Path)))));
 
         if (!confirmed)
         {

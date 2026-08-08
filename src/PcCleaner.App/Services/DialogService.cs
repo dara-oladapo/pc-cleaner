@@ -1,25 +1,27 @@
+using PcCleaner.App.ViewModels;
+
 namespace PcCleaner.App.Services;
 
 /// <summary>
-/// <see cref="IDialogService"/> over MAUI's built-in alert. No third-party dependency — CommunityToolkit.Maui
-/// can't be referenced here (see README: it forces a Microsoft.Maui.Controls downgrade against this workload).
+/// Drives the app's own confirmation dialog (see <c>Controls/DialogHost.xaml</c>).
 /// </summary>
-public sealed class DialogService : IDialogService
+/// <remarks>
+/// Deliberately not <c>Page.DisplayAlert</c>. That renders the operating system's dialog: it ignores the
+/// design system, differs between Windows and Mac Catalyst, can't list what is about to be deleted, and
+/// reads as a system warning rather than part of this app. It's also obsolete in .NET 10.
+/// </remarks>
+public sealed class DialogService(DialogHostViewModel host) : IDialogService
 {
-    public async Task<bool> ConfirmAsync(string title, string message, string acceptText, string cancelText = "Cancel")
-    {
-        var page = CurrentPage();
-        if (page is null)
-        {
-            // No page means no way to ask. Refusing is the safe answer: every caller is guarding a
-            // delete, so "couldn't ask" must never be read as "user said yes".
-            return false;
-        }
+    public Task<bool> ConfirmAsync(string title, string message, string acceptText, string cancelText = "Cancel") =>
+        ConfirmAsync(title, message, acceptText, cancelText, isDestructive: true, details: null);
 
-        return await MainThread.InvokeOnMainThreadAsync(() => page.DisplayAlert(title, message, acceptText, cancelText));
-    }
-
-    private static Page? CurrentPage() =>
-        Shell.Current?.CurrentPage
-        ?? Application.Current?.Windows.FirstOrDefault()?.Page;
+    public Task<bool> ConfirmAsync(
+        string title,
+        string message,
+        string acceptText,
+        string cancelText,
+        bool isDestructive,
+        IReadOnlyList<string>? details) =>
+        MainThread.InvokeOnMainThreadAsync(
+            () => host.ShowAsync(title, message, acceptText, cancelText, isDestructive, details));
 }

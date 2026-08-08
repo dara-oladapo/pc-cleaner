@@ -2,10 +2,13 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.AboutPage"
              x:DataType="vm:AboutViewModel"
              Title="About"
              Shell.NavBarIsVisible="False">
+
+    <Grid>
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
@@ -43,6 +46,11 @@
             <Button Text="Download and restart" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
             <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" VerticalOptions="Center" />
         </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>

@@ -2,10 +2,13 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.JunkCleanupPage"
              x:DataType="vm:JunkCleanupViewModel"
              Title="Junk Files"
              Shell.NavBarIsVisible="False">
+
+    <Grid>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
@@ -90,6 +93,11 @@
                    Text="Cleaning deletes permanently — junk does not go to the Recycle Bin."
                    VerticalOptions="Center" />
         </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>

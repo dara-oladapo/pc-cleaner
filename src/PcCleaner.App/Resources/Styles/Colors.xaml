@@ -33,6 +33,8 @@
     <!-- The "already in use" portion of the drive on the capacity readout. A slate carrying the same
          blue bias as Paper, so it reads as a chosen neutral rather than an unconsidered grey. -->
     <Color x:Key="Occupied">#97A4B0</Color>
+    <!-- Dialog scrim. Ink-tinted rather than neutral black, so the dimmed page keeps the palette's cool cast. -->
+    <Color x:Key="Scrim">#8C12181D</Color>
 
     <!-- Dark (mirrored, not inverted: an ink-blue-slate base rather than flat black) -->
     <Color x:Key="PaperDark">#12161B</Color>
@@ -49,5 +51,6 @@
     <Color x:Key="OnSignalDark">#0A1513</Color>
     <Color x:Key="OnDangerDark">#21100E</Color>
     <Color x:Key="OccupiedDark">#46525F</Color>
+    <Color x:Key="ScrimDark">#A6060A0E</Color>
 
 </ResourceDictionary>
