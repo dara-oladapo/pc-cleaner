@@ -68,7 +68,19 @@ Install the CLI once: `dotnet tool install -g vpk`.
 
 ### Continuous integration
 
-`.github/workflows/ci.yml` builds the Windows target and runs the Core tests on every pull request and every push to `main`. The build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime. `.github/workflows/release.yml` is separate and only runs on tags.
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`, across all three desktop platforms. A change has to be green on all of them — the `All platforms green` job is the single status to require in branch protection.
+
+| Runner | What it does |
+|---|---|
+| `ubuntu-latest` | `PcCleaner.Core` build and tests only. The app project's `TargetFrameworks` evaluates to empty on Linux, so it can't be restored there at all; the app step is a stub until there's a Linux UI layer. |
+| `windows-latest` | Core tests, plus the Windows app build. The primary supported platform. |
+| `macos-latest` | Core tests, plus the Mac Catalyst app build — the first thing that has ever compiled that target (see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)). |
+
+The app build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime.
+
+Core is tested on all three rather than just once, deliberately — it's pure `System.IO`, which is exactly the code whose behaviour varies by platform (path roots, separators, drive enumeration). Testing it in one place would exercise it where it's least likely to break.
+
+`.github/workflows/release.yml` is separate and only runs on tags.
 
 **Windows** (verified working end-to-end — build, install, version detection, and clean uninstall all confirmed):
 
