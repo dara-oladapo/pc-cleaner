@@ -109,8 +109,10 @@ jobs:
         with:
           global-json-file: global.json
 
+      # maui-maccatalyst, not maccatalyst. The bare `maccatalyst` workload installs the platform SDK but
+      # not MAUI itself, and the build then fails with NETSDK1147 asking for maui-maccatalyst by name.
       - name: Install MAUI Mac Catalyst workload
-        run: dotnet workload install maccatalyst
+        run: dotnet workload install maui-maccatalyst
 
       - name: Test Core
         run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
