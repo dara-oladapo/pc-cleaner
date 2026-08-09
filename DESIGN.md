@@ -4,6 +4,8 @@ PC Cleaner's visual identity, in one place, so new screens stay consistent with 
 
 A clickable prototype of every screen lives at [`docs/prototype/index.html`](docs/prototype/index.html) — open it in a browser. It uses the same fonts and the same token values as the app, so it is the fastest way to see a change before building it, and the reference the XAML is expected to match.
 
+Rendered stills of that prototype are in [`docs/prototype/screenshots/`](docs/prototype/screenshots) for anyone who wants to see the screens without running anything. They are renders of the prototype, not captures of the built app — the app has to be run on Windows or a Mac to see the real thing.
+
 ## Why this look
 
 The two default "AI tool" aesthetics are cream-paper-serif-terracotta and near-black-with-one-acid-accent. Both are template answers, not choices made for this app. Instead: a cool "lab report" palette (pale blue-gray, not cream) with one functional accent color, and monospace tabular numerals as the running signature — every size and count in the app reads like a terminal/`du -h` readout, reinforcing "precise diagnostic tool" over "sales funnel with a scan button."
