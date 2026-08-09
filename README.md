@@ -4,10 +4,15 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 
 ## Features
 
-- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), reports reclaimable size, deletes what you select.
-- **Duplicates & Large Files** — scans folders you choose (plus sensible defaults), groups duplicates by content hash, moves selected copies to the Recycle Bin / Trash (never a hard delete).
+- **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) and one "Scan everything" button that runs every tool in one pass, with a summary card per tool.
+- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), groups them by category, reports reclaimable size, and deletes what you select after confirming.
+- **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
+- **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.
+- **Appearance** — Light, Dark, or System (the default), chosen from the navigation rail and remembered across restarts. System keeps following the OS rather than sampling it once at launch.
 - **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.
+
+Nothing is deleted without a confirmation that says what will go and whether it can be recovered. Junk is deleted permanently (caches are regenerable, and filling the Recycle Bin with them defeats the point); your own files always go to the Recycle Bin / Trash instead.
 
 ## Architecture
 
@@ -17,9 +22,13 @@ src/
   PcCleaner.App/          .NET MAUI app (UI, MVVM, DI)
     Platforms/Windows/    Windows-specific: junk locations, Recycle Bin (SHFileOperation), registry startup items
     Platforms/MacCatalyst/  macOS-specific: junk locations, Trash (NSFileManager), LaunchAgent/Daemon management
-    Services/             UpdateService — wraps Velopack's UpdateManager (check/download/apply against GitHub Releases)
+    Services/             UpdateService (Velopack), DialogService (confirmations), IFolderPickerService
+    Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
+    Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
 tests/
   PcCleaner.Core.Tests/   xUnit tests for the cross-platform Core logic
+docs/
+  prototype/index.html    Clickable prototype of every screen — the design reference for the MAUI UI
 ```
 
 The rule of thumb: anything that's pure `System.IO` logic (recursive file walking, hashing, size math) lives in `PcCleaner.Core` and is unit-tested there. Anything that touches an OS API (registry, Recycle Bin, `launchctl`, native Trash) lives under `Platforms/<OS>` in the MAUI project and is resolved via DI in `MauiProgram.cs`.
@@ -56,6 +65,22 @@ dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj
 Installers are built with [Velopack](https://velopack.io) (`vpk` CLI) — it packages a self-contained publish into a real installer (`Setup.exe` on Windows, `.pkg`/`.zip` on macOS) and is what `UpdateService` (`Services/UpdateService.cs`) talks to at runtime to check GitHub Releases for a newer version and apply it. `VelopackApp.Build().Run()` runs as the very first line of `MauiProgram.CreateMauiApp()` — it intercepts the installer's `--veloapp-install` / `--veloapp-uninstall` lifecycle hooks and exits immediately for those, before any UI would start.
 
 Install the CLI once: `dotnet tool install -g vpk`.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`, across all three desktop platforms. A change has to be green on all of them — the `All platforms green` job is the single status to require in branch protection.
+
+| Runner | What it does |
+|---|---|
+| `ubuntu-latest` | `PcCleaner.Core` build and tests only. The app project's `TargetFrameworks` evaluates to empty on Linux, so it can't be restored there at all; the app step is a stub until there's a Linux UI layer. |
+| `windows-latest` | Core tests, plus the Windows app build. The primary supported platform. |
+| `macos-latest` | Core tests, plus the Mac Catalyst app build — the first thing that has ever compiled that target (see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)). |
+
+The app build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime.
+
+Core is tested on all three rather than just once, deliberately — it's pure `System.IO`, which is exactly the code whose behaviour varies by platform (path roots, separators, drive enumeration). Testing it in one place would exercise it where it's least likely to break.
+
+`.github/workflows/release.yml` is separate and only runs on tags.
 
 **Windows** (verified working end-to-end — build, install, version detection, and clean uninstall all confirmed):
 
@@ -96,6 +121,6 @@ vpk pack \
 ## Known gaps / next steps
 
 - **Linux has no path here.** Standard .NET MAUI does not support Linux as a target at all — there's no workload for it. `PcCleaner.Core` was deliberately kept 100% platform-agnostic so it can be reused; getting to Linux means pairing it with a different UI layer (e.g. Avalonia) and writing a `Platforms/Linux`-equivalent set of services (junk paths, trash via `gio trash`/freedesktop trash spec, systemd user units / XDG autostart for the startup manager).
-- **Folder picker** for the Duplicate Finder is a plain text field (paste a path) rather than a native folder browser — `CommunityToolkit.Maui`'s `FolderPicker` would add this, but its current version requires a newer `Microsoft.Maui.Controls` than this SDK's `maui-windows`/`maccatalyst` workload ships, causing a version-downgrade conflict. Revisit once the workload catches up.
+- **Folder picking** uses the native OS browser (`Windows.Storage.Pickers.FolderPicker` on Windows, `UIDocumentPickerViewController` on macOS) via `IFolderPickerService`, with the typed-path entry kept as a fallback. `CommunityToolkit.Maui`'s `FolderPicker` is still unusable here — its current version requires a newer `Microsoft.Maui.Controls` than this SDK's `maui-windows`/`maccatalyst` workload ships, causing a version-downgrade conflict — hence the hand-rolled platform services.
 - **Recycle Bin / Trash failures on system-owned junk paths** (e.g. `C:\Windows\SoftwareDistribution\Download`, `/Library/Caches`) are expected without elevated privileges — the cleaner reports these as partial failures rather than crashing, but doesn't yet prompt for elevation.
 - Startup item disabling for **system-scope** entries (`HKLM` Run keys on Windows, `/Library/LaunchAgents`, `/Library/LaunchDaemons` on macOS) requires admin/root and will throw; the UI surfaces the error but doesn't yet offer an elevation prompt.

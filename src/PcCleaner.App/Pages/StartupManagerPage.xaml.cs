@@ -9,12 +9,4 @@ public partial class StartupManagerPage : ContentPage
         InitializeComponent();
         BindingContext = viewModel;
     }
-
-    private void OnToggleClicked(object? sender, EventArgs e)
-    {
-        if (sender is Button { BindingContext: StartupItemViewModel item } && BindingContext is StartupManagerViewModel vm)
-        {
-            vm.ToggleCommand.Execute(item);
-        }
-    }
 }

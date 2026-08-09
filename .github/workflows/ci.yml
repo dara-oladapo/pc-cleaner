@@ -1,0 +1,147 @@
+name: CI
+
+# Builds and tests on all three desktop platforms. Every pull request and every push to main.
+#
+# This exists because the release workflow only runs on tags, so until now a change could be merged
+# without ever being compiled. That matters more here than in most projects: `MauiXamlInflator=SourceGen`
+# turns the XAML into C# at build time, so a mistyped StaticResource key or a binding path that doesn't
+# exist on its x:DataType is a *build* error — the kind of mistake a human reviewer reading a diff will
+# not catch, and that no test can reach.
+#
+# The three jobs are not symmetric, because the platforms aren't:
+#
+#   ubuntu   PcCleaner.Core only. Standard MAUI has no Linux target, and the app csproj's
+#            TargetFrameworks evaluates to *empty* on Linux, so the app project can't even be
+#            restored there — the solution build would fail before it did anything useful.
+#   windows  Core, plus the real app build. The primary supported platform.
+#   macos    Core, plus the Mac Catalyst app build. Never verified on real hardware (see #4), so
+#            this job is the first thing that has ever compiled that target.
+#
+# All three run the Core tests rather than only Linux, and that is deliberate: Core is pure System.IO,
+# which is exactly the code whose behaviour differs across platforms (path roots, separators, drive
+# enumeration). Running it in one place would test the one place it's least likely to break.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Superseded runs on the same branch are pointless once a newer commit exists.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Core (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Explicit project paths, not the solution: PcCleaner.App has no valid TargetFramework on Linux,
+      # so anything that touches it fails here for reasons that have nothing to do with the change.
+      - name: Build Core
+        run: dotnet build src/PcCleaner.Core/PcCleaner.Core.csproj --configuration Release -warnaserror
+
+      - name: Test Core
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
+
+      # Stub. PcCleaner.Core was deliberately kept 100% platform-agnostic so a Linux port is possible;
+      # what's missing is a UI layer (MAUI has no Linux target — Avalonia is the likely answer) and a
+      # Platforms/Linux set of services: junk paths, trash via the freedesktop spec, and XDG autostart
+      # or systemd user units for the startup manager. When that lands, its build and test steps belong
+      # here and the job stops being Core-only.
+      - name: App build (not yet possible on Linux)
+        run: echo "No Linux UI target yet - see the Known gaps section of README.md."
+
+  windows:
+    name: Build and test (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      # Core first: it needs no workload, so if the workload install is what's broken, the failure
+      # stays readable instead of looking like a code problem.
+      - name: Test Core
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
+
+      # The real check. -f is required: a plain build would also try the Mac Catalyst target, which this
+      # runner has no toolchain for.
+      #
+      # -warnaserror is safe now: the build reports 0 warnings on every platform. It was deliberately
+      # left off until that was true, because a gate that is red on arrival gets ignored or switched off.
+      #
+      # If a future SDK introduces an unrelated warning, suppress that specific code (-nowarn:XXXX) with
+      # a comment saying why, rather than dropping the flag. Removing it silently re-opens the door: the
+      # last warning to appear here (CS0618, an obsolete DisplayAlert) marked a real design problem — the
+      # app was using the OS's dialog instead of its own.
+      - name: Build app (compiles XAML)
+        run: >
+          dotnet build src/PcCleaner.App/PcCleaner.App.csproj
+          -f net10.0-windows10.0.19041.0
+          -c Release
+          -warnaserror
+
+  macos:
+    name: Build and test (macOS)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # maui-maccatalyst, not maccatalyst. The bare `maccatalyst` workload installs the platform SDK but
+      # not MAUI itself, and the build then fails with NETSDK1147 asking for maui-maccatalyst by name.
+      - name: Install MAUI Mac Catalyst workload
+        run: dotnet workload install maui-maccatalyst
+
+      - name: Test Core
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
+
+      - name: Build app (Mac Catalyst)
+        run: >
+          dotnet build src/PcCleaner.App/PcCleaner.App.csproj
+          -f net10.0-maccatalyst
+          -c Release
+          -warnaserror
+
+  # One check to require in branch protection instead of three. It also catches a job that was skipped
+  # or cancelled, which a plain "needs" would let through green.
+  all-green:
+    name: All platforms green
+    runs-on: ubuntu-latest
+    needs: [linux, windows, macos]
+    if: always()
+    steps:
+      - name: Verify every platform succeeded
+        run: |
+          echo "linux=${{ needs.linux.result }} windows=${{ needs.windows.result }} macos=${{ needs.macos.result }}"
+          if [ "${{ needs.linux.result }}" != "success" ] \
+            || [ "${{ needs.windows.result }}" != "success" ] \
+            || [ "${{ needs.macos.result }}" != "success" ]; then
+            echo "::error::All three platforms must pass."
+            exit 1
+          fi

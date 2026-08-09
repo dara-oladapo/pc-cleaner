@@ -2,62 +2,102 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.JunkCleanupPage"
              x:DataType="vm:JunkCleanupViewModel"
-             Title="Junk Cleanup">
+             Title="Junk Files"
+             Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="24,20" RowSpacing="16">
+    <Grid>
 
-        <!-- Hero -->
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
+
         <VerticalStackLayout Grid.Row="0" Spacing="2">
-            <Label Style="{StaticResource Eyebrow}" Text="Reclaimable right now" />
+            <Label Style="{StaticResource Eyebrow}" Text="Selected to remove" />
             <Label Style="{StaticResource HeroNumber}" Text="{Binding SelectedSizeText}" />
             <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
         </VerticalStackLayout>
 
-        <HorizontalStackLayout Grid.Row="1" Spacing="10">
-            <Button Text="Scan" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" />
-            <Button Text="Cancel" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
-            <ActivityIndicator IsRunning="{Binding IsScanning}" IsVisible="{Binding IsScanning}" />
-        </HorizontalStackLayout>
+        <Border Grid.Row="1" Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsScanning}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space3}">
+                <ActivityIndicator Grid.Column="0" IsRunning="{Binding IsScanning}" HeightRequest="16" WidthRequest="16" />
+                <Label Grid.Column="1" Style="{StaticResource ProgressText}" Text="{Binding StatusText}" />
+            </Grid>
+        </Border>
 
-        <CollectionView Grid.Row="2" ItemsSource="{Binding Items}">
+        <!-- Bulk selection. With 14+ locations, ticking every box by hand was the slowest part of the job. -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{StaticResource Space2}" IsVisible="{Binding HasScanned}">
+            <Button Grid.Column="0" Text="Select all" Style="{StaticResource InlineButton}" Command="{Binding SelectAllCommand}" />
+            <Button Grid.Column="1" Text="Select none" Style="{StaticResource InlineButton}" Command="{Binding SelectNoneCommand}" />
+            <Label Grid.Column="2" Style="{StaticResource Mono}" Text="{Binding SelectionSummary}"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" />
+        </Grid>
+
+        <CollectionView Grid.Row="3" ItemsSource="{Binding Groups}" IsGrouped="True">
+
             <CollectionView.EmptyView>
-                <Label Style="{StaticResource Caption}" Text="No results yet. Tap Scan to look for temp files, caches, and logs." Margin="0,24" />
+                <!-- An empty screen is an invitation to act: say what is true, then what to do about it. -->
+                <VerticalStackLayout Spacing="{StaticResource Space3}" VerticalOptions="Center" HorizontalOptions="Start" Padding="0,32">
+                    <Path Data="{StaticResource IconSearch}"
+                          Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                          StrokeThickness="1.5" StrokeLineCap="Round" Aspect="Uniform"
+                          HeightRequest="28" WidthRequest="28" HorizontalOptions="Start" Opacity="0.7" />
+                    <Label Style="{StaticResource EmptyStateTitle}" Text="Nothing scanned yet" />
+                    <Label Style="{StaticResource EmptyStateBody}"
+                           Text="Scan to find temp files, browser caches, system logs, and package manager caches. Nothing is removed until you choose it." />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
+
+            <CollectionView.GroupHeaderTemplate>
+                <DataTemplate x:DataType="vm:JunkCategoryGroup">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}" Padding="0,16,0,6">
+                        <Label Grid.Column="0" Style="{StaticResource Eyebrow}" Text="{Binding Name}" VerticalOptions="Center" />
+                        <BoxView Grid.Column="1" HeightRequest="1" VerticalOptions="Center" />
+                        <Label Grid.Column="2" Style="{StaticResource Mono}" Text="{Binding TotalText}" VerticalOptions="Center" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.GroupHeaderTemplate>
+
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:JunkItemViewModel">
-                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,12" ColumnSpacing="14">
-                        <Grid.Resources>
-                            <Style TargetType="BoxView" x:Key="RowDivider">
-                                <Setter Property="HeightRequest" Value="1" />
-                                <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
-                            </Style>
-                        </Grid.Resources>
-                        <BoxView Grid.ColumnSpan="3" Style="{StaticResource RowDivider}" VerticalOptions="End" Opacity="0.6" />
+                    <Border Style="{StaticResource RowCard}" Margin="0,3">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
 
-                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Start" />
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Center" />
 
-                        <VerticalStackLayout Grid.Column="1" Spacing="5">
-                            <Label Style="{StaticResource RowTitle}" Text="{Binding Description}" />
-                            <Border Style="{StaticResource Pill}">
-                                <Label Style="{StaticResource PillLabel}" Text="{Binding CategoryText}" />
-                            </Border>
-                            <Label Style="{StaticResource Mono}" Text="{Binding Path}" LineBreakMode="MiddleTruncation" />
-                            <Grid HorizontalOptions="Start">
+                            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                <Label Style="{StaticResource RowTitle}" Text="{Binding Description}" />
+                                <Label Style="{StaticResource Mono}" Text="{Binding Path}" LineBreakMode="MiddleTruncation" />
+                            </VerticalStackLayout>
+
+                            <Grid Grid.Column="2" HorizontalOptions="Start" VerticalOptions="Center">
                                 <BoxView Style="{StaticResource MeterTrack}" />
                                 <BoxView Style="{StaticResource MeterFill}"
-                                         WidthRequest="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter='60'}" />
+                                         WidthRequest="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
                             </Grid>
-                        </VerticalStackLayout>
 
-                        <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}" VerticalOptions="Start" />
-                    </Grid>
+                            <Label Grid.Column="3" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}"
+                                   VerticalOptions="Center" MinimumWidthRequest="72" />
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <Button Grid.Row="3" Text="Clean Selected" Style="{StaticResource PrimaryButton}" Command="{Binding CleanCommand}" HorizontalOptions="Fill" />
+        <HorizontalStackLayout Grid.Row="4" Spacing="{StaticResource Space3}">
+            <Button Text="Scan" Style="{StaticResource PrimaryButton}" Command="{Binding ScanCommand}" />
+            <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+            <!-- Red, and only here: this delete does not go to the Recycle Bin. -->
+            <Button Text="Clean selected" Style="{StaticResource DangerButton}" Command="{Binding CleanCommand}" />
+            <Label Style="{StaticResource HeroCaption}"
+                   Text="Cleaning deletes permanently — junk does not go to the Recycle Bin."
+                   VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>

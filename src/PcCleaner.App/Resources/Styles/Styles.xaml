@@ -22,25 +22,25 @@
 
     <Style TargetType="CheckBox">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-        <Setter Property="MinimumHeightRequest" Value="32"/>
-        <Setter Property="MinimumWidthRequest" Value="32"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource CheckBoxSize}"/>
+        <Setter Property="MinimumWidthRequest" Value="{StaticResource CheckBoxSize}"/>
     </Style>
 
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontFamily" Value="BodyRegular"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
         <Setter Property="MinimumHeightRequest" Value="40"/>
     </Style>
 
-    <!-- Default Label: quiet body text (OpenSans stays in a supporting role) -->
+    <!-- Default Label: quiet body text (IBM Plex Sans stays in a supporting role) -->
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontFamily" Value="BodyRegular" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
@@ -62,8 +62,8 @@
         <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
         <Setter Property="BorderWidth" Value="1"/>
         <Setter Property="FontFamily" Value="DisplayMedium"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="FontSize" Value="{StaticResource FontControl}"/>
+        <Setter Property="CharacterSpacing" Value="{StaticResource TrackControl}" />
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="16,9"/>
         <Setter Property="MinimumHeightRequest" Value="40"/>
@@ -71,6 +71,11 @@
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+                        </VisualState.Setters>
+                    </VisualState>
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
                             <Setter Property="Opacity" Value="0.4" />
@@ -81,21 +86,26 @@
         </Setter>
     </Style>
 
-    <!-- Primary button: the ONE place solid Signal teal appears as a fill -->
+    <!-- Primary button: solid Signal teal. One per screen — the action you came to this screen to take. -->
     <Style TargetType="Button" x:Key="PrimaryButton">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSignal}, Dark={StaticResource OnSignalDark}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="FontFamily" Value="DisplayBold"/>
-        <Setter Property="FontSize" Value="13"/>
-        <Setter Property="CharacterSpacing" Value="0.6" />
+        <Setter Property="FontSize" Value="{StaticResource FontControl}"/>
+        <Setter Property="CharacterSpacing" Value="{StaticResource TrackPrimary}" />
         <Setter Property="CornerRadius" Value="4"/>
-        <Setter Property="Padding" Value="18,10"/>
+        <Setter Property="Padding" Value="20,11"/>
         <Setter Property="MinimumHeightRequest" Value="42"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.88" />
+                        </VisualState.Setters>
+                    </VisualState>
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
                             <Setter Property="Opacity" Value="0.35" />
@@ -106,22 +116,37 @@
         </Setter>
     </Style>
 
-    <!-- Compact ghost button used inline in rows (Remove, Enable/Disable, etc.) -->
+    <!--
+      Destructive button. The one place Danger red appears as a fill.
+      Previously "Scan" and "Delete Selected" were the same teal, so the interface gave no warning
+      that one of them could not be undone.
+    -->
+    <Style TargetType="Button" x:Key="DangerButton" BasedOn="{StaticResource PrimaryButton}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnDanger}, Dark={StaticResource OnDangerDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+    </Style>
+
+    <!-- Compact ghost button used inline in rows (Remove, Enable/Disable, Select none) -->
     <Style TargetType="Button" x:Key="InlineButton">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
         <Setter Property="BorderWidth" Value="1"/>
         <Setter Property="FontFamily" Value="DisplayMedium"/>
-        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource TrackControl}" />
         <Setter Property="CornerRadius" Value="4"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontSize" Value="{StaticResource FontEyebrow}"/>
         <Setter Property="Padding" Value="10,4"/>
         <Setter Property="MinimumHeightRequest" Value="30"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
                     <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+                        </VisualState.Setters>
+                    </VisualState>
                     <VisualState x:Name="Disabled">
                         <VisualState.Setters>
                             <Setter Property="Opacity" Value="0.4" />
@@ -134,60 +159,118 @@
 
     <!-- ===================== Typography ===================== -->
 
-    <!-- Page title: Space Grotesk carries the app's personality -->
     <Style TargetType="Label" x:Key="PageTitle">
         <Setter Property="FontFamily" Value="DisplayBold" />
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontSize" Value="{StaticResource FontTitle}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
     </Style>
 
     <!-- Hero stat: the big reclaimable-size number at the top of each tool -->
     <Style TargetType="Label" x:Key="HeroNumber">
         <Setter Property="FontFamily" Value="MonoMedium" />
-        <Setter Property="FontSize" Value="36" />
+        <Setter Property="FontSize" Value="{StaticResource FontHero}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
     </Style>
 
     <Style TargetType="Label" x:Key="HeroCaption">
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontFamily" Value="BodyRegular" />
+        <Setter Property="FontSize" Value="{StaticResource FontControl}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
     </Style>
 
     <!-- Small tracked label for section headers ("FOLDERS TO SCAN") -->
     <Style TargetType="Label" x:Key="Eyebrow">
         <Setter Property="FontFamily" Value="DisplayMedium" />
-        <Setter Property="FontSize" Value="11" />
-        <Setter Property="CharacterSpacing" Value="1.2" />
+        <Setter Property="FontSize" Value="{StaticResource FontEyebrow}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource TrackEyebrow}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
         <Setter Property="TextTransform" Value="Uppercase" />
     </Style>
 
     <Style TargetType="Label" x:Key="RowTitle">
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontFamily" Value="BodySemibold" />
+        <Setter Property="FontSize" Value="{StaticResource FontRowTitle}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
     </Style>
+
 
     <!-- Monospace path/command text -->
     <Style TargetType="Label" x:Key="Mono">
         <Setter Property="FontFamily" Value="MonoRegular" />
-        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontSize" Value="{StaticResource FontMono}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
     </Style>
 
     <!-- Tabular monospace size/count figures — the app's signature: every number reads like a terminal readout -->
     <Style TargetType="Label" x:Key="MonoNumber">
         <Setter Property="FontFamily" Value="MonoMedium" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontControl}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
         <Setter Property="HorizontalTextAlignment" Value="End" />
     </Style>
 
+    <!-- The headline figure on a dashboard tool card -->
+    <Style TargetType="Label" x:Key="StatValue">
+        <Setter Property="FontFamily" Value="MonoMedium" />
+        <Setter Property="FontSize" Value="{StaticResource FontStat}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+    </Style>
+
     <Style TargetType="Label" x:Key="Caption">
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontFamily" Value="BodyRegular" />
+        <Setter Property="FontSize" Value="{StaticResource FontCaption}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+    <!-- ===================== Empty / done states ===================== -->
+    <!-- An empty screen is an invitation to act, not a shrug. Title says what's true, body says what to do. -->
+
+    <Style TargetType="Label" x:Key="EmptyStateTitle">
+        <Setter Property="FontFamily" Value="DisplayBold" />
+        <Setter Property="FontSize" Value="{StaticResource FontSubtitle}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="EmptyStateBody">
+        <Setter Property="FontFamily" Value="BodyRegular" />
+        <Setter Property="FontSize" Value="{StaticResource FontRowTitle}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
+    <!-- ===================== Cards & rows ===================== -->
+
+    <!-- Raised container on the page background. Used for tool cards and grouped panels. -->
+    <Style TargetType="Border" x:Key="Card">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="{StaticResource CardPadding}" />
+    </Style>
+
+    <!-- A single result row. Rows are cards now, not hairline-separated bands: at 20+ results the
+         hairline version read as one undifferentiated wall of text. -->
+    <Style TargetType="Border" x:Key="RowCard" BasedOn="{StaticResource Card}">
+        <Setter Property="Padding" Value="{StaticResource RowPadding}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Hoisted out of JunkCleanupPage and StartupManagerPage, where it was declared twice inline. -->
+    <Style TargetType="BoxView" x:Key="RowDivider">
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="Opacity" Value="0.6" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
     </Style>
 
     <!-- ===================== Pills / badges ===================== -->
@@ -195,16 +278,17 @@
     <Style TargetType="Border" x:Key="Pill">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SignalMuted}, Dark={StaticResource SignalMutedDark}}" />
         <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape" Value="RoundRectangle 4" />
-        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="Padding" Value="{StaticResource PillPadding}" />
         <Setter Property="HorizontalOptions" Value="Start" />
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
     <Style TargetType="Label" x:Key="PillLabel">
         <Setter Property="FontFamily" Value="DisplayMedium" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="CharacterSpacing" Value="0.4" />
+        <Setter Property="FontSize" Value="{StaticResource FontPill}" />
+        <Setter Property="CharacterSpacing" Value="{StaticResource TrackControl}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
         <Setter Property="TextTransform" Value="Uppercase" />
     </Style>
@@ -217,20 +301,155 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Attention}, Dark={StaticResource AttentionDark}}" />
     </Style>
 
+    <!-- Neutral pill for states that are simply off — "Disabled", "Kept" — where Signal would overstate them. -->
+    <Style TargetType="Border" x:Key="QuietPill" BasedOn="{StaticResource Pill}">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="QuietPillLabel" BasedOn="{StaticResource PillLabel}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
+    </Style>
+
     <!-- ===================== Meter bar (signature element) ===================== -->
-    <!-- Two BoxViews: a hairline track and a Signal-colored fill whose WidthRequest is bound via ShareToWidthConverter -->
+    <!-- Two BoxViews: a sunken track and a Signal fill whose WidthRequest comes from ShareToWidthConverter.
+         Both the track width and the converter parameter read the same MeterWidth token, so they can no
+         longer drift apart the way the old hardcoded '60'/'120' pairs could. -->
 
     <Style TargetType="BoxView" x:Key="MeterTrack">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
-        <Setter Property="HeightRequest" Value="3" />
-        <Setter Property="WidthRequest" Value="60" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="HeightRequest" Value="{StaticResource MeterHeight}" />
+        <Setter Property="WidthRequest" Value="{StaticResource MeterWidth}" />
+        <Setter Property="CornerRadius" Value="2" />
         <Setter Property="HorizontalOptions" Value="Start" />
     </Style>
 
     <Style TargetType="BoxView" x:Key="MeterFill">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-        <Setter Property="HeightRequest" Value="3" />
+        <Setter Property="HeightRequest" Value="{StaticResource MeterHeight}" />
+        <Setter Property="CornerRadius" Value="2" />
         <Setter Property="HorizontalOptions" Value="Start" />
+    </Style>
+
+    <!-- ===================== Capacity readout (dashboard hero) ===================== -->
+    <!-- The same meter device at hero scale, split into three real segments of the drive. -->
+
+    <Style TargetType="Border" x:Key="CapacityBar">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HeightRequest" Value="{StaticResource CapacityBarHeight}" />
+    </Style>
+
+    <Style TargetType="BoxView" x:Key="SegmentOccupied">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Occupied}, Dark={StaticResource OccupiedDark}}" />
+    </Style>
+
+    <Style TargetType="BoxView" x:Key="SegmentReclaimable">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+    </Style>
+
+    <Style TargetType="BoxView" x:Key="SegmentFree">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+    </Style>
+
+    <Style TargetType="BoxView" x:Key="LegendSwatch">
+        <Setter Property="HeightRequest" Value="10" />
+        <Setter Property="WidthRequest" Value="10" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <!-- ===================== Navigation rail ===================== -->
+
+    <Style TargetType="Label" x:Key="NavItemLabel">
+        <Setter Property="FontFamily" Value="DisplayMedium" />
+        <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+        <Setter Property="CharacterSpacing" Value="0.2" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+
+    <!-- ===================== Dialog ===================== -->
+    <!-- The app's own confirmation, not the OS's. Centred card over a scrim; the manifest well lists
+         what is actually about to be removed. -->
+
+    <Style TargetType="Border" x:Key="DialogCard">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="24" />
+        <Setter Property="WidthRequest" Value="460" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style TargetType="Border" x:Key="DialogManifest">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 4" />
+        <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <!-- ===================== Theme switcher ===================== -->
+    <!-- Three segments — System, Light, Dark — in one recessed track, so it reads as a choice between
+         three rather than an on/off. System is the default and stays selected until the user says otherwise. -->
+
+    <Style TargetType="Border" x:Key="ThemeSwitcher">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="Padding" Value="3" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <Style TargetType="Border" x:Key="ThemeSegment">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 4" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HeightRequest" Value="28" />
+    </Style>
+
+    <!-- Sits transparent over the icon purely so the segment is reachable and focusable by keyboard;
+         a Border with a TapGestureRecognizer would be mouse-only. -->
+    <Style TargetType="Button" x:Key="ThemeSegmentHit">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinimumHeightRequest" Value="28" />
+        <Setter Property="MinimumWidthRequest" Value="0" />
+    </Style>
+
+    <!-- ===================== Progress ===================== -->
+    <!-- The scanners report a running file count, never a percentage, so scanning shows an
+         indeterminate bar plus the real count. Do not add a fake ProgressBar value here. -->
+
+    <Style TargetType="Border" x:Key="ProgressPanel">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SignalMuted}, Dark={StaticResource SignalMutedDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 6" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="16,10" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="ProgressText" BasedOn="{StaticResource Mono}">
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <!-- Determinate step markers. Only used where a fraction is genuinely known — the dashboard's
+         "N of 4 tools finished". -->
+    <Style TargetType="BoxView" x:Key="StepMarker">
+        <Setter Property="HeightRequest" Value="3" />
+        <Setter Property="WidthRequest" Value="34" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Sunken}, Dark={StaticResource SunkenDark}}" />
     </Style>
 
     <!-- ===================== Shell / navigation ===================== -->

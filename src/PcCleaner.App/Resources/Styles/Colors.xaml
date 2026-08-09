@@ -6,13 +6,20 @@
     <!--
       PC Cleaner design tokens — a "lab report" palette, not the two AI-tool defaults we're avoiding:
       not cream+serif+terracotta, and not near-black+single-acid-accent. Cool pale paper in light mode,
-      ink-blue-slate (not flat black) in dark mode, with exactly one functional accent color: Signal teal.
+      ink-blue-slate (not flat black) in dark mode, with one accent color: Signal teal.
       Signal is spent ONLY on the primary action and on "how much space will I get back" numbers.
+
+      Danger is the single deliberate exception to the one-accent rule, and it earns it: it appears only
+      on a confirmation's affirmative button and on destructive-action buttons. Before it existed, "Scan"
+      and "Delete Selected" were the same teal, so one color meant both "look" and "cannot be undone".
+      See DESIGN.md for the reasoning.
     -->
 
     <!-- Light -->
     <Color x:Key="Paper">#EEF1F3</Color>
     <Color x:Key="Surface">#FFFFFF</Color>
+    <!-- Recessed fill: meter tracks, wells, hover states. Cards sit above it, the page sits below. -->
+    <Color x:Key="Sunken">#E4E9EC</Color>
     <Color x:Key="InkStrong">#12181D</Color>
     <Color x:Key="InkMuted">#5B6672</Color>
     <Color x:Key="Hairline">#D7DEE3</Color>
@@ -20,11 +27,19 @@
     <Color x:Key="SignalMuted">#E4F1EF</Color>
     <Color x:Key="Attention">#B8863B</Color>
     <Color x:Key="AttentionMuted">#F5ECDC</Color>
+    <Color x:Key="Danger">#A8322D</Color>
     <Color x:Key="OnSignal">#FFFFFF</Color>
+    <Color x:Key="OnDanger">#FFFFFF</Color>
+    <!-- The "already in use" portion of the drive on the capacity readout. A slate carrying the same
+         blue bias as Paper, so it reads as a chosen neutral rather than an unconsidered grey. -->
+    <Color x:Key="Occupied">#97A4B0</Color>
+    <!-- Dialog scrim. Ink-tinted rather than neutral black, so the dimmed page keeps the palette's cool cast. -->
+    <Color x:Key="Scrim">#8C12181D</Color>
 
     <!-- Dark (mirrored, not inverted: an ink-blue-slate base rather than flat black) -->
     <Color x:Key="PaperDark">#12161B</Color>
     <Color x:Key="SurfaceDark">#1A2027</Color>
+    <Color x:Key="SunkenDark">#0D1116</Color>
     <Color x:Key="InkStrongDark">#EDF1F3</Color>
     <Color x:Key="InkMutedDark">#8B99A6</Color>
     <Color x:Key="HairlineDark">#2A323B</Color>
@@ -32,13 +47,10 @@
     <Color x:Key="SignalMutedDark">#17302E</Color>
     <Color x:Key="AttentionDark">#D9A857</Color>
     <Color x:Key="AttentionMutedDark">#3A2F1C</Color>
+    <Color x:Key="DangerDark">#E8756D</Color>
     <Color x:Key="OnSignalDark">#0A1513</Color>
+    <Color x:Key="OnDangerDark">#21100E</Color>
+    <Color x:Key="OccupiedDark">#46525F</Color>
+    <Color x:Key="ScrimDark">#A6060A0E</Color>
 
-    <Color x:Key="White">White</Color>
-    <Color x:Key="Black">Black</Color>
-
-    <SolidColorBrush x:Key="SignalBrush" Color="{StaticResource Signal}"/>
-    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
-    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
-    <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource Hairline}"/>
 </ResourceDictionary>

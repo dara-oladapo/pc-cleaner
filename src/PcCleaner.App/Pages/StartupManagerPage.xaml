@@ -2,60 +2,101 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PcCleaner.App.ViewModels"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
              x:Class="PcCleaner.App.Pages.StartupManagerPage"
              x:DataType="vm:StartupManagerViewModel"
-             Title="Startup Items">
+             Title="Startup"
+             Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="24,20" RowSpacing="16">
+    <Grid>
 
-        <!-- Hero -->
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
+
         <VerticalStackLayout Grid.Row="0" Spacing="2">
             <Label Style="{StaticResource Eyebrow}" Text="Launch at login" />
             <Label Style="{StaticResource HeroNumber}" Text="{Binding ItemCountText}" />
             <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
         </VerticalStackLayout>
 
-        <HorizontalStackLayout Grid.Row="1" Spacing="10">
-            <Button Text="Reload" Style="{StaticResource PrimaryButton}" Command="{Binding LoadCommand}" />
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
-        </HorizontalStackLayout>
+        <Border Grid.Row="1" Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsBusy}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space3}">
+                <ActivityIndicator Grid.Column="0" IsRunning="{Binding IsBusy}" HeightRequest="16" WidthRequest="16" />
+                <Label Grid.Column="1" Style="{StaticResource ProgressText}" Text="{Binding StatusText}" />
+            </Grid>
+        </Border>
 
         <CollectionView Grid.Row="2" ItemsSource="{Binding Items}">
+
             <CollectionView.EmptyView>
-                <Label Style="{StaticResource Caption}" Text="No startup items loaded yet. Tap Reload." Margin="0,24" />
+                <VerticalStackLayout Spacing="{StaticResource Space3}" VerticalOptions="Center" HorizontalOptions="Start" Padding="0,32">
+                    <Path Data="{StaticResource IconStartup}"
+                          Stroke="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}"
+                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                          HeightRequest="28" WidthRequest="28" HorizontalOptions="Start" Opacity="0.7" />
+                    <Label Style="{StaticResource EmptyStateTitle}" Text="Nothing loaded yet" />
+                    <Label Style="{StaticResource EmptyStateBody}"
+                           Text="Load to see the apps and services that start with your computer. Disabling one is reversible and never uninstalls anything." />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
+
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:StartupItemViewModel">
-                    <Grid ColumnDefinitions="*,Auto" Padding="0,12" ColumnSpacing="14">
-                        <Grid.Resources>
-                            <Style TargetType="BoxView" x:Key="RowDivider">
-                                <Setter Property="HeightRequest" Value="1" />
-                                <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
-                            </Style>
-                        </Grid.Resources>
-                        <BoxView Grid.ColumnSpan="2" Style="{StaticResource RowDivider}" VerticalOptions="End" Opacity="0.6" />
+                    <Border Style="{StaticResource RowCard}" Margin="0,3">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
 
-                        <VerticalStackLayout Grid.Column="0" Spacing="5">
-                            <Label Style="{StaticResource RowTitle}" Text="{Binding Name}" />
-                            <HorizontalStackLayout Spacing="6">
-                                <Border Style="{StaticResource Pill}">
-                                    <Label Style="{StaticResource PillLabel}" Text="{Binding SourceText}" />
-                                </Border>
-                                <Border Style="{StaticResource AttentionPill}" IsVisible="{Binding RequiresElevation}">
-                                    <Label Style="{StaticResource AttentionPillLabel}" Text="Admin required" />
-                                </Border>
-                            </HorizontalStackLayout>
-                            <Label Style="{StaticResource Mono}" Text="{Binding CommandOrPath}" LineBreakMode="MiddleTruncation" />
-                        </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                    <Label Style="{StaticResource RowTitle}" Text="{Binding Name}" VerticalOptions="Center" />
+                                    <Border Style="{StaticResource Pill}">
+                                        <Label Style="{StaticResource PillLabel}" Text="{Binding SourceText}" />
+                                    </Border>
+                                    <Border Style="{StaticResource AttentionPill}" IsVisible="{Binding RequiresElevation}">
+                                        <Label Style="{StaticResource AttentionPillLabel}" Text="Needs admin" />
+                                    </Border>
+                                </HorizontalStackLayout>
+                                <Label Style="{StaticResource Mono}" Text="{Binding CommandOrPath}" LineBreakMode="MiddleTruncation" />
+                            </VerticalStackLayout>
 
-                        <VerticalStackLayout Grid.Column="1" Spacing="6" HorizontalOptions="End" VerticalOptions="Center">
-                            <Label Style="{StaticResource Caption}" Text="{Binding StateText}" HorizontalOptions="End" />
-                            <Button Text="{Binding ActionButtonText}" Style="{StaticResource InlineButton}" Clicked="OnToggleClicked" />
-                        </VerticalStackLayout>
-                    </Grid>
+                            <!-- Enabled reads as Signal, disabled as a neutral. The trigger is repeated on the
+                                 label because MAUI's visual/data triggers only set properties on the element
+                                 that declares them — they can't reach a child. -->
+                            <Border Grid.Column="1" Style="{StaticResource QuietPill}" VerticalOptions="Center">
+                                <Label Style="{StaticResource QuietPillLabel}" Text="{Binding StateText}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsEnabled}" Value="True">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsEnabled}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SignalMuted}, Dark={StaticResource SignalMutedDark}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                            </Border>
+
+                            <!-- ToggleCommand already takes the row's item, so no Clicked handler is needed. -->
+                            <Button Grid.Column="2" Text="{Binding ActionButtonText}" Style="{StaticResource InlineButton}"
+                                    VerticalOptions="Center"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:StartupManagerViewModel}}, Path=ToggleCommand}"
+                                    CommandParameter="{Binding .}" />
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
+        <HorizontalStackLayout Grid.Row="3" Spacing="{StaticResource Space3}">
+            <Button Text="Reload" Style="{StaticResource PrimaryButton}" Command="{Binding LoadCommand}" />
+            <Label Style="{StaticResource HeroCaption}"
+                   Text="Read fresh from the registry and the Startup folder each time you reload."
+                   VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
 
     </Grid>
 </ContentPage>
