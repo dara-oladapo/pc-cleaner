@@ -18,6 +18,15 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+#if WINDOWS
+        // Elevated-helper mode (issue #3): WindowsElevationService relaunches this exe via UAC with one encoded
+        // operation. Do that operation and exit before any UI exists, so the app itself never runs elevated.
+        if (WindowsElevatedHelper.TryRun(Environment.GetCommandLineArgs(), out int helperExitCode))
+        {
+            Environment.Exit(helperExitCode);
+        }
+#endif
+
         // Must run before anything else: intercepts install/update/uninstall lifecycle command-line
         // hooks from the Velopack-generated installer and exits immediately for those, before any UI
         // would otherwise start up. A no-op when launched normally (not via a Velopack-managed install).
@@ -66,11 +75,13 @@ public static class MauiProgram
         services.AddSingleton<IStartupItemManager, WindowsStartupManager>();
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
         services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
+        services.AddSingleton<IElevationService, WindowsElevationService>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
         services.AddSingleton<IFolderPickerService, MacFolderPicker>();
+        services.AddSingleton<IElevationService, MacElevationService>();
 #endif
 
         services.AddSingleton<IDialogService, DialogService>();

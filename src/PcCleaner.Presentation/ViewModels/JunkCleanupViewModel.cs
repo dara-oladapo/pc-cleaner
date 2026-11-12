@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Presentation.Services;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Elevation;
+using PcCleaner.Core.Models;
 using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.Presentation.ViewModels;
@@ -12,6 +14,7 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
     private readonly IJunkScanner _scanner;
     private readonly IJunkCleaner _cleaner;
     private readonly IDialogService _dialogs;
+    private readonly IElevationService _elevation;
     private CancellationTokenSource? _scanCts;
 
     /// <summary>Flat list of every result — the source of truth for totals and for cleaning.</summary>
@@ -42,11 +45,12 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
     /// <summary>Read by the dashboard for the combined reclaimable figure and the capacity bar.</summary>
     public long SelectedBytes => Items.Where(i => i.IsSelected).Sum(i => i.Model.SizeBytes);
 
-    public JunkCleanupViewModel(IJunkScanner scanner, IJunkCleaner cleaner, IDialogService dialogs)
+    public JunkCleanupViewModel(IJunkScanner scanner, IJunkCleaner cleaner, IDialogService dialogs, IElevationService elevation)
     {
         _scanner = scanner;
         _cleaner = cleaner;
         _dialogs = dialogs;
+        _elevation = elevation;
     }
 
     [RelayCommand(CanExecute = nameof(CanScan))]
@@ -150,9 +154,68 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
             ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
             : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
 
+        if (!result.AllSucceeded)
+        {
+            await RetryElevatedAsync(result);
+        }
+
         IsCleaning = false;
         UpdateSelection();
         UpdateShares();
+    }
+
+    /// <summary>
+    /// Offers to retry the failures that sit in system-owned folders with administrator permission (issue #3). Failures
+    /// elsewhere — typically files held open by a running app — are left as reported, since elevation would not help.
+    /// </summary>
+    private async Task RetryElevatedAsync(TrashResult result)
+    {
+        var failedPaths = result.FailedPaths.Select(f => f.Path).ToList();
+        IReadOnlyList<string> roots = _elevation.GetElevatableJunkRoots(failedPaths);
+        if (roots.Count == 0)
+        {
+            return;
+        }
+
+        var retryPaths = failedPaths
+            .Where(p => ElevationPolicy.TryNormalizeAbsolutePath(p, out string n) && roots.Any(r => ElevationPolicy.IsStrictlyUnder(n, r)))
+            .ToList();
+
+        bool confirmed = await _dialogs.ConfirmAsync(
+            title: "Needs administrator permission — continue?",
+            message: $"{retryPaths.Count} item(s) are in system folders that only an administrator can clean. Your system will ask you to approve removing them. Like the rest of this clean, it cannot be undone.",
+            acceptText: "Continue",
+            cancelText: "Skip",
+            isDestructive: true,
+            details: roots);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        StatusText = "Waiting for administrator permission...";
+        ElevatedJunkOutcome outcome = await ElevatedJunkRetry.RunAsync(_elevation, roots, retryPaths);
+        long totalFreed = result.BytesFreed + outcome.BytesFreed;
+        int stillFailed = result.FailedPaths.Count - outcome.RemovedPaths.Count;
+
+        // The scan reported each root as one location; drop the ones the elevated pass left with no failures.
+        IReadOnlyList<string> dirtyRoots = ElevationPolicy.FindContainingRoots(outcome.StillFailedPaths, roots);
+        var cleanRoots = roots.Except(dirtyRoots).ToList();
+        foreach (var vm in Items.Where(i => ElevationPolicy.IsAllowedRoot(i.Path, cleanRoots)).ToList())
+        {
+            vm.PropertyChanged -= OnItemPropertyChanged;
+            Items.Remove(vm);
+            RemoveFromGroup(vm);
+        }
+
+        StatusText = outcome.Status switch
+        {
+            ElevationStatus.Cancelled => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) were left because administrator permission was not given.",
+            ElevationStatus.Rejected => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) could not be removed.",
+            _ when stillFailed == 0 => $"Freed {ByteSizeFormatter.Format(totalFreed)}.",
+            _ => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) could not be removed, probably because they are in use.",
+        };
     }
 
     private bool CanClean() => !IsCleaning && !IsScanning && Items.Any(i => i.IsSelected);
