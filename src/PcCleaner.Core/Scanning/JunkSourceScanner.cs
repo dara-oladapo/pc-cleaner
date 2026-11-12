@@ -26,7 +26,16 @@ public static class JunkSourceScanner
                 .ScanAsync(root, nowUtc, minimumAge, pathComparison, cancellationToken, filesScanned)
                 .ConfigureAwait(false);
 
-            if (scan.TotalBytes > 0)
+            if (scan.RootIsLink)
+            {
+                // Following the link could clean another drive or folder entirely; tell the user instead of
+                // silently showing nothing.
+                yield return new JunkItem(root.Path, 0, root.Category, root.Description, IsDirectory: true)
+                {
+                    Notice = $"{root.Description} was not scanned: {root.Path} is a link to another location.",
+                };
+            }
+            else if (scan.TotalBytes > 0)
             {
                 yield return new JunkItem(
                     root.Path,
@@ -37,6 +46,7 @@ public static class JunkSourceScanner
                 {
                     Files = scan.Files,
                     Directories = scan.Directories,
+                    MinimumAge = root.IsTemp ? minimumAge : null,
                 };
             }
         }

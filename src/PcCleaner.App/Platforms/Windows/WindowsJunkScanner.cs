@@ -9,6 +9,7 @@ namespace PcCleaner.App.Platforms.Windows;
 public sealed class WindowsJunkScanner : IJunkScanner
 {
     // Overlap handling (the same Temp folder reached two ways, NuGetScratch nested inside Temp), the age filter,
+    // a temp folder that is itself a link (reported as a notice, not scanned),
     // link/junction refusal and the per-file manifest all live in Core's JunkSourceScanner; this class only says
     // where junk lives on Windows.
     public IAsyncEnumerable<JunkItem> ScanAsync(
@@ -30,13 +31,16 @@ public sealed class WindowsJunkScanner : IJunkScanner
 
         // Windows\Prefetch is deliberately absent: Windows manages it, and clearing it only makes the next
         // launch of every app slower while the cache is rebuilt.
+        //
+        // Windows\Temp is deliberately absent too: any standard user can create folders there, so if this app is
+        // run as administrator a planted folder could be swapped for a junction mid-clean and redirect deletes
+        // into protected locations. Path-based link checks narrow that race but cannot close it.
         var sources = new List<JunkSource>
         {
             // %TEMP% can come back in 8.3 form (C:\Users\FIRSTN~1\...), which would not match the long path of
             // %LOCALAPPDATA%\Temp and would count the same folder twice — so expand it first.
             new(ToLongPath(Path.GetTempPath()), JunkCategory.TempFiles, "User Temp Files", IsTemp: true),
             new(Path.Combine(localAppData, "Temp"), JunkCategory.TempFiles, "Local App Temp Files", IsTemp: true),
-            new(Path.Combine(windowsDir, "Temp"), JunkCategory.TempFiles, "System Temp Files", IsTemp: true),
             new(Path.Combine(windowsDir, "SoftwareDistribution", "Download"), JunkCategory.SystemCache, "Windows Update Cache"),
             new(Path.Combine(localAppData, "Microsoft", "Windows", "WER"), JunkCategory.SystemLogs, "Windows Error Reporting"),
             new(Path.Combine(localAppData, "CrashDumps"), JunkCategory.SystemLogs, "Application Crash Dumps"),

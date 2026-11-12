@@ -35,6 +35,11 @@ public class JunkSafetyRulesTests
     [InlineData("ext4.vhdx")]
     [InlineData("disk.VHD")]
     [InlineData("checkpoint.avhdx")]
+    [InlineData("vm.VMDK")]
+    [InlineData("vm.vdi")]
+    [InlineData("vm.qcow2")]
+    [InlineData("install.iso")]
+    [InlineData("boot.wim")]
     public void ShouldSkipFile_VirtualDisks_AlwaysSkipped(string name)
     {
         Assert.True(JunkSafetyRules.ShouldSkipFile(name, inTempRoot: true, Old, Old, Now, MinAge));

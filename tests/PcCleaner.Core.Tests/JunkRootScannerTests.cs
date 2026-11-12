@@ -68,7 +68,7 @@ public class JunkRootScannerTests
         JunkRootScan scan = JunkRootScanner.Scan(TempRoot(dir.Path), FutureNow, MinAge, Cmp);
 
         Assert.Equal(["deep.tmp"], Names(scan));
-        Assert.DoesNotContain(scan.Directories, d => Path.GetFileName(d) == "session");
+        Assert.DoesNotContain(scan.Directories, d => Path.GetFileName(d.Path) == "session");
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class JunkRootScannerTests
         JunkRootScan scan = JunkRootScanner.Scan(TempRoot(dir.Path), FutureNow, MinAge, Cmp);
 
         Assert.Equal(["old.tmp"], Names(scan));
-        Assert.DoesNotContain(scan.Directories, d => Path.GetFileName(d) == "active");
+        Assert.DoesNotContain(scan.Directories, d => Path.GetFileName(d.Path) == "active");
     }
 
     [Fact]
@@ -128,7 +128,47 @@ public class JunkRootScannerTests
             return;
         }
 
-        Assert.Empty(JunkRootScanner.Scan(TempRoot(link), FutureNow, MinAge, Cmp).Files);
+        JunkRootScan scan = JunkRootScanner.Scan(TempRoot(link), FutureNow, MinAge, Cmp);
+        Assert.Empty(scan.Files);
+        Assert.True(scan.RootIsLink);
+    }
+
+    [Fact]
+    public async Task JunkSourceScanner_RootThatIsALink_YieldsNoticeNotCleanableItem()
+    {
+        using var dir = new TestDirectory();
+        dir.WriteFileOfSize("real/file.tmp", 1);
+        string link = Path.Combine(dir.Path, "link");
+        if (!TestLinks.TryCreateDirectoryLink(link, Path.Combine(dir.Path, "real")))
+        {
+            return;
+        }
+
+        var items = new List<JunkItem>();
+        await foreach (JunkItem item in JunkSourceScanner.ScanAsync(
+                           [new JunkSource(link, JunkCategory.TempFiles, "User Temp Files", IsTemp: true)], Cmp, FutureNow, MinAge))
+        {
+            items.Add(item);
+        }
+
+        JunkItem notice = Assert.Single(items);
+        Assert.NotNull(notice.Notice);
+        Assert.Null(notice.Files);
+        Assert.Equal(0, notice.SizeBytes);
+    }
+
+    [Fact]
+    public void Scan_RecordsSizeWriteAndCreationTimes()
+    {
+        using var dir = new TestDirectory();
+        string file = dir.WriteFileOfSize("a.bin", 7);
+        var root = new PlannedJunkRoot(JunkRootPlanner.Normalize(dir.Path), JunkCategory.SystemCache, "Cache", IsTemp: false, []);
+
+        JunkFileEntry entry = Assert.Single(JunkRootScanner.Scan(root, FutureNow, MinAge, Cmp).Files);
+
+        Assert.Equal(7, entry.SizeBytes);
+        Assert.Equal(File.GetLastWriteTimeUtc(file), entry.LastWriteUtc);
+        Assert.Equal(File.GetCreationTimeUtc(file), entry.CreationUtc);
     }
 
     [Fact]

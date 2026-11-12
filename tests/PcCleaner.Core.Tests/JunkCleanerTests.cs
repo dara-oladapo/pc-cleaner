@@ -7,17 +7,29 @@ public class JunkCleanerTests
 {
     private static readonly DateTime FutureNow = DateTime.UtcNow.AddDays(10);
 
+    /// <summary>A clock fixed at <see cref="FutureNow"/>, so files the test just created count as old.</summary>
+    private static JunkCleaner FutureCleaner() => new(new FixedTime(FutureNow));
+
+    private sealed class FixedTime(DateTime utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(utcNow, TimeSpan.Zero);
+    }
+
     /// <summary>Builds a directory item the way the real scanner does, from a walk of the folder.</summary>
     private static JunkItem ScanAsItem(string path, bool isTemp = false)
     {
         var root = new PlannedJunkRoot(JunkRootPlanner.Normalize(path), JunkCategory.SystemCache, "Cache", isTemp, []);
         JunkRootScan scan = JunkRootScanner.Scan(root, FutureNow, JunkSafetyRules.DefaultMinimumAge, JunkRootPlanner.DefaultPathComparison);
-        return new JunkItem(path, scan.TotalBytes, JunkCategory.SystemCache, "Cache", IsDirectory: true)
+        return new JunkItem(root.Path, scan.TotalBytes, JunkCategory.SystemCache, "Cache", IsDirectory: true)
         {
             Files = scan.Files,
             Directories = scan.Directories,
+            MinimumAge = isTemp ? JunkSafetyRules.DefaultMinimumAge : null,
         };
     }
+
+    private static JunkFileEntry EntryFor(string path) =>
+        new(path, new FileInfo(path).Length, File.GetLastWriteTimeUtc(path), File.GetCreationTimeUtc(path));
 
     [Fact]
     public async Task CleanAsync_DirectoryItem_DeletesContentsButKeepsTopLevelFolder()
@@ -64,7 +76,7 @@ public class JunkCleanerTests
         string disk = dir.WriteFileOfSize("Temp/old/ext4.vhdx", 10);
         File.SetLastWriteTimeUtc(recent, FutureNow.AddHours(-1));
 
-        var result = await new JunkCleaner().CleanAsync([ScanAsItem(temp, isTemp: true)]);
+        var result = await FutureCleaner().CleanAsync([ScanAsItem(temp, isTemp: true)]);
 
         Assert.False(File.Exists(Path.Combine(temp, "old.tmp")));
         Assert.True(File.Exists(recent));
@@ -140,8 +152,13 @@ public class JunkCleanerTests
         JunkItem scanned = ScanAsItem(root);
         var tampered = scanned with
         {
-            Files = [.. scanned.Files!, new FileEntry(Path.Combine(link, "precious.dat"), 5, File.GetLastWriteTimeUtc(precious))],
-            Directories = [.. scanned.Directories!, Path.Combine(link, "empty"), link],
+            Files = [.. scanned.Files!, EntryFor(precious) with { Path = Path.Combine(link, "precious.dat") }],
+            Directories =
+            [
+                .. scanned.Directories!,
+                new JunkDirectoryEntry(Path.Combine(link, "empty"), Directory.GetCreationTimeUtc(outsideEmpty)),
+                new JunkDirectoryEntry(link, Directory.GetCreationTimeUtc(outside)),
+            ],
         };
 
         var result = await new JunkCleaner().CleanAsync([tampered]);
@@ -163,7 +180,7 @@ public class JunkCleanerTests
 
         var item = new JunkItem(cacheDir, 10, JunkCategory.SystemCache, "Cache", IsDirectory: true)
         {
-            Files = [new FileEntry(Path.Combine(cacheDir, "..", "elsewhere", "keep.bin"), 10, File.GetLastWriteTimeUtc(elsewhere))],
+            Files = [EntryFor(elsewhere) with { Path = Path.Combine(cacheDir, "..", "elsewhere", "keep.bin") }],
             Directories = [],
         };
 
@@ -186,6 +203,122 @@ public class JunkCleanerTests
         Assert.True(File.Exists(file));
         Assert.Single(result.SkippedPaths);
         Assert.Equal(0, result.BytesFreed);
+    }
+
+    [Fact]
+    public async Task CleanAsync_SizeChangedButWriteTimeRestored_IsSkipped()
+    {
+        using var dir = new TestDirectory();
+        string cacheDir = Path.Combine(dir.Path, "cache");
+        string file = dir.WriteFileOfSize("cache/a.bin", 10);
+        JunkItem item = ScanAsItem(cacheDir);
+
+        DateTime written = File.GetLastWriteTimeUtc(file);
+        File.WriteAllBytes(file, new byte[20]);
+        File.SetLastWriteTimeUtc(file, written);
+
+        var result = await new JunkCleaner().CleanAsync([item]);
+
+        Assert.True(File.Exists(file));
+        Assert.Single(result.SkippedPaths);
+    }
+
+    [Fact]
+    public async Task CleanAsync_TempItem_ReappliesAgeWithCurrentClock()
+    {
+        // Scanned with a clock 10 days ahead (so the file was "old"), cleaned with the real clock: the file is
+        // only seconds old right now and must survive.
+        using var dir = new TestDirectory();
+        string temp = Path.Combine(dir.Path, "Temp");
+        string file = dir.WriteFileOfSize("Temp/a.tmp", 10);
+        JunkItem item = ScanAsItem(temp, isTemp: true);
+        Assert.Single(item.Files!);
+
+        var result = await new JunkCleaner().CleanAsync([item]);
+
+        Assert.True(File.Exists(file));
+        Assert.Single(result.SkippedPaths);
+        Assert.Equal(0, result.BytesFreed);
+    }
+
+    [Fact]
+    public async Task CleanAsync_TempItem_EmptyFolderRemovedOnlyWhenOldByCurrentClock()
+    {
+        using var dir = new TestDirectory();
+        string temp = Path.Combine(dir.Path, "Temp");
+        string folder = Path.Combine(temp, "empty");
+        Directory.CreateDirectory(folder);
+        dir.WriteFileOfSize("Temp/keep-root-nonempty.tmp", 1);
+        JunkItem item = ScanAsItem(temp, isTemp: true);
+        Assert.Single(item.Directories!);
+
+        await new JunkCleaner().CleanAsync([item]);
+        Assert.True(Directory.Exists(folder));
+
+        await FutureCleaner().CleanAsync([item]);
+        Assert.False(Directory.Exists(folder));
+    }
+
+    [Fact]
+    public async Task CleanAsync_RecreatedFolder_IsNotRemoved()
+    {
+        using var dir = new TestDirectory();
+        string cacheDir = Path.Combine(dir.Path, "cache");
+        string folder = Path.Combine(cacheDir, "sub");
+        Directory.CreateDirectory(folder);
+        JunkItem scanned = ScanAsItem(cacheDir);
+
+        var item = scanned with
+        {
+            Directories = [new JunkDirectoryEntry(folder, Directory.GetCreationTimeUtc(folder).AddDays(-1))],
+        };
+
+        await new JunkCleaner().CleanAsync([item]);
+
+        Assert.True(Directory.Exists(folder));
+    }
+
+    [Fact]
+    public async Task CleanAsync_NonCanonicalManifestPath_IsSkippedEvenInsideRoot()
+    {
+        using var dir = new TestDirectory();
+        string cacheDir = Path.Combine(dir.Path, "cache");
+        string file = dir.WriteFileOfSize("cache/a.bin", 10);
+        Directory.CreateDirectory(Path.Combine(cacheDir, "sub"));
+        string sep = Path.DirectorySeparatorChar.ToString();
+
+        var item = new JunkItem(JunkRootPlanner.Normalize(cacheDir), 10, JunkCategory.SystemCache, "Cache", IsDirectory: true)
+        {
+            Files = [EntryFor(file) with { Path = cacheDir + sep + "sub" + sep + ".." + sep + "a.bin" }],
+            Directories = [],
+        };
+
+        var result = await new JunkCleaner().CleanAsync([item]);
+
+        Assert.True(File.Exists(file));
+        Assert.Single(result.SkippedPaths);
+    }
+
+    [Theory]
+    [InlineData("vm.vmdk")]
+    [InlineData("vm.vdi")]
+    [InlineData("vm.qcow2")]
+    [InlineData("install.iso")]
+    [InlineData("boot.wim")]
+    public async Task CleanAsync_ProtectedDiskImage_NeverDeleted(string name)
+    {
+        using var dir = new TestDirectory();
+        string cacheDir = Path.Combine(dir.Path, "cache");
+        string file = dir.WriteFileOfSize("cache/" + name, 10);
+
+        JunkItem scanned = ScanAsItem(cacheDir);
+        Assert.Empty(scanned.Files!);
+
+        var forced = scanned with { Files = [EntryFor(file)] };
+        var result = await new JunkCleaner().CleanAsync([forced]);
+
+        Assert.True(File.Exists(file));
+        Assert.Single(result.SkippedPaths);
     }
 
     [Fact]

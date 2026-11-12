@@ -4,7 +4,11 @@ using PcCleaner.Core.Models;
 namespace PcCleaner.Core.Scanning;
 
 /// <summary>What a junk root's walk found: the exact files to offer, and the folders the walk entered.</summary>
-public sealed record JunkRootScan(IReadOnlyList<FileEntry> Files, IReadOnlyList<string> Directories, long TotalBytes);
+public sealed record JunkRootScan(
+    IReadOnlyList<JunkFileEntry> Files,
+    IReadOnlyList<JunkDirectoryEntry> Directories,
+    long TotalBytes,
+    bool RootIsLink = false);
 
 /// <summary>
 /// Walks one planned junk root applying <see cref="JunkSafetyRules"/>. Never follows a symlink, junction or other
@@ -43,13 +47,13 @@ public static class JunkRootScanner
         CancellationToken cancellationToken = default,
         IProgress<int>? filesVisited = null)
     {
-        var files = new List<FileEntry>();
-        var directories = new List<string>();
+        var files = new List<JunkFileEntry>();
+        var directories = new List<JunkDirectoryEntry>();
         long totalBytes = 0;
 
         if (!IsRealDirectory(root.Path))
         {
-            return new JunkRootScan(files, directories, 0);
+            return new JunkRootScan(files, directories, 0, RootIsLink: IsLink(root.Path));
         }
 
         var pending = new Stack<string>();
@@ -97,7 +101,7 @@ public static class JunkRootScanner
                             continue;
                         }
 
-                        directories.Add(subDir.FullName);
+                        directories.Add(new JunkDirectoryEntry(subDir.FullName, subDir.CreationTimeUtc));
                         pending.Push(subDir.FullName);
                     }
                     else if (entry is FileInfo file)
@@ -115,7 +119,7 @@ public static class JunkRootScanner
                             continue;
                         }
 
-                        files.Add(new FileEntry(file.FullName, file.Length, file.LastWriteTimeUtc));
+                        files.Add(new JunkFileEntry(file.FullName, file.Length, file.LastWriteTimeUtc, file.CreationTimeUtc));
                         totalBytes += file.Length;
                     }
                 }
@@ -128,6 +132,21 @@ public static class JunkRootScanner
 
         filesVisited?.Report(visited);
         return new JunkRootScan(files, directories, totalBytes);
+    }
+
+    /// <summary>The path exists (as anything) and is a symlink, junction or other reparse point.</summary>
+    internal static bool IsLink(string path)
+    {
+        try
+        {
+            var info = new DirectoryInfo(path);
+            return (info.Exists || info.LinkTarget is not null)
+                && (info.Attributes.HasFlag(FileAttributes.ReparsePoint) || info.LinkTarget is not null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     /// <summary>Exists, is a directory, and is not itself a symlink/junction/reparse point.</summary>

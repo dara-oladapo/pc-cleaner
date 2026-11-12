@@ -17,10 +17,12 @@ public static class JunkSafetyRules
     private static readonly string[] ProtectedTempDirectoryNames = ["claude"];
 
     /// <summary>
-    /// File extensions that are never junk anywhere: virtual disks (WSL, Docker, Hyper-V and dev drives keep
-    /// these in temp-like places, and deleting one destroys a whole machine image).
+    /// File extensions that are never junk anywhere: virtual disks and disk images (WSL, Docker, Hyper-V,
+    /// VMware, VirtualBox, QEMU, dev drives, OS install media). They turn up in temp-like places, and deleting
+    /// one destroys a whole machine image.
     /// </summary>
-    private static readonly string[] ProtectedExtensions = [".vhdx", ".vhd", ".avhdx"];
+    private static readonly string[] ProtectedExtensions =
+        [".vhdx", ".vhd", ".avhdx", ".vmdk", ".vdi", ".qcow2", ".iso", ".wim"];
 
     public static bool IsProtectedFileName(string name) =>
         ProtectedExtensions.Any(ext => name.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
