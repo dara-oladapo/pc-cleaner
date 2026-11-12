@@ -127,7 +127,10 @@ jobs:
 
   macos-installer:
     needs: version
-    runs-on: macos-latest
+    # xcode-27 (macOS 27, Xcode 27.x; public preview), not macos-latest (macos-26, Xcode <= 26.6). v0.2.0's
+    # Mac app, built with Xcode 26.6, crashed at launch on macOS 27 ("_mainSceneIdentifier should have been
+    # set by now!"); the same commit built with Xcode 27.2 launches. Its assets were rebuilt by hand.
+    runs-on: xcode-27
     env:
       VERSION: ${{ needs.version.outputs.version }}
       DISPLAY_VERSION: ${{ needs.version.outputs.display_version }}
@@ -138,16 +141,19 @@ jobs:
       # the newest SDK, `workload install` picks that SDK's newest workload set, and the pair breaks
       # whenever Microsoft ships a workload ahead of the runner image's Xcode.
       #
-      #   10.0.400.1  = workload set for SDK band 10.0.4xx; Mac Catalyst SDK 26.5.10315, MAUI 10.0.20
-      #   26.6        = the Xcode that pack requires (CI said so; a pack's own version number is NOT its Xcode
-      #                 version), on macos-latest (macos-26) at /Applications/Xcode_26.6.app
+      #   10.0.404.0  = workload set for SDK band 10.0.4xx; Mac Catalyst SDK 27.2.10000, MAUI 10.0.110
+      #   27.2        = the Xcode that pack requires ("requires Xcode 27.2" in an earlier CI run), on the
+      #                 xcode-27 image at /Applications/Xcode_27.2.app
+      #
+      # History: 10.0.400.1 + Xcode 26.6 built fine on macos-latest but produced an app that crashes on
+      # macOS 27. Don't move back to an Xcode 26 toolchain.
       #
       # To move forward: pick a newer set (nuget.org package Microsoft.NET.Workloads.<band>, file
       # data/microsoft.net.workloads.workloadset.json, "Microsoft.NET.Sdk.MacCatalyst" entry), find the
       # Xcode it needs (the pack's version number is only a hint; the build error states the exact one),
       # and check the runner image README lists it.
-      XCODE_VERSION: "26.6"
-      MACCATALYST_WORKLOAD_SET: "10.0.400.1"
+      XCODE_VERSION: "27.2"
+      MACCATALYST_WORKLOAD_SET: "10.0.404.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
