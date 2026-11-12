@@ -50,14 +50,26 @@ public sealed class JunkCleaner : IJunkCleaner
         RemoveEmptySubdirectories(directory);
     }
 
+    // Never enumerate into, or return, a junction/symlink: SearchOption.AllDirectories follows them, which let this
+    // step delete empty directories outside the root (and the root may be cleaned by the elevated helper).
+    private static readonly EnumerationOptions NoReparsePoints = new()
+    {
+        RecurseSubdirectories = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+    };
+
     private static void RemoveEmptySubdirectories(string root)
     {
-        foreach (string dir in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories)
+        foreach (string dir in Directory.EnumerateDirectories(root, "*", NoReparsePoints)
                      .OrderByDescending(d => d.Length))
         {
             try
             {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                // Re-checked immediately before deleting, in case the directory was swapped for a link meanwhile.
+                var info = new DirectoryInfo(dir);
+                if (info.Exists && !info.Attributes.HasFlag(FileAttributes.ReparsePoint)
+                    && !info.EnumerateFileSystemInfos().Any())
                 {
                     Directory.Delete(dir);
                 }

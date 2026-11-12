@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Elevation;
 using PcCleaner.Core.Models;
 
 namespace PcCleaner.App.Platforms.MacCatalyst;
@@ -23,15 +24,27 @@ public sealed class MacStartupManager : IStartupItemManager
         var items = new List<StartupItem>();
 
         items.AddRange(ReadPlistDirectory(UserLaunchAgentsDir, StartupItemSource.MacLaunchAgent, StartupItemScope.CurrentUser, isEnabled: true));
-        items.AddRange(ReadPlistDirectory("/Library/LaunchAgents", StartupItemSource.MacLaunchAgent, StartupItemScope.AllUsers, isEnabled: true));
-        items.AddRange(ReadPlistDirectory("/Library/LaunchDaemons", StartupItemSource.MacLaunchDaemon, StartupItemScope.AllUsers, isEnabled: true));
+        items.AddRange(ReadPlistDirectory(MacElevationService.SystemLaunchAgentsDir, StartupItemSource.MacLaunchAgent, StartupItemScope.AllUsers, isEnabled: true));
+        items.AddRange(ReadPlistDirectory(MacElevationService.SystemLaunchDaemonsDir, StartupItemSource.MacLaunchDaemon, StartupItemScope.AllUsers, isEnabled: true));
         items.AddRange(ReadPlistDirectory(DisabledDir, StartupItemSource.MacLaunchAgent, StartupItemScope.CurrentUser, isEnabled: false));
+
+        // System-scope entries disabled through the elevated path live in a root-owned quarantine, so they keep their
+        // all-users scope (and their way back to /Library) rather than being re-enabled into the user's own folder.
+        items.AddRange(ReadPlistDirectory(MacElevationService.DisabledSystemLaunchAgentsDir, StartupItemSource.MacLaunchAgent, StartupItemScope.AllUsers, isEnabled: false));
+        items.AddRange(ReadPlistDirectory(MacElevationService.DisabledSystemLaunchDaemonsDir, StartupItemSource.MacLaunchDaemon, StartupItemScope.AllUsers, isEnabled: false));
 
         return Task.FromResult<IReadOnlyList<StartupItem>>(items);
     }
 
     public Task SetEnabledAsync(StartupItem item, bool enabled, CancellationToken cancellationToken = default)
     {
+        if (item.Scope == StartupItemScope.AllUsers)
+        {
+            // /Library/LaunchAgents and /Library/LaunchDaemons are root-owned; the move always goes through the elevated
+            // path (IElevationService) so system entries are quarantined in a root-owned folder, never the user's.
+            throw new ElevationRequiredException("Changing an all-users startup entry needs administrator permission.");
+        }
+
         Directory.CreateDirectory(DisabledDir);
         string fileName = Path.GetFileName(item.CommandOrPath);
 
