@@ -39,7 +39,8 @@ public sealed class MacJunkScanner : IJunkScanner
             new(Path.Combine(library, "Caches", "BraveSoftware"), JunkCategory.BrowserCache, "Brave Cache"),
 
             new(Path.Combine(library, "Developer", "Xcode", "DerivedData"), JunkCategory.SystemCache, "Xcode DerivedData"),
-            new(Path.Combine(library, "Developer", "Xcode", "Archives"), JunkCategory.SystemCache, "Xcode Archives"),
+            // Xcode Archives is deliberately absent: it holds the dSYMs for shipped builds, which cannot be
+            // regenerated, so a permanent delete is never right. DerivedData is pure build output and stays.
             new(Path.Combine(library, "Developer", "CoreSimulator", "Caches"), JunkCategory.SystemCache, "iOS Simulator Caches"),
 
             new(Path.Combine(library, "Caches", "Homebrew"), JunkCategory.PackageManagerCache, "Homebrew Cache"),
