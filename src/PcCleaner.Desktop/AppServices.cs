@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Platform.Linux;
 using PcCleaner.Core.Scanning;
 using PcCleaner.Desktop.Platforms.Linux;
 using PcCleaner.Desktop.Services;
@@ -34,9 +35,12 @@ public static class AppServices
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
         // Core's real cleaner, now that the Linux scanner (#10) decides what the junk list holds. Junk is
-        // regenerable cache, so it is deleted outright, exactly as on Windows and macOS. Only junk: duplicates and
-        // large files still go through LinuxFileTrasher below, which stays a stub that moves nothing.
-        services.AddSingleton<IJunkCleaner, JunkCleaner>();
+        // regenerable cache, so it is deleted outright, exactly as on Windows and macOS. The home Trash is the one
+        // exception to "delete every file": LinuxJunkCleaner empties it by the freedesktop spec (files/ and info/
+        // stay, each entry goes with its .trashinfo). Only junk: duplicates and large files still go through
+        // LinuxFileTrasher below, which stays a stub that moves nothing.
+        // TODO(#10 follow-up): JunkCleaner does not re-check for mount points at clean time; see LinuxJunkCleaner.
+        services.AddSingleton<IJunkCleaner>(_ => new LinuxJunkCleaner(new JunkCleaner()));
 
         // Platform-specific. Linux is the only platform this front end serves today. The junk scanner is real
         // (and read-only); every other one is a stub that touches nothing, and each has its own issue.

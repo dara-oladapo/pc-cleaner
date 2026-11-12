@@ -115,8 +115,7 @@ public class LinuxJunkPlannerTests
         Assert.Equal(JunkCategory.SystemCache, startup.Category);
         Assert.Equal("Cache: mozilla/firefox/abc.default/startupCache", startup.Description);
 
-        var ini = Single(plan, $"{Home}/.cache/mozilla/firefox/profiles.ini");
-        Assert.False(ini.IsDirectory);
+        Assert.DoesNotContain(plan, s => s.Path.EndsWith("profiles.ini", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -136,13 +135,35 @@ public class LinuxJunkPlannerTests
         Assert.DoesNotContain(plan, s => s.Path == $"{Home}/.cache");
         Assert.Equal(JunkCategory.SystemCache, Single(plan, $"{Home}/.cache/fontconfig").Category);
         Assert.Equal(JunkCategory.SystemCache, Single(plan, $"{Home}/.cache/mesa_shader_cache").Category);
-        Assert.False(Single(plan, $"{Home}/.cache/motd.legal-displayed").IsDirectory);
+        Assert.DoesNotContain(plan, s => s.Path == $"{Home}/.cache/motd.legal-displayed");
 
         // Every source appears once, and no source sits inside another, so no byte is counted twice.
         foreach (LinuxJunkSource a in plan)
         {
             Assert.DoesNotContain(plan, b => !ReferenceEquals(a, b) && LinuxPath.IsSameOrUnder(b.Path, a.Path));
         }
+    }
+
+    [Fact]
+    public void Plan_NeverOffersLooseFilesFromTheCache_OnlyDirectories()
+    {
+        // Seen on a real home: apps park device IDs and generated keys directly in ~/.cache.
+        var fs = new FakeLinuxFileSystem()
+            .Directory($"{Home}/.cache/helm/repository", $"{Home}/.cache/pip")
+            .File(
+                $"{Home}/.cache/deviceid",
+                $"{Home}/.cache/clippy-local-jwt.pem",
+                $"{Home}/.cache/helm/repository/index.yaml",
+                $"{Home}/.cache/pip/selfcheck.json");
+
+        var plan = Plan(fs);
+
+        Assert.All(plan, s => Assert.True(s.IsDirectory));
+        Assert.DoesNotContain(plan, s => s.Path.EndsWith("deviceid", StringComparison.Ordinal));
+        Assert.DoesNotContain(plan, s => s.Path.EndsWith(".pem", StringComparison.Ordinal));
+        Assert.Equal(
+            new[] { $"{Home}/.cache/helm", $"{Home}/.cache/pip" },
+            plan.Select(s => s.Path).Order(StringComparer.Ordinal));
     }
 
     [Fact]

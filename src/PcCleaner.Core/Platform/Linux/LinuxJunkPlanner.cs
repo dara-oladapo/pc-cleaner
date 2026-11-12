@@ -12,7 +12,7 @@ public sealed record LinuxJunkSource(string Path, JunkCategory Category, string 
 /// <remarks>
 /// <para>
 /// Every source it returns has already passed the safety checks, so the scanner only has to size them:
-/// it is a directory (or, for logs and loose cache files, a regular file), it is not on <c>/proc</c>,
+/// it is a directory (or, for <c>*.log</c> files, a regular file), it is not on <c>/proc</c>,
 /// <c>/sys</c>, <c>/dev</c> or another pseudo file system, neither it nor any directory between it and the
 /// home directory is a symlink, and no mount point lies beneath it, so walking it (and later cleaning it)
 /// cannot cross onto another device. Inside each root, <c>FileSystemWalker</c> already refuses to descend
@@ -20,7 +20,7 @@ public sealed record LinuxJunkSource(string Path, JunkCategory Category, string 
 /// </para>
 /// <para>
 /// No two returned sources overlap. <see cref="JunkCategory.SystemCache"/> is "everything else" in
-/// <c>XDG_CACHE_HOME</c>: one source per entry that isn't, and doesn't contain, a more specific source, so
+/// <c>XDG_CACHE_HOME</c>: one source per directory that isn't, and doesn't contain, a more specific source, so
 /// the same bytes are never counted (or deleted) under two rows, and unticking "Chrome cache" really does
 /// leave Chrome's cache alone.
 /// </para>
@@ -123,9 +123,14 @@ public static class LinuxJunkPlanner
     }
 
     /// <summary>
-    /// SystemCache: every entry of <c>XDG_CACHE_HOME</c> not covered by <paramref name="specific"/>. A directory
-    /// that contains a specific source (or a mount point) is opened up and its other children listed instead.
+    /// SystemCache: every directory in <c>XDG_CACHE_HOME</c> not covered by <paramref name="specific"/>. A directory
+    /// that contains a specific source (or a mount point) is opened up and its other subdirectories listed instead.
     /// </summary>
+    /// <remarks>
+    /// Loose files are never offered, at any level. In practice the ones sitting directly in a cache directory
+    /// are things like device IDs and locally generated keys (<c>deviceid</c>, <c>*.pem</c>) that apps park in
+    /// <c>~/.cache</c> for convenience; deleting them is not "clearing a cache", and they are tiny anyway.
+    /// </remarks>
     private static IEnumerable<LinuxJunkSource> PlanSystemCacheResidual(
         string home,
         XdgBaseDirectories xdg,
@@ -156,19 +161,14 @@ public static class LinuxJunkPlanner
             foreach (LinuxDirectoryEntry entry in fileSystem.List(dir).OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 string path = LinuxPath.Join(dir, entry.Name);
-                if (entry.Kind is not (LinuxEntryKind.Directory or LinuxEntryKind.File) ||
-                    excluded.Any(x => LinuxPath.IsSameOrUnder(path, x)))
+                if (entry.Kind != LinuxEntryKind.Directory || excluded.Any(x => LinuxPath.IsSameOrUnder(path, x)))
                 {
                     continue;
                 }
 
                 if (excluded.Any(x => LinuxPath.IsStrictlyUnder(x, path)))
                 {
-                    if (entry.Kind == LinuxEntryKind.Directory)
-                    {
-                        pending.Push(path);
-                    }
-
+                    pending.Push(path);
                     continue;
                 }
 
@@ -176,7 +176,7 @@ public static class LinuxJunkPlanner
                     path,
                     JunkCategory.SystemCache,
                     $"Cache: {LinuxPath.GetRelative(path, cacheHome)}",
-                    IsDirectory: entry.Kind == LinuxEntryKind.Directory);
+                    IsDirectory: true);
             }
         }
     }
