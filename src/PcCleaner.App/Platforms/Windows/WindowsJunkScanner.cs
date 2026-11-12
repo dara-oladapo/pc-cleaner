@@ -1,70 +1,64 @@
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
-using PcCleaner.Core.Utilities;
+using PcCleaner.Core.Scanning;
 
 namespace PcCleaner.App.Platforms.Windows;
 
 public sealed class WindowsJunkScanner : IJunkScanner
 {
-    public async IAsyncEnumerable<JunkItem> ScanAsync(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default,
-        IProgress<int>? filesScanned = null)
-    {
-        // Several "distinct" special folders can resolve to the identical physical path (e.g. Path.GetTempPath()
-        // and %LOCALAPPDATA%\Temp), so track full paths already reported to avoid double-counting the same bytes.
-        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // Overlap handling (the same Temp folder reached two ways, NuGetScratch nested inside Temp), the age filter,
+    // a temp folder that is itself a link (reported as a notice, not scanned),
+    // link/junction refusal and the per-file manifest all live in Core's JunkSourceScanner; this class only says
+    // where junk lives on Windows.
+    public IAsyncEnumerable<JunkItem> ScanAsync(
+        CancellationToken cancellationToken = default,
+        IProgress<int>? filesScanned = null) =>
+        JunkSourceScanner.ScanAsync(
+            GetJunkSources(),
+            StringComparison.OrdinalIgnoreCase,
+            DateTime.UtcNow,
+            JunkSafetyRules.DefaultMinimumAge,
+            filesScanned,
+            cancellationToken);
 
-        foreach ((string path, JunkCategory category, string description) in GetJunkSources())
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (!Directory.Exists(path))
-            {
-                continue;
-            }
-
-            string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
-            if (!seenPaths.Add(fullPath))
-            {
-                continue;
-            }
-
-            (long totalBytes, int fileCount) = await FileSystemWalker.ComputeStatsAsync(path, cancellationToken, filesScanned);
-            if (totalBytes > 0)
-            {
-                yield return new JunkItem(path, totalBytes, category, $"{description} ({fileCount:N0} items)", IsDirectory: true);
-            }
-        }
-    }
-
-    private static List<(string Path, JunkCategory Category, string Description)> GetJunkSources()
+    private static List<JunkSource> GetJunkSources()
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
 
-        var sources = new List<(string, JunkCategory, string)>
+        // Windows\Prefetch is deliberately absent: Windows manages it, and clearing it only makes the next
+        // launch of every app slower while the cache is rebuilt.
+        //
+        // Windows\Temp is deliberately absent too: any standard user can create folders there, so if this app is
+        // run as administrator a planted folder could be swapped for a junction mid-clean and redirect deletes
+        // into protected locations. Path-based link checks narrow that race but cannot close it.
+        var sources = new List<JunkSource>
         {
-            (Path.GetTempPath(), JunkCategory.TempFiles, "User Temp Files"),
-            (Path.Combine(localAppData, "Temp"), JunkCategory.TempFiles, "Local App Temp Files"),
-            (Path.Combine(windowsDir, "Temp"), JunkCategory.TempFiles, "System Temp Files"),
-            (Path.Combine(windowsDir, "Prefetch"), JunkCategory.SystemCache, "Windows Prefetch Cache"),
-            (Path.Combine(windowsDir, "SoftwareDistribution", "Download"), JunkCategory.SystemCache, "Windows Update Cache"),
-            (Path.Combine(localAppData, "Microsoft", "Windows", "WER"), JunkCategory.SystemLogs, "Windows Error Reporting"),
-            (Path.Combine(localAppData, "CrashDumps"), JunkCategory.SystemLogs, "Application Crash Dumps"),
+            // %TEMP% can come back in 8.3 form (C:\Users\FIRSTN~1\...), which would not match the long path of
+            // %LOCALAPPDATA%\Temp and would count the same folder twice — so expand it first.
+            new(ToLongPath(Path.GetTempPath()), JunkCategory.TempFiles, "User Temp Files", IsTemp: true),
+            new(Path.Combine(localAppData, "Temp"), JunkCategory.TempFiles, "Local App Temp Files", IsTemp: true),
+            new(Path.Combine(windowsDir, "SoftwareDistribution", "Download"), JunkCategory.SystemCache, "Windows Update Cache"),
+            new(Path.Combine(localAppData, "Microsoft", "Windows", "WER"), JunkCategory.SystemLogs, "Windows Error Reporting"),
+            new(Path.Combine(localAppData, "CrashDumps"), JunkCategory.SystemLogs, "Application Crash Dumps"),
 
-            (Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Chrome Cache"),
-            (Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Chrome Code Cache"),
-            (Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Edge Cache"),
-            (Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Edge Code Cache"),
-            (Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Brave Cache"),
+            new(Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Chrome Cache"),
+            new(Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Chrome Code Cache"),
+            new(Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Edge Cache"),
+            new(Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Edge Code Cache"),
+            new(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Brave Cache"),
 
-            (Path.Combine(localAppData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
-            (Path.Combine(appData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
-            (Path.Combine(localAppData, "pip", "Cache"), JunkCategory.PackageManagerCache, "pip Cache"),
-            (Path.Combine(localAppData, "NuGet", "v3-cache"), JunkCategory.PackageManagerCache, "NuGet HTTP Cache"),
-            (Path.Combine(localAppData, "Temp", "NuGetScratch"), JunkCategory.PackageManagerCache, "NuGet Scratch Cache"),
+            new(Path.Combine(localAppData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
+            new(Path.Combine(appData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
+            new(Path.Combine(localAppData, "pip", "Cache"), JunkCategory.PackageManagerCache, "pip Cache"),
+            new(Path.Combine(localAppData, "NuGet", "v3-cache"), JunkCategory.PackageManagerCache, "NuGet HTTP Cache"),
+
+            // Nested inside Temp: listed on its own for the more specific label; Temp's walk skips it, and it
+            // inherits Temp's age rules.
+            new(Path.Combine(localAppData, "Temp", "NuGetScratch"), JunkCategory.PackageManagerCache, "NuGet Scratch Cache", IsTemp: true),
         };
 
         string firefoxProfiles = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
@@ -72,7 +66,7 @@ public sealed class WindowsJunkScanner : IJunkScanner
         {
             foreach (string profileDir in Directory.EnumerateDirectories(firefoxProfiles))
             {
-                sources.Add((
+                sources.Add(new(
                     Path.Combine(profileDir, "cache2"),
                     JunkCategory.BrowserCache,
                     $"Firefox Cache ({Path.GetFileName(profileDir)})"));
@@ -81,4 +75,14 @@ public sealed class WindowsJunkScanner : IJunkScanner
 
         return sources;
     }
+
+    private static string ToLongPath(string path)
+    {
+        var buffer = new StringBuilder(1024);
+        uint length = GetLongPathName(path, buffer, (uint)buffer.Capacity);
+        return length > 0 && length < buffer.Capacity ? buffer.ToString() : path;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "GetLongPathNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetLongPathName(string shortPath, StringBuilder longPath, uint bufferLength);
 }

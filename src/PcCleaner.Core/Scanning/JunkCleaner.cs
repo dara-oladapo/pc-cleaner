@@ -1,94 +1,263 @@
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
-using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.Core.Scanning;
 
-/// <summary>Deletes junk contents directly (no trash round-trip) but leaves top-level cache/temp directories in place, since apps often assume they still exist.</summary>
+/// <summary>
+/// Permanently deletes junk (no trash round-trip) but leaves top-level cache/temp directories in place, since apps
+/// often assume they still exist.
+/// <para>
+/// It deletes exactly the files the scan reported in <see cref="JunkItem.Files"/> — never a fresh recursive walk
+/// of the root — and re-checks each one immediately before deleting it: its manifest path is canonical and inside
+/// the root, every folder from the root down to it is a real directory (no symlink/junction), it is not a
+/// protected type, its size, write time and creation time are unchanged since the scan, and (for temp roots) it is
+/// still old enough by the clock right now. Files that are in use are skipped and reported as skipped, not failed,
+/// so they never look like a permissions problem.
+/// </para>
+/// </summary>
+// TODO: The link checks here are path-based, so a folder swapped for a junction between the check and the delete
+// (a TOCTOU race) is narrowed but not closed. The full fix is handle-based deletion: open each directory from the
+// root down with FILE_FLAG_OPEN_REPARSE_POINT / O_NOFOLLOW, verify it is not a reparse point on the handle, and
+// delete relative to that handle (NtSetInformationFile FileDispositionInfo / unlinkat).
 public sealed class JunkCleaner : IJunkCleaner
 {
-    public async Task<TrashResult> CleanAsync(IReadOnlyList<JunkItem> items, CancellationToken cancellationToken = default)
+    private readonly StringComparison _pathComparison = JunkRootPlanner.DefaultPathComparison;
+    private readonly TimeProvider _timeProvider;
+
+    public JunkCleaner()
+        : this(TimeProvider.System)
     {
-        var succeeded = new List<string>();
-        var failed = new List<(string Path, string Error)>();
-        long bytesFreed = 0;
+    }
+
+    public JunkCleaner(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider;
+    }
+
+    public Task<TrashResult> CleanAsync(IReadOnlyList<JunkItem> items, CancellationToken cancellationToken = default) =>
+        Task.Run(() => Clean(items, cancellationToken), cancellationToken);
+
+    private TrashResult Clean(IReadOnlyList<JunkItem> items, CancellationToken cancellationToken)
+    {
+        var run = new CleanRun();
 
         foreach (JunkItem item in items)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (item.Notice is not null)
+            {
+                continue;
+            }
+
             if (item.IsDirectory)
             {
-                await CleanDirectoryContentsAsync(item.Path, succeeded, failed, cancellationToken, sizeFreed => bytesFreed += sizeFreed);
+                CleanDirectoryItem(item, run, cancellationToken);
             }
             else
             {
-                TryDeleteFile(item.Path, succeeded, failed, sizeFreed => bytesFreed += sizeFreed);
+                TryDeleteFile(item.Path, expected: null, minimumAge: null, run);
             }
         }
 
-        return new TrashResult(succeeded, failed, bytesFreed);
+        return new TrashResult(run.Succeeded, run.Failed, run.BytesFreed) { SkippedPaths = run.Skipped };
     }
 
-    private static async Task CleanDirectoryContentsAsync(
-        string directory,
-        List<string> succeeded,
-        List<(string Path, string Error)> failed,
-        CancellationToken cancellationToken,
-        Action<long> onBytesFreed)
+    private void CleanDirectoryItem(JunkItem item, CleanRun run, CancellationToken cancellationToken)
     {
-        if (!Directory.Exists(directory))
+        string root = JunkRootPlanner.Normalize(item.Path);
+
+        if (!Directory.Exists(root) && !File.Exists(root) && !JunkRootScanner.IsLink(root))
         {
             return;
         }
 
-        await foreach (var entry in FileSystemWalker.EnumerateFilesAsync(directory, cancellationToken))
+        if (item.Files is null)
         {
-            TryDeleteFile(entry.Path, succeeded, failed, onBytesFreed);
+            run.Skipped.Add((item.Path, "No scan manifest; refusing to delete a folder that was not scanned."));
+            return;
         }
 
-        RemoveEmptySubdirectories(directory);
+        foreach (JunkFileEntry file in item.Files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!IsCanonicalPathInside(file.Path, root))
+            {
+                run.Skipped.Add((file.Path, "Not a plain path inside the scanned folder."));
+                continue;
+            }
+
+            if (!ChainIsReal(file.Path, root))
+            {
+                run.Skipped.Add((file.Path, "Reached through a link or junction; not followed."));
+                continue;
+            }
+
+            TryDeleteFile(file.Path, file, item.MinimumAge, run);
+        }
+
+        RemoveEmptyScannedDirectories(item.Directories ?? [], root, item.MinimumAge);
     }
 
-    private static void RemoveEmptySubdirectories(string root)
+    /// <summary>
+    /// Manifest paths are used exactly as the scan produced them. One that is not already canonical (contains
+    /// "..", odd separators, trailing dots...) is refused rather than normalised into something else.
+    /// </summary>
+    private bool IsCanonicalPathInside(string path, string root)
     {
-        foreach (string dir in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories)
-                     .OrderByDescending(d => d.Length))
+        try
         {
-            try
-            {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
-                {
-                    Directory.Delete(dir);
-                }
-            }
-            catch (IOException)
-            {
-                // Left in place; not worth surfacing as a failure for a best-effort cleanup step.
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
+            return string.Equals(Path.GetFullPath(path), path, StringComparison.Ordinal)
+                && JunkRootPlanner.IsStrictlyUnder(path, root, _pathComparison);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
         }
     }
 
-    private static void TryDeleteFile(string path, List<string> succeeded, List<(string, string)> failed, Action<long> onBytesFreed)
+    /// <summary>
+    /// True when the root and every folder between it and <paramref name="path"/> is a real directory. Checked
+    /// fresh for every single delete: no cache, so a folder swapped for a junction mid-clean is still caught.
+    /// </summary>
+    private bool ChainIsReal(string path, string root)
+    {
+        string? dir = Path.GetDirectoryName(path);
+        while (dir is not null && JunkRootPlanner.IsStrictlyUnder(dir, root, _pathComparison))
+        {
+            if (!JunkRootScanner.IsRealDirectory(dir))
+            {
+                return false;
+            }
+
+            dir = Path.GetDirectoryName(dir);
+        }
+
+        return dir is not null
+            && string.Equals(dir, root, _pathComparison)
+            && JunkRootScanner.IsRealDirectory(root);
+    }
+
+    private void TryDeleteFile(string path, JunkFileEntry? expected, TimeSpan? minimumAge, CleanRun run)
     {
         try
         {
             var info = new FileInfo(path);
-            long size = info.Exists ? info.Length : 0;
+            if (!info.Exists)
+            {
+                return;
+            }
+
+            if (info.Attributes.HasFlag(FileAttributes.ReparsePoint) || info.LinkTarget is not null)
+            {
+                run.Skipped.Add((path, "Is a link; not followed."));
+                return;
+            }
+
+            if (JunkSafetyRules.IsProtectedFileName(info.Name))
+            {
+                run.Skipped.Add((path, "Protected file type."));
+                return;
+            }
+
+            if (expected is not null
+                && (info.Length != expected.SizeBytes
+                    || info.LastWriteTimeUtc != expected.LastWriteUtc
+                    || (JunkSafetyRules.CreationTimeIsBirthTime && info.CreationTimeUtc != expected.CreationUtc)))
+            {
+                run.Skipped.Add((path, "Changed since the scan."));
+                return;
+            }
+
+            if (minimumAge is { } age
+                && !JunkSafetyRules.IsOldEnough(info.LastWriteTimeUtc, info.CreationTimeUtc, _timeProvider.GetUtcNow().UtcDateTime, age))
+            {
+                run.Skipped.Add((path, "Too recent to remove."));
+                return;
+            }
+
+            long size = info.Length;
             info.Delete();
-            succeeded.Add(path);
-            onBytesFreed(size);
+            run.Succeeded.Add(path);
+            run.BytesFreed += size;
         }
         catch (IOException ex)
         {
-            failed.Add((path, ex.Message));
+            // Sharing violation / locked / in use (or vanished mid-delete). Another program owns it; more rights
+            // would not help, so this is a skip, not a failure.
+            run.Skipped.Add((path, ex.Message));
         }
         catch (UnauthorizedAccessException ex)
         {
-            failed.Add((path, ex.Message));
+            run.Failed.Add((path, ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Removes only folders the scan entered (so never an excluded, recent, protected or linked one), deepest
+    /// first, only when now empty, and never the root itself. Each is re-checked immediately before deletion: the
+    /// whole chain from the root is real directories, it has not been recreated since the scan, and for temp roots
+    /// it is still old enough. Age here is by creation time only, because deleting a folder's contents moments
+    /// ago has just updated its write time. A non-recursive delete cannot reach anything beneath it anyway.
+    /// </summary>
+    private void RemoveEmptyScannedDirectories(IReadOnlyList<JunkDirectoryEntry> directories, string root, TimeSpan? minimumAge)
+    {
+        foreach (JunkDirectoryEntry entry in directories.OrderByDescending(d => d.Path.Length))
+        {
+            string dir = entry.Path;
+            if (!IsCanonicalPathInside(dir, root))
+            {
+                continue;
+            }
+
+            try
+            {
+                if (!ChainIsReal(Path.Combine(dir, "_"), root))
+                {
+                    continue;
+                }
+
+                // Recreation and age checks need a real birth time. Without one (Linux ctime fallback, which our
+                // own deletes just bumped) they are skipped: the scan already refused recent folders, and only an
+                // empty folder can be removed here.
+                var info = new DirectoryInfo(dir);
+                if (JunkSafetyRules.CreationTimeIsBirthTime)
+                {
+                    if (info.CreationTimeUtc != entry.CreationUtc)
+                    {
+                        continue;
+                    }
+
+                    if (minimumAge is { } age
+                        && !JunkSafetyRules.IsOldEnough(info.CreationTimeUtc, info.CreationTimeUtc, _timeProvider.GetUtcNow().UtcDateTime, age))
+                    {
+                        continue;
+                    }
+                }
+
+                if (info.EnumerateFileSystemInfos().Any())
+                {
+                    continue;
+                }
+
+                Directory.Delete(dir, recursive: false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Best-effort tidy-up: an undeletable empty folder is not worth surfacing.
+            }
+        }
+    }
+
+    private sealed class CleanRun
+    {
+        public List<string> Succeeded { get; } = [];
+
+        public List<(string Path, string Error)> Failed { get; } = [];
+
+        public List<(string Path, string Reason)> Skipped { get; } = [];
+
+        public long BytesFreed { get; set; }
     }
 }

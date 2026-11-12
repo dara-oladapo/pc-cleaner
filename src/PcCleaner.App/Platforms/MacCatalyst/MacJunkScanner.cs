@@ -1,67 +1,52 @@
-using System.Runtime.CompilerServices;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
-using PcCleaner.Core.Utilities;
+using PcCleaner.Core.Scanning;
 
 namespace PcCleaner.App.Platforms.MacCatalyst;
 
 public sealed class MacJunkScanner : IJunkScanner
 {
-    public async IAsyncEnumerable<JunkItem> ScanAsync(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default,
-        IProgress<int>? filesScanned = null)
-    {
-        // Some candidate paths overlap (e.g. pip's cache dir varies by version/config), so track full paths
-        // already reported to avoid double-counting the same bytes under two different labels.
-        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // Overlap handling (browser, Homebrew and pip caches all live inside ~/Library/Caches), symlink refusal and
+    // the per-file manifest all live in Core's JunkSourceScanner; this class only says where junk lives on macOS.
+    // Case-insensitive because APFS is by default.
+    public IAsyncEnumerable<JunkItem> ScanAsync(
+        CancellationToken cancellationToken = default,
+        IProgress<int>? filesScanned = null) =>
+        JunkSourceScanner.ScanAsync(
+            GetJunkSources(),
+            StringComparison.OrdinalIgnoreCase,
+            DateTime.UtcNow,
+            JunkSafetyRules.DefaultMinimumAge,
+            filesScanned,
+            cancellationToken);
 
-        foreach ((string path, JunkCategory category, string description) in GetJunkSources())
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (!Directory.Exists(path))
-            {
-                continue;
-            }
-
-            string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
-            if (!seenPaths.Add(fullPath))
-            {
-                continue;
-            }
-
-            (long totalBytes, int fileCount) = await FileSystemWalker.ComputeStatsAsync(path, cancellationToken, filesScanned);
-            if (totalBytes > 0)
-            {
-                yield return new JunkItem(path, totalBytes, category, $"{description} ({fileCount:N0} items)", IsDirectory: true);
-            }
-        }
-    }
-
-    private static List<(string Path, JunkCategory Category, string Description)> GetJunkSources()
+    private static List<JunkSource> GetJunkSources()
     {
         string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         string library = Path.Combine(home, "Library");
 
+        // The specific caches nested in ~/Library/Caches are listed for their labels; "User Caches" then counts
+        // only what none of them covers, so nothing is offered twice.
         return
         [
-            (Path.Combine(library, "Caches"), JunkCategory.SystemCache, "User Caches"),
-            (Path.Combine(library, "Logs"), JunkCategory.SystemLogs, "User Logs"),
-            (Path.Combine(home, ".Trash"), JunkCategory.TrashBin, "User Trash"),
+            new(Path.Combine(library, "Caches"), JunkCategory.SystemCache, "User Caches"),
+            new(Path.Combine(library, "Logs"), JunkCategory.SystemLogs, "User Logs"),
+            new(Path.Combine(home, ".Trash"), JunkCategory.TrashBin, "User Trash"),
 
-            (Path.Combine(library, "Caches", "com.apple.Safari"), JunkCategory.BrowserCache, "Safari Cache"),
-            (Path.Combine(library, "Caches", "Google", "Chrome"), JunkCategory.BrowserCache, "Chrome Cache"),
-            (Path.Combine(library, "Caches", "Firefox"), JunkCategory.BrowserCache, "Firefox Cache"),
-            (Path.Combine(library, "Caches", "BraveSoftware"), JunkCategory.BrowserCache, "Brave Cache"),
+            new(Path.Combine(library, "Caches", "com.apple.Safari"), JunkCategory.BrowserCache, "Safari Cache"),
+            new(Path.Combine(library, "Caches", "Google", "Chrome"), JunkCategory.BrowserCache, "Chrome Cache"),
+            new(Path.Combine(library, "Caches", "Firefox"), JunkCategory.BrowserCache, "Firefox Cache"),
+            new(Path.Combine(library, "Caches", "BraveSoftware"), JunkCategory.BrowserCache, "Brave Cache"),
 
-            (Path.Combine(library, "Developer", "Xcode", "DerivedData"), JunkCategory.SystemCache, "Xcode DerivedData"),
-            (Path.Combine(library, "Developer", "Xcode", "Archives"), JunkCategory.SystemCache, "Xcode Archives"),
-            (Path.Combine(library, "Developer", "CoreSimulator", "Caches"), JunkCategory.SystemCache, "iOS Simulator Caches"),
+            new(Path.Combine(library, "Developer", "Xcode", "DerivedData"), JunkCategory.SystemCache, "Xcode DerivedData"),
+            // Xcode Archives is deliberately absent: it holds the dSYMs for shipped builds, which cannot be
+            // regenerated, so a permanent delete is never right. DerivedData is pure build output and stays.
+            new(Path.Combine(library, "Developer", "CoreSimulator", "Caches"), JunkCategory.SystemCache, "iOS Simulator Caches"),
 
-            (Path.Combine(library, "Caches", "Homebrew"), JunkCategory.PackageManagerCache, "Homebrew Cache"),
-            (Path.Combine(home, ".npm", "_cacache"), JunkCategory.PackageManagerCache, "npm Cache"),
-            (Path.Combine(library, "Caches", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
-            (Path.Combine(home, ".cache", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
+            new(Path.Combine(library, "Caches", "Homebrew"), JunkCategory.PackageManagerCache, "Homebrew Cache"),
+            new(Path.Combine(home, ".npm", "_cacache"), JunkCategory.PackageManagerCache, "npm Cache"),
+            new(Path.Combine(library, "Caches", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
+            new(Path.Combine(home, ".cache", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
         ];
     }
 }

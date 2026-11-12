@@ -62,10 +62,18 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         // count, not a fraction, so the UI pairs it with an indeterminate bar rather than inventing a percentage.
         var walkProgress = new Progress<int>(count => StatusText = $"Scanning... {count:N0} files in current location.");
 
+        var notices = new List<string>();
+
         try
         {
             await foreach (var item in _scanner.ScanAsync(_scanCts.Token, walkProgress))
             {
+                if (item.Notice is not null)
+                {
+                    notices.Add(item.Notice);
+                    continue;
+                }
+
                 var vm = new JunkItemViewModel(item);
                 vm.PropertyChanged += OnItemPropertyChanged;
                 Items.Add(vm);
@@ -78,6 +86,10 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
             StatusText = Items.Count == 0
                 ? "No junk found — you're clean."
                 : $"Found {Items.Count} location(s) using {ByteSizeFormatter.Format(Items.Sum(i => i.Model.SizeBytes))}.";
+            if (notices.Count > 0)
+            {
+                StatusText += " " + string.Join(" ", notices);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -133,26 +145,35 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         IsCleaning = true;
         StatusText = "Cleaning...";
 
-        var result = await _cleaner.CleanAsync(selected.Select(s => s.Model).ToList());
-
-        foreach (string succeededPath in result.SucceededPaths)
+        try
         {
-            var vm = Items.FirstOrDefault(i => i.Path == succeededPath);
-            if (vm is not null)
+            var result = await _cleaner.CleanAsync(selected.Select(s => s.Model).ToList());
+
+            // A file row is done when its own path succeeded; a folder row when every file in its manifest did.
+            var succeeded = result.SucceededPaths.ToHashSet();
+            foreach (var vm in selected.Where(s => s.Model.Files is { } files
+                         ? files.All(f => succeeded.Contains(f.Path))
+                         : succeeded.Contains(s.Path)))
             {
                 vm.PropertyChanged -= OnItemPropertyChanged;
                 Items.Remove(vm);
                 RemoveFromGroup(vm);
             }
+
+            StatusText = result.AllSucceeded
+                ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
+                : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
+            if (result.SkippedPaths.Count > 0)
+            {
+                StatusText += $" {result.SkippedPaths.Count:N0} item(s) skipped because they were in use or changed.";
+            }
         }
-
-        StatusText = result.AllSucceeded
-            ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
-            : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
-
-        IsCleaning = false;
-        UpdateSelection();
-        UpdateShares();
+        finally
+        {
+            IsCleaning = false;
+            UpdateSelection();
+            UpdateShares();
+        }
     }
 
     private bool CanClean() => !IsCleaning && !IsScanning && Items.Any(i => i.IsSelected);
