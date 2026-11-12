@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.JunkCleanupView"
+             x:DataType="pvm:JunkCleanupViewModel">
+
+  <!--
+    Bound to the same JunkCleanupViewModel the MAUI JunkCleanupPage uses. Results stream into Items/Groups one at a
+    time as the scanner yields them, so the list grows during the scan rather than appearing at the end.
+
+    CollectionView has no Avalonia equivalent: the grouped list (IsGrouped over JunkCategoryGroup on MAUI) is an
+    ItemsControl of groups, each with its own ItemsControl of rows. Styling is stock Fluent; the design system is #9.
+  -->
+  <DockPanel Margin="32,24">
+
+    <StackPanel DockPanel.Dock="Top" Spacing="4">
+      <TextBlock Text="Junk Files" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding StatusText}" Opacity="0.7" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,16,0,8">
+      <Button Content="Scan" Command="{Binding ScanCommand}" Classes="accent" />
+      <Button Content="Stop" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+      <Button Content="Select all" Command="{Binding SelectAllCommand}" />
+      <Button Content="Select none" Command="{Binding SelectNoneCommand}" />
+      <Button Content="Clean selected" Command="{Binding CleanCommand}" />
+    </StackPanel>
+
+    <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" IsVisible="{Binding IsScanning}" Margin="0,0,0,8" />
+
+    <Border DockPanel.Dock="Bottom" Padding="0,12,0,0">
+      <TextBlock Text="{Binding SelectionSummary}" FontFamily="monospace" />
+    </Border>
+
+    <Panel>
+      <!-- Before the first scan: an invitation, not an empty list. -->
+      <TextBlock IsVisible="{Binding !HasScanned}"
+                 Text="Nothing scanned yet. Press Scan to look for temp files, caches, and logs."
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6" />
+
+      <ScrollViewer IsVisible="{Binding HasScanned}">
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pvm:JunkCategoryGroup">
+              <StackPanel Margin="0,8,0,12">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,16,6">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontFamily="monospace" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="pvm:JunkItemViewModel">
+                      <Grid ColumnDefinitions="Auto,*,140,100" Margin="0,2,16,2">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Description}" />
+                          <TextBlock Text="{Binding Path}" FontFamily="monospace" FontSize="11" Opacity="0.6"
+                                     TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <ProgressBar Grid.Column="2" Minimum="0" Maximum="1" Value="{Binding ShareOfMax}"
+                                     Height="6" MinWidth="0" Margin="12,0" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontFamily="monospace"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+
+  </DockPanel>
+</UserControl>

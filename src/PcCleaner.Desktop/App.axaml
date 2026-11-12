@@ -1,0 +1,14 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PcCleaner.Desktop.App"
+             RequestedThemeVariant="Default">
+
+  <!--
+    Stock Fluent for now. The real design system (colors, tokens, icons, fonts from src/PcCleaner.App/Resources/Styles)
+    is #9; this scaffold only has to prove the view models bind under Avalonia.
+  -->
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+</Application>

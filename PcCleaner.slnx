@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/PcCleaner.App/PcCleaner.App.csproj" />
     <Project Path="src/PcCleaner.Core/PcCleaner.Core.csproj" />
+    <Project Path="src/PcCleaner.Desktop/PcCleaner.Desktop.csproj" />
     <Project Path="src/PcCleaner.Presentation/PcCleaner.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
