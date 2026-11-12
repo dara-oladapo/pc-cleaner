@@ -32,12 +32,16 @@ public sealed record ElevationResult(ElevationStatus Status)
 }
 
 /// <summary>Process exit codes the elevated helper returns, and how the caller reads them back.</summary>
+/// <remarks>
+/// The non-zero codes are distinctive ("PC" = 0x5043 in the high word) so a crash, a CLR/Win32 failure code, or some
+/// other process's small exit code is never mistaken for Partial or Rejected — anything unrecognised reads as Failed.
+/// </remarks>
 public static class ElevationExitCodes
 {
     public const int Success = 0;
-    public const int Failed = 1;
-    public const int Rejected = 2;
-    public const int Partial = 3;
+    public const int Failed = 0x50430001;
+    public const int Rejected = 0x50430002;
+    public const int Partial = 0x50430003;
 
     public static ElevationStatus ToStatus(int exitCode) => exitCode switch
     {

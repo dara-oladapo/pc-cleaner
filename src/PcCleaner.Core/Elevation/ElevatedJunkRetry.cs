@@ -28,7 +28,9 @@ public static class ElevatedJunkRetry
 
         ElevationResult result = await elevation.CleanJunkRootsAsync(roots, cancellationToken);
 
-        if (result.Status is ElevationStatus.Cancelled or ElevationStatus.Rejected)
+        // Only a helper that ran to completion is worth checking the disk for. A failed, rejected or cancelled run is
+        // reported as freeing nothing rather than guessing from whatever happens to be missing now.
+        if (result.Status is not (ElevationStatus.Succeeded or ElevationStatus.PartiallySucceeded))
         {
             return new ElevatedJunkOutcome(result.Status, [], [.. sizes.Keys], 0);
         }
@@ -39,18 +41,43 @@ public static class ElevatedJunkRetry
 
         foreach ((string path, long size) in sizes)
         {
-            if (File.Exists(path))
-            {
-                stillFailed.Add(path);
-            }
-            else
+            if (IsConfirmedRemoved(path))
             {
                 removed.Add(path);
                 bytesFreed += size;
             }
+            else
+            {
+                stillFailed.Add(path);
+            }
         }
 
         return new ElevatedJunkOutcome(result.Status, removed, stillFailed, bytesFreed);
+    }
+
+    /// <summary>
+    /// True only when the OS positively says the path is gone (file or directory not found). Access denied, I/O errors
+    /// or a path that still exists all count as not removed, so the "freed" figure never overstates.
+    /// </summary>
+    public static bool IsConfirmedRemoved(string path)
+    {
+        try
+        {
+            File.GetAttributes(path);
+            return false;
+        }
+        catch (FileNotFoundException)
+        {
+            return true;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static long TryGetSize(string path)

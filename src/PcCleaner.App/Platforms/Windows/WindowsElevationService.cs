@@ -21,6 +21,11 @@ public sealed class WindowsElevationService : IElevationService
     /// differently in the elevated process when an admin approves UAC for a standard user, and a failure there is a
     /// locked file that elevation would not fix anyway.
     /// </summary>
+    /// <remarks>
+    /// <c>%windir%\Temp</c> is deliberately NOT here: standard users can create subfolders in it and plant a junction
+    /// to anywhere (e.g. <c>C:\</c>), and any medium-integrity process can launch the helper verb. Only roots whose
+    /// whole tree is writable by administrators/SYSTEM alone belong on this list.
+    /// </remarks>
     internal static IReadOnlyList<string> SystemJunkRoots
     {
         get
@@ -28,7 +33,6 @@ public sealed class WindowsElevationService : IElevationService
             string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             return
             [
-                Path.Combine(windowsDir, "Temp"),
                 Path.Combine(windowsDir, "Prefetch"),
                 Path.Combine(windowsDir, "SoftwareDistribution", "Download"),
             ];
@@ -89,6 +93,10 @@ public sealed class WindowsElevationService : IElevationService
 
     private static async Task<ElevationResult> RunHelperAsync(ElevatedOperation operation, CancellationToken cancellationToken)
     {
+        // ACCEPTED RISK (see README "Known gaps"): a Velopack install lives under %LocalAppData%, which the user — and any
+        // process running as the user — can write to. Replacing a DLL there means attacker code runs elevated behind a
+        // genuine-looking UAC prompt for this exe. The proper fix is a small helper installed under Program Files; until
+        // then the helper's operations are kept to the minimal fixed set in ElevatedOperationKind.
         string? exePath = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exePath))
         {

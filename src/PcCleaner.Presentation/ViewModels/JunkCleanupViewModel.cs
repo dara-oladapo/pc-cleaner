@@ -137,31 +137,41 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         IsCleaning = true;
         StatusText = "Cleaning...";
 
-        var result = await _cleaner.CleanAsync(selected.Select(s => s.Model).ToList());
-
-        foreach (string succeededPath in result.SucceededPaths)
+        try
         {
-            var vm = Items.FirstOrDefault(i => i.Path == succeededPath);
-            if (vm is not null)
+            var result = await _cleaner.CleanAsync(selected.Select(s => s.Model).ToList());
+
+            foreach (string succeededPath in result.SucceededPaths)
             {
-                vm.PropertyChanged -= OnItemPropertyChanged;
-                Items.Remove(vm);
-                RemoveFromGroup(vm);
+                var vm = Items.FirstOrDefault(i => i.Path == succeededPath);
+                if (vm is not null)
+                {
+                    vm.PropertyChanged -= OnItemPropertyChanged;
+                    Items.Remove(vm);
+                    RemoveFromGroup(vm);
+                }
+            }
+
+            StatusText = result.AllSucceeded
+                ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
+                : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
+
+            if (!result.AllSucceeded)
+            {
+                await RetryElevatedAsync(result);
             }
         }
-
-        StatusText = result.AllSucceeded
-            ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
-            : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
-
-        if (!result.AllSucceeded)
+        catch (Exception)
         {
-            await RetryElevatedAsync(result);
+            StatusText = "Cleaning stopped unexpectedly. Scan again to see what is left.";
         }
-
-        IsCleaning = false;
-        UpdateSelection();
-        UpdateShares();
+        finally
+        {
+            // Always released, so a failure mid-clean can't leave Scan and Clean disabled for the rest of the session.
+            IsCleaning = false;
+            UpdateSelection();
+            UpdateShares();
+        }
     }
 
     /// <summary>
@@ -183,7 +193,7 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
 
         bool confirmed = await _dialogs.ConfirmAsync(
             title: "Needs administrator permission — continue?",
-            message: $"{retryPaths.Count} item(s) are in system folders that only an administrator can clean. Your system will ask you to approve removing them. Like the rest of this clean, it cannot be undone.",
+            message: $"{retryPaths.Count} item(s) could not be removed from the system folders listed below, which only an administrator can clean. Continuing empties everything in these folders (the folders themselves stay), after your system asks you to approve it. Like the rest of this clean, it cannot be undone.",
             acceptText: "Continue",
             cancelText: "Skip",
             isDestructive: true,
@@ -213,6 +223,7 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         {
             ElevationStatus.Cancelled => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) were left because administrator permission was not given.",
             ElevationStatus.Rejected => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) could not be removed.",
+            ElevationStatus.Failed => $"Freed {ByteSizeFormatter.Format(totalFreed)}; the administrator clean did not complete, so {stillFailed} item(s) may remain. Scan again to check.",
             _ when stillFailed == 0 => $"Freed {ByteSizeFormatter.Format(totalFreed)}.",
             _ => $"Freed {ByteSizeFormatter.Format(totalFreed)}; {stillFailed} item(s) could not be removed, probably because they are in use.",
         };

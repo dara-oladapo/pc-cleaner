@@ -24,9 +24,6 @@ public sealed class MacElevationService : IElevationService
     internal const string DisabledSystemLaunchAgentsDir = "/Library/Application Support/PcCleaner/DisabledStartup/LaunchAgents";
     internal const string DisabledSystemLaunchDaemonsDir = "/Library/Application Support/PcCleaner/DisabledStartup/LaunchDaemons";
 
-    /// <summary>The user cancelled the password dialog: AppleScript error -128, "User canceled."</summary>
-    private const string UserCancelledErrorCode = "-128";
-
     private static readonly IReadOnlyList<string> SystemJunkRoots = ["/Library/Caches", "/Library/Logs"];
 
     public bool CanElevate(StartupItem item) => TryBuildStartupCommand(item, enabled: true, out _);
@@ -137,9 +134,7 @@ public sealed class MacElevationService : IElevationService
                 return ElevationResult.Succeeded;
             }
 
-            return error.Contains(UserCancelledErrorCode, StringComparison.Ordinal)
-                ? ElevationResult.Cancelled
-                : ElevationResult.Failed;
+            return ShellQuoting.IsAppleScriptUserCancelled(error) ? ElevationResult.Cancelled : ElevationResult.Failed;
         }
         catch (Win32Exception)
         {

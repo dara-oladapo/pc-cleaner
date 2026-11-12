@@ -95,11 +95,15 @@ public class ElevatedOperationCodecTests
     }
 
     [Theory]
-    [InlineData(0, ElevationStatus.Succeeded)]
+    [InlineData(ElevationExitCodes.Success, ElevationStatus.Succeeded)]
+    [InlineData(ElevationExitCodes.Failed, ElevationStatus.Failed)]
+    [InlineData(ElevationExitCodes.Rejected, ElevationStatus.Rejected)]
+    [InlineData(ElevationExitCodes.Partial, ElevationStatus.PartiallySucceeded)]
     [InlineData(1, ElevationStatus.Failed)]
-    [InlineData(2, ElevationStatus.Rejected)]
-    [InlineData(3, ElevationStatus.PartiallySucceeded)]
+    [InlineData(2, ElevationStatus.Failed)]
+    [InlineData(3, ElevationStatus.Failed)]
     [InlineData(-1073741510, ElevationStatus.Failed)]
+    [InlineData(unchecked((int)0xE0434352), ElevationStatus.Failed)]
     public void ExitCodes_MapToStatus(int exitCode, ElevationStatus expected)
     {
         Assert.Equal(expected, ElevationExitCodes.ToStatus(exitCode));
@@ -265,6 +269,18 @@ public class ShellQuotingTests
         Assert.Equal(expected, ShellQuoting.QuoteAppleScriptString(input));
     }
 
+    [Theory]
+    [InlineData("0:52: execution error: User canceled. (-128)\n", true)]
+    [InlineData("execution error: User canceled.", true)]
+    [InlineData("execution error: rm: /Library/Caches/x-128: Operation not permitted (1)\n", false)]
+    [InlineData("execution error: /tmp/(-128)/x: No such file (1)", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsAppleScriptUserCancelled(string? stderr, bool expected)
+    {
+        Assert.Equal(expected, ShellQuoting.IsAppleScriptUserCancelled(stderr));
+    }
+
     [Fact]
     public void BuildAdminAppleScript_EscapesShellCommandForAppleScript()
     {
@@ -309,6 +325,39 @@ public class ElevatedJunkRetryTests
         Assert.Equal(0, outcome.BytesFreed);
         Assert.Empty(outcome.RemovedPaths);
         Assert.Equal([file], outcome.StillFailedPaths);
+    }
+
+    [Fact]
+    public async Task RunAsync_Failed_DoesNotTrustWhatIsMissingOnDisk()
+    {
+        using var dir = new TestDirectory();
+        string file = dir.WriteFileOfSize("root/a.bin", 100);
+        var fake = new FakeElevation(ElevationStatus.Failed, onClean: () => File.Delete(file));
+
+        ElevatedJunkOutcome outcome = await ElevatedJunkRetry.RunAsync(fake, [Path.Combine(dir.Path, "root")], [file]);
+
+        Assert.Equal(ElevationStatus.Failed, outcome.Status);
+        Assert.Equal(0, outcome.BytesFreed);
+        Assert.Empty(outcome.RemovedPaths);
+        Assert.Equal([file], outcome.StillFailedPaths);
+    }
+
+    [Fact]
+    public void IsConfirmedRemoved_OnlyForNotFound()
+    {
+        using var dir = new TestDirectory();
+        string existing = dir.WriteFile("present.txt");
+
+        Assert.False(ElevatedJunkRetry.IsConfirmedRemoved(existing));
+        Assert.False(ElevatedJunkRetry.IsConfirmedRemoved(dir.Path));
+        Assert.True(ElevatedJunkRetry.IsConfirmedRemoved(Path.Combine(dir.Path, "missing.txt")));
+        Assert.True(ElevatedJunkRetry.IsConfirmedRemoved(Path.Combine(dir.Path, "missing-dir", "x.txt")));
+    }
+
+    [Fact]
+    public void IsConfirmedRemoved_InvalidPathIsNotRemoved()
+    {
+        Assert.False(ElevatedJunkRetry.IsConfirmedRemoved("bad\0path"));
     }
 
     private sealed class FakeElevation(ElevationStatus status, Action onClean) : IElevationService

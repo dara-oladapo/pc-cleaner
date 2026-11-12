@@ -111,13 +111,14 @@ public sealed partial class StartupManagerViewModel : ObservableObject
         ElevationResult result = await _elevation.SetStartupItemEnabledAsync(item.Model, newState);
         StatusText = result.Status switch
         {
-            ElevationStatus.Succeeded or ElevationStatus.PartiallySucceeded => $"{item.Name} {(newState ? "enabled" : "disabled")}.",
+            ElevationStatus.Succeeded => $"{item.Name} {(newState ? "enabled" : "disabled")}.",
             ElevationStatus.Cancelled => $"{item.Name} was not changed — administrator permission was not given.",
             ElevationStatus.Rejected => $"Couldn't update {item.Name}: PC Cleaner can't change this entry with administrator permission.",
             _ => $"Couldn't update {item.Name}, even with administrator permission. Reload and try again.",
         };
 
-        if (result.Status is ElevationStatus.Succeeded or ElevationStatus.PartiallySucceeded)
+        // A toggle is all-or-nothing: anything but full success (including "partial") is reported as a failure.
+        if (result.Status == ElevationStatus.Succeeded)
         {
             string message = StatusText;
             await LoadAsync();

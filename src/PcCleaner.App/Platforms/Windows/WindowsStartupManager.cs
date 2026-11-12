@@ -114,13 +114,7 @@ public sealed class WindowsStartupManager : IStartupItemManager
 
         if (source is null || value is null)
         {
-            // Already moved (e.g. a retry after a partial run) — nothing to do, as long as it's where it should be.
-            using RegistryKey? target = hive.OpenSubKey(toPath, writable: false);
-            if (target?.GetValue(valueName) is not null)
-            {
-                return;
-            }
-
+            // Never reported as success: the caller asked to move something that isn't there.
             throw new InvalidOperationException("The startup entry no longer exists.");
         }
 
@@ -129,6 +123,12 @@ public sealed class WindowsStartupManager : IStartupItemManager
         using (RegistryKey destination = hive.CreateSubKey(toPath, writable: true)
             ?? throw new InvalidOperationException($"Could not open '{toPath}' for write."))
         {
+            // Refuse rather than overwrite: a same-named value already at the destination is someone else's entry.
+            if (destination.GetValue(valueName) is not null)
+            {
+                throw new InvalidOperationException("A startup entry with that name already exists at the destination.");
+            }
+
             destination.SetValue(valueName, value, kind);
         }
 

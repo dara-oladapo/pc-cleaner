@@ -34,6 +34,18 @@ public static class ShellQuoting
     public static string BuildAdminAppleScript(string shellCommand) =>
         $"do shell script {QuoteAppleScriptString(shellCommand)} with administrator privileges";
 
+    /// <summary>
+    /// True when osascript's stderr says the user cancelled the password dialog. osascript ends that error with
+    /// "User canceled. (-128)"; only the end is matched, so a path echoed in some other error that happens to contain
+    /// "-128" is not mistaken for a cancel.
+    /// </summary>
+    public static bool IsAppleScriptUserCancelled(string? stderr)
+    {
+        string trimmed = (stderr ?? string.Empty).TrimEnd();
+        return trimmed.EndsWith("(-128)", StringComparison.Ordinal)
+            || trimmed.EndsWith("User canceled.", StringComparison.Ordinal);
+    }
+
     private static void RejectNul(string value)
     {
         if (value.Contains('\0'))
