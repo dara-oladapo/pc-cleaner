@@ -109,8 +109,9 @@ jobs:
       # release.yml (see the comment there for how to move them forward). Each Mac Catalyst SDK pack
       # requires exactly one Xcode major.minor; left floating, the newest workload set (27.2.x) outran
       # the runner's default Xcode (26.6) and the build failed with "requires Xcode 27.2".
-      #   10.0.400.1 = SDK band 10.0.4xx workload set -> Mac Catalyst SDK 26.5.10315 -> needs Xcode 26.5
-      XCODE_VERSION: "26.5"
+      #   10.0.400.1 = SDK band 10.0.4xx workload set -> Mac Catalyst SDK 26.5.10315 -> needs Xcode 26.6 (CI-confirmed:
+      #   the pack version is not the Xcode version; 26.5.10315 says "requires Xcode 26.6")
+      XCODE_VERSION: "26.6"
       MACCATALYST_WORKLOAD_SET: "10.0.400.1"
     steps:
       - name: Checkout

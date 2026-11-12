@@ -139,12 +139,14 @@ jobs:
       # whenever Microsoft ships a workload ahead of the runner image's Xcode.
       #
       #   10.0.400.1  = workload set for SDK band 10.0.4xx; Mac Catalyst SDK 26.5.10315, MAUI 10.0.20
-      #   26.5        = the Xcode that pack requires; on macos-latest (macos-26) at /Applications/Xcode_26.5.app
+      #   26.6        = the Xcode that pack requires (CI said so; a pack's own version number is NOT its Xcode
+      #                 version), on macos-latest (macos-26) at /Applications/Xcode_26.6.app
       #
       # To move forward: pick a newer set (nuget.org package Microsoft.NET.Workloads.<band>, file
-      # data/microsoft.net.workloads.workloadset.json, "Microsoft.NET.Sdk.MacCatalyst" entry), read the
-      # Xcode it needs from that version's first two numbers, and check the runner image README lists it.
-      XCODE_VERSION: "26.5"
+      # data/microsoft.net.workloads.workloadset.json, "Microsoft.NET.Sdk.MacCatalyst" entry), find the
+      # Xcode it needs (the pack's version number is only a hint; the build error states the exact one),
+      # and check the runner image README lists it.
+      XCODE_VERSION: "26.6"
       MACCATALYST_WORKLOAD_SET: "10.0.400.1"
     steps:
       - name: Checkout
