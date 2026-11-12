@@ -252,8 +252,12 @@ public class JunkCleanerTests
         JunkItem item = ScanAsItem(temp, isTemp: true);
         Assert.Single(item.Directories!);
 
-        await new JunkCleaner().CleanAsync([item]);
-        Assert.True(Directory.Exists(folder));
+        // Folder age needs a real birth time; on Linux the cleaner relies on the scan-time check alone.
+        if (JunkSafetyRules.CreationTimeIsBirthTime)
+        {
+            await new JunkCleaner().CleanAsync([item]);
+            Assert.True(Directory.Exists(folder));
+        }
 
         await FutureCleaner().CleanAsync([item]);
         Assert.False(Directory.Exists(folder));
@@ -262,6 +266,12 @@ public class JunkCleanerTests
     [Fact]
     public async Task CleanAsync_RecreatedFolder_IsNotRemoved()
     {
+        // Recreation is detected via birth time, which Linux does not reliably expose.
+        if (!JunkSafetyRules.CreationTimeIsBirthTime)
+        {
+            return;
+        }
+
         using var dir = new TestDirectory();
         string cacheDir = Path.Combine(dir.Path, "cache");
         string folder = Path.Combine(cacheDir, "sub");

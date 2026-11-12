@@ -164,7 +164,7 @@ public sealed class JunkCleaner : IJunkCleaner
             if (expected is not null
                 && (info.Length != expected.SizeBytes
                     || info.LastWriteTimeUtc != expected.LastWriteUtc
-                    || info.CreationTimeUtc != expected.CreationUtc))
+                    || (JunkSafetyRules.CreationTimeIsBirthTime && info.CreationTimeUtc != expected.CreationUtc)))
             {
                 run.Skipped.Add((path, "Changed since the scan."));
                 return;
@@ -218,16 +218,22 @@ public sealed class JunkCleaner : IJunkCleaner
                     continue;
                 }
 
+                // Recreation and age checks need a real birth time. Without one (Linux ctime fallback, which our
+                // own deletes just bumped) they are skipped: the scan already refused recent folders, and only an
+                // empty folder can be removed here.
                 var info = new DirectoryInfo(dir);
-                if (info.CreationTimeUtc != entry.CreationUtc)
+                if (JunkSafetyRules.CreationTimeIsBirthTime)
                 {
-                    continue;
-                }
+                    if (info.CreationTimeUtc != entry.CreationUtc)
+                    {
+                        continue;
+                    }
 
-                if (minimumAge is { } age
-                    && !JunkSafetyRules.IsOldEnough(info.CreationTimeUtc, info.CreationTimeUtc, _timeProvider.GetUtcNow().UtcDateTime, age))
-                {
-                    continue;
+                    if (minimumAge is { } age
+                        && !JunkSafetyRules.IsOldEnough(info.CreationTimeUtc, info.CreationTimeUtc, _timeProvider.GetUtcNow().UtcDateTime, age))
+                    {
+                        continue;
+                    }
                 }
 
                 if (info.EnumerateFileSystemInfos().Any())

@@ -24,6 +24,14 @@ public static class JunkSafetyRules
     private static readonly string[] ProtectedExtensions =
         [".vhdx", ".vhd", ".avhdx", ".vmdk", ".vdi", ".qcow2", ".iso", ".wim"];
 
+    /// <summary>
+    /// True where <c>CreationTimeUtc</c> is a real birth time (NTFS, APFS). On Linux .NET may fall back to ctime,
+    /// which changes whenever a folder's entries change or a file is chmod'ed, so it cannot be used to detect a
+    /// recreated file/folder or to age a folder whose contents were just deleted.
+    /// </summary>
+    public static bool CreationTimeIsBirthTime =>
+        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst();
+
     public static bool IsProtectedFileName(string name) =>
         ProtectedExtensions.Any(ext => name.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
 
