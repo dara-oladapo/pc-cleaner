@@ -1,11 +1,25 @@
 name: Release
 
-# Builds and publishes the Windows installer. Trigger by pushing a tag like `v0.2.0`, or run manually via
-# workflow_dispatch with an explicit version (useful for re-running a release without re-tagging).
+# Builds the Windows and macOS installers and publishes them together as one GitHub Release. Trigger by
+# pushing a tag like `v0.2.0`, or run manually via workflow_dispatch with an explicit version (useful for
+# re-running a release without re-tagging).
 #
-# macOS packaging isn't included here yet — see issue #4 (Mac Catalyst has never been verified on real
-# hardware) and the macOS build instructions in README.md, which still need to be run and adapted for CI
-# on a macos-latest runner once that verification is done.
+# Shape:
+#
+#   version            resolves the version once, so both platforms package the same number
+#   windows-installer  dotnet publish + vpk pack  -> Setup.exe, full nupkg, RELEASES, releases.win.json
+#   macos-installer    dotnet publish + vpk pack  -> Setup.pkg, Portable.zip, osx nupkg, releases.osx.json
+#   publish            downloads both artifact sets and creates the release in one `gh release create`
+#
+# Creating the release once, after both builds, means a release never exists with only one platform's
+# files on it: Velopack's GithubSource reads the *latest* release, so a half-uploaded release would tell
+# Mac users "no update" (or Windows users the same) until someone noticed.
+#
+# Velopack keeps the two platforms apart by channel. Windows packs into the default `win` channel and
+# macOS into `osx`; every feed/asset file carries the channel in its name (releases.win.json vs
+# releases.osx.json, RELEASES vs RELEASES-osx, PCCleaner-X-full.nupkg vs PCCleaner-X-osx-full.nupkg,
+# PCCleaner-win-* vs PCCleaner-osx-* installers — confirmed on a real vpk 1.2 run), so both sets sit in the same
+# release without colliding. The publish job checks that before uploading anything.
 
 on:
   push:
@@ -16,25 +30,21 @@ on:
       version:
         description: "Version to release (e.g. 0.2.0) — required for manual runs"
         required: false
+      skip_xcode_check:
+        description: "macOS: build even if the runner's Xcode isn't the exact one the .NET workload expects"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 jobs:
-  windows-installer:
-    runs-on: windows-latest
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      display_version: ${{ steps.version.outputs.display_version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-
-      - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows
-
       - name: Determine version
         id: version
         shell: bash
@@ -49,6 +59,24 @@ jobs:
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # Apple's CFBundleShortVersionString must be plain numbers (1.2.3), so a prerelease suffix like
+          # 0.2.0-beta.1 is dropped for the bundle. Velopack still uses the full SemVer for updates.
+          echo "display_version=${VERSION%%-*}" >> "$GITHUB_OUTPUT"
+
+  windows-installer:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
 
       - name: Restore
         run: dotnet restore src/PcCleaner.App/PcCleaner.App.csproj
@@ -62,6 +90,8 @@ jobs:
           -f net10.0-windows10.0.19041.0
           -c Release
           --self-contained
+          -p:ApplicationDisplayVersion=${{ needs.version.outputs.display_version }}
+          -p:ApplicationVersion=${{ github.run_number }}
           -o publish/win-x64
 
       - name: Install vpk
@@ -72,7 +102,7 @@ jobs:
         run: >
           vpk pack
           --packId PCCleaner
-          --packVersion "${{ steps.version.outputs.version }}"
+          --packVersion "${{ needs.version.outputs.version }}"
           --packDir publish/win-x64
           --mainExe PcCleaner.App.exe
           --icon publish/win-x64/appicon.ico
@@ -81,18 +111,266 @@ jobs:
           --outputDir releases/win
           -y
 
+      # Exactly the files the release has always carried — the Portable.zip vpk also writes is left out,
+      # as before.
+      - name: Upload Windows release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-win
+          if-no-files-found: error
+          path: |
+            releases/win/PCCleaner-win-Setup.exe
+            releases/win/PCCleaner-${{ needs.version.outputs.version }}-full.nupkg
+            releases/win/RELEASES
+            releases/win/releases.win.json
+            releases/win/assets.win.json
+
+  macos-installer:
+    needs: version
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      DISPLAY_VERSION: ${{ needs.version.outputs.display_version }}
+      # Xcode and the Mac Catalyst workload are pinned as a PAIR — keep these identical to the macOS job
+      # in ci.yml. Each Mac Catalyst SDK pack is built against exactly one Xcode major.minor and the
+      # build refuses any other ("This version of .NET for MacCatalyst (27.2.10000) requires Xcode 27.2.
+      # The current version of Xcode is 26.6."). Left floating, setup-dotnet's latestFeature roll picks
+      # the newest SDK, `workload install` picks that SDK's newest workload set, and the pair breaks
+      # whenever Microsoft ships a workload ahead of the runner image's Xcode.
+      #
+      #   10.0.400.1  = workload set for SDK band 10.0.4xx; Mac Catalyst SDK 26.5.10315, MAUI 10.0.20
+      #   26.6        = the Xcode that pack requires (CI said so; a pack's own version number is NOT its Xcode
+      #                 version), on macos-latest (macos-26) at /Applications/Xcode_26.6.app
+      #
+      # To move forward: pick a newer set (nuget.org package Microsoft.NET.Workloads.<band>, file
+      # data/microsoft.net.workloads.workloadset.json, "Microsoft.NET.Sdk.MacCatalyst" entry), find the
+      # Xcode it needs (the pack's version number is only a hint; the build error states the exact one),
+      # and check the runner image README lists it.
+      XCODE_VERSION: "26.6"
+      MACCATALYST_WORKLOAD_SET: "10.0.400.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: |
+          XCODE_APP="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$XCODE_APP" ]; then
+            echo "::error::$XCODE_APP is not on this runner image. Installed:"; ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # maui-maccatalyst, not maccatalyst: the bare workload lacks MAUI itself (NETSDK1147).
+      # A workload set only installs onto an SDK of the same feature band, so check that first and fail
+      # with a readable message rather than a workload-resolver error.
+      - name: Install MAUI Mac Catalyst workload (pinned)
+        run: |
+          SDK=$(dotnet --version)
+          SDK_BAND=$(echo "$SDK" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]).*/\1/')
+          SET_BAND=$(echo "$MACCATALYST_WORKLOAD_SET" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]).*/\1/')
+          if [ "$SDK_BAND" != "$SET_BAND" ]; then
+            echo "::error::SDK $SDK is band ${SDK_BAND}xx but MACCATALYST_WORKLOAD_SET $MACCATALYST_WORKLOAD_SET is band ${SET_BAND}xx. Pick a workload set (and matching Xcode) for the new band."
+            exit 1
+          fi
+          dotnet workload install maui-maccatalyst --version "$MACCATALYST_WORKLOAD_SET"
+          dotnet workload list
+
+      # Release on Mac Catalyst builds both maccatalyst-arm64 and maccatalyst-x64 and lipos them into one
+      # universal .app. That is deliberate: one bundle, one Velopack channel (osx), installable on Apple
+      # Silicon and Intel alike, and UpdateService needs no per-architecture logic. (Passing
+      # -p:RuntimeIdentifiers on the command line doesn't work — it leaks into PcCleaner.Core and fails
+      # NETSDK1083 — so the default is relied on, and checked with lipo below.)
+      #
+      # CreatePackage=false: MAUI's own .pkg isn't wanted; vpk builds the installer from the .app.
+      - name: Publish Mac Catalyst app (universal)
+        run: |
+          EXTRA=""
+          if [ "${{ github.event.inputs.skip_xcode_check }}" = "true" ]; then
+            EXTRA="-p:ValidateXcodeVersion=false"
+          fi
+          dotnet publish src/PcCleaner.App/PcCleaner.App.csproj \
+            -f net10.0-maccatalyst \
+            -c Release \
+            -p:CreatePackage=false \
+            -p:ApplicationDisplayVersion="$DISPLAY_VERSION" \
+            -p:ApplicationVersion=${{ github.run_number }} \
+            $EXTRA
+
+      - name: Locate .app bundle
+        id: app
+        run: |
+          # The universal bundle sits directly under the TFM folder; per-RID intermediates are deeper.
+          APP=$(find src/PcCleaner.App/bin/Release/net10.0-maccatalyst -maxdepth 1 -name '*.app' -type d | head -n 1)
+          if [ -z "$APP" ]; then
+            echo "::error::No .app bundle found. Bundles under bin/:"
+            find src/PcCleaner.App/bin -name '*.app' -type d
+            exit 1
+          fi
+          mkdir -p publish/osx
+          ditto "$APP" "publish/osx/$(basename "$APP")"
+          APP="publish/osx/$(basename "$APP")"
+          EXE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
+          echo "Bundle: $APP"
+          echo "Executable: $EXE ($(lipo -archs "$APP/Contents/MacOS/$EXE"))"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist"
+          echo "path=$APP" >> "$GITHUB_OUTPUT"
+          echo "exe=$EXE" >> "$GITHUB_OUTPUT"
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk
+
+      # Signing is optional so a release can ship before an Apple Developer account is set up. With all
+      # seven APPLE_* secrets present the app and pkg are signed with Developer ID and notarized; with any
+      # missing, the build is unsigned and users get Gatekeeper's "unidentified developer" prompt (README
+      # has the workaround).
+      - name: Import signing certificate (optional)
+        id: signing
+        env:
+          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_SIGN_APP_IDENTITY: ${{ secrets.APPLE_SIGN_APP_IDENTITY }}
+          APPLE_SIGN_INSTALL_IDENTITY: ${{ secrets.APPLE_SIGN_INSTALL_IDENTITY }}
+          APPLE_NOTARY_APPLE_ID: ${{ secrets.APPLE_NOTARY_APPLE_ID }}
+          APPLE_NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARY_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for v in APPLE_CERT_P12_BASE64 APPLE_CERT_PASSWORD APPLE_SIGN_APP_IDENTITY APPLE_SIGN_INSTALL_IDENTITY \
+                   APPLE_NOTARY_APPLE_ID APPLE_NOTARY_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then
+              echo "::warning::$v is not set — building an UNSIGNED, un-notarized macOS installer. Users will need the Gatekeeper workaround in README.md."
+              echo "enabled=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          echo "$APPLE_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$APPLE_CERT_PASSWORD" -f pkcs12 \
+            -T /usr/bin/codesign -T /usr/bin/productsign -T /usr/bin/pkgbuild -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          # Put it on the search list so codesign/productbuild can resolve the identities by name.
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+          xcrun notarytool store-credentials pccleaner-notary \
+            --apple-id "$APPLE_NOTARY_APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_NOTARY_PASSWORD" \
+            --keychain "$KEYCHAIN"
+
+          echo "Identities available:"; security find-identity -v "$KEYCHAIN"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "keychain=$KEYCHAIN" >> "$GITHUB_OUTPUT"
+
+      # --packDir is the .app itself: vpk uses an existing bundle as-is (adding its UpdateMac binary and
+      # fixing up MAUI's MonoBundle signing) instead of generating a generic one. --mainExe is the
+      # CFBundleExecutable read from that bundle. No --icon: the bundle already carries its asset catalog.
+      #
+      # Entitlements: vpk insists on a `.entitlements` extension, and codesign's parser rejects the UTF-8
+      # BOM the project's Entitlements.plist starts with ("AMFIUnserializeXML: syntax error near line 1"),
+      # so plutil writes a clean copy.
+      #
+      # Unsigned builds still go through vpk's signing with the ad-hoc identity "-". vpk adds UpdateMac
+      # and sq.version to the bundle, which breaks the seal MAUI's build put on it ("a sealed resource is
+      # missing or invalid"); re-signing ad-hoc gives a bundle that passes `codesign --verify --strict`,
+      # so the only hurdle left for users is Gatekeeper's unidentified-developer prompt.
+      - name: Pack installer
+        env:
+          APPLE_SIGN_APP_IDENTITY: ${{ secrets.APPLE_SIGN_APP_IDENTITY }}
+          APPLE_SIGN_INSTALL_IDENTITY: ${{ secrets.APPLE_SIGN_INSTALL_IDENTITY }}
+        run: |
+          ENTITLEMENTS="$RUNNER_TEMP/PcCleaner.entitlements"
+          plutil -convert xml1 -o "$ENTITLEMENTS" src/PcCleaner.App/Platforms/MacCatalyst/Entitlements.plist
+
+          if [ "${{ steps.signing.outputs.enabled }}" = "true" ]; then
+            SIGN_ARGS=(
+              --signAppIdentity "$APPLE_SIGN_APP_IDENTITY"
+              --signInstallIdentity "$APPLE_SIGN_INSTALL_IDENTITY"
+              --signEntitlements "$ENTITLEMENTS"
+              --notaryProfile pccleaner-notary
+              --keychain "${{ steps.signing.outputs.keychain }}"
+            )
+          else
+            SIGN_ARGS=(
+              --signAppIdentity=-
+              --signEntitlements "$ENTITLEMENTS"
+            )
+          fi
+          vpk pack \
+            --packId PCCleaner \
+            --packVersion "$VERSION" \
+            --channel osx \
+            --packDir "${{ steps.app.outputs.path }}" \
+            --mainExe "${{ steps.app.outputs.exe }}" \
+            --packTitle "PC Cleaner" \
+            --packAuthors "Dara Oladapo" \
+            --outputDir releases/osx \
+            -y \
+            "${SIGN_ARGS[@]}"
+          ls -la releases/osx
+
+          # Fail here, not on a user's Mac, if the shipped bundle's signature is broken.
+          mkdir -p "$RUNNER_TEMP/verify"
+          ditto -x -k releases/osx/PCCleaner-osx-Portable.zip "$RUNNER_TEMP/verify"
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP"/verify/*.app
+          codesign -dv "$RUNNER_TEMP"/verify/*.app 2>&1 | grep -E 'Identifier|Authority|Signature|TeamIdentifier' || true
+
+      - name: Remove signing keychain
+        if: always() && steps.signing.outputs.enabled == 'true'
+        run: security delete-keychain "${{ steps.signing.outputs.keychain }}" || true
+
+      # Everything vpk wrote: PCCleaner-osx-Setup.pkg, PCCleaner-osx-Portable.zip, the osx nupkg and the
+      # osx feed files.
+      - name: Upload macOS release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-osx
+          if-no-files-found: error
+          path: releases/osx/*
+
+  publish:
+    needs: [version, windows-installer, macos-installer]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release files
+        uses: actions/download-artifact@v8
+        with:
+          path: releases
+          pattern: release-*
+          # One subfolder per artifact: releases/release-win/*, releases/release-osx/*
+
+      - name: Check for filename collisions
+        shell: bash
+        run: |
+          ls -la releases/release-win releases/release-osx
+          DUPES=$( (ls releases/release-win; ls releases/release-osx) | sort | uniq -d)
+          if [ -n "$DUPES" ]; then
+            echo "::error::Windows and macOS produced files with the same name — they would overwrite each other in the release: $DUPES"
+            exit 1
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
-            releases/win/PCCleaner-win-Setup.exe \
-            "releases/win/PCCleaner-${{ steps.version.outputs.version }}-full.nupkg" \
-            releases/win/RELEASES \
-            releases/win/releases.win.json \
-            releases/win/assets.win.json \
+          VERSION="${{ needs.version.outputs.version }}"
+          gh release create "v$VERSION" \
+            releases/release-win/* \
+            releases/release-osx/* \
             --repo "${{ github.repository }}" \
-            --title "PC Cleaner v${{ steps.version.outputs.version }}" \
+            --title "PC Cleaner v$VERSION" \
             --generate-notes \
             --latest
