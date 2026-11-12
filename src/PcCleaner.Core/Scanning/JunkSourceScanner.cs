@@ -1,0 +1,44 @@
+using System.Runtime.CompilerServices;
+using PcCleaner.Core.Models;
+
+namespace PcCleaner.Core.Scanning;
+
+/// <summary>
+/// The platform-agnostic half of a junk scan: platform scanners supply the list of places, this plans their
+/// overlaps (<see cref="JunkRootPlanner"/>), walks each one (<see cref="JunkRootScanner"/>) and yields items that
+/// carry the exact file manifest the cleaner will act on.
+/// </summary>
+public static class JunkSourceScanner
+{
+    public static async IAsyncEnumerable<JunkItem> ScanAsync(
+        IEnumerable<JunkSource> sources,
+        StringComparison pathComparison,
+        DateTime nowUtc,
+        TimeSpan minimumAge,
+        IProgress<int>? filesScanned = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        foreach (PlannedJunkRoot root in JunkRootPlanner.Plan(sources, pathComparison))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            JunkRootScan scan = await JunkRootScanner
+                .ScanAsync(root, nowUtc, minimumAge, pathComparison, cancellationToken, filesScanned)
+                .ConfigureAwait(false);
+
+            if (scan.TotalBytes > 0)
+            {
+                yield return new JunkItem(
+                    root.Path,
+                    scan.TotalBytes,
+                    root.Category,
+                    $"{root.Description} ({scan.Files.Count:N0} items)",
+                    IsDirectory: true)
+                {
+                    Files = scan.Files,
+                    Directories = scan.Directories,
+                };
+            }
+        }
+    }
+}
