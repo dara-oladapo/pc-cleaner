@@ -1,14 +1,32 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:PcCleaner.Desktop.Converters"
              x:Class="PcCleaner.Desktop.App"
              RequestedThemeVariant="Default">
 
   <!--
-    Stock Fluent for now. The real design system (colors, tokens, icons, fonts from src/PcCleaner.App/Resources/Styles)
-    is #9; this scaffold only has to prove the view models bind under Avalonia.
+    The design system from src/PcCleaner.App/Resources/Styles, ported to Avalonia (#9). DESIGN.md is the spec and
+    lists the places where the two front ends deliberately differ.
+
+    Fluent stays underneath for the control templates (CheckBox, TextBox, ScrollViewer, ProgressBar); Colors.axaml
+    re-points the Fluent resources those templates read, and Styles.axaml restyles everything else.
   -->
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://PcCleaner.Desktop/Resources/Styles/Colors.axaml" />
+        <ResourceInclude Source="avares://PcCleaner.Desktop/Resources/Styles/Tokens.axaml" />
+        <ResourceInclude Source="avares://PcCleaner.Desktop/Resources/Styles/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <conv:ShareToWidthConverter x:Key="ShareToWidthConverter" />
+      <conv:UppercaseConverter x:Key="UppercaseConverter" />
+      <conv:ResourceKeyToGeometryConverter x:Key="ResourceKeyToGeometryConverter" />
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://PcCleaner.Desktop/Resources/Styles/Styles.axaml" />
   </Application.Styles>
 
 </Application>

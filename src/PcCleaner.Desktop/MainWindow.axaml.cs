@@ -15,5 +15,6 @@ public partial class MainWindow : Window
         : this()
     {
         DataContext = shell;
+        shell.Navigate(ShellViewModel.StartRoute);
     }
 }

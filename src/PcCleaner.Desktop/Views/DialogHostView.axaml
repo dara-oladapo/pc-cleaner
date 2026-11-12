@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.DialogHostView"
+             x:DataType="pvm:DialogHostViewModel"
+             IsVisible="{Binding IsOpen}">
+
+  <!--
+    The Avalonia port of src/PcCleaner.App/Controls/DialogHost.xaml: the app's own confirmation dialog, never an OS
+    message box (DESIGN.md, "Destructive actions"). MAUI hosts one in every page; here there is one, over the whole
+    window including the rail, because MainWindow is the only root.
+  -->
+
+  <Panel>
+    <!-- Scrim. Clicking outside the card cancels, which is why Cancel must mean "no". -->
+    <Border Background="{DynamicResource Scrim}" PointerPressed="OnScrimPressed" />
+
+    <Border Classes="dialogCard">
+      <StackPanel Spacing="{StaticResource Space3}">
+
+        <TextBlock Classes="emptyTitle" Text="{Binding Title}" />
+
+        <TextBlock Classes="emptyBody" Text="{Binding Message}" />
+
+        <!-- What is actually about to go. Omitted entirely when the caller has nothing to list. -->
+        <Border Classes="dialogManifest" IsVisible="{Binding HasDetails}">
+          <ItemsControl ItemsSource="{Binding Details}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="3" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Classes="mono path" Text="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}" HorizontalAlignment="Right" Margin="0,4,0,0">
+          <Button Content="{Binding CancelText}" Command="{Binding CancelCommand}" IsCancel="True" />
+          <!-- Danger only when the caller says the action is destructive; otherwise the ordinary primary. -->
+          <Button Content="{Binding AcceptText}" Command="{Binding AcceptCommand}"
+                  Classes="primary" Classes.danger="{Binding IsDestructive}" />
+        </StackPanel>
+
+      </StackPanel>
+    </Border>
+  </Panel>
+</UserControl>

@@ -5,17 +5,13 @@ using PcCleaner.Presentation.ViewModels;
 namespace PcCleaner.Desktop.ViewModels;
 
 /// <summary>One entry in the navigation rail. Routes match the MAUI Shell's.</summary>
-public sealed record NavItem(string Title, string Route);
-
-/// <summary>Shown for a tool whose screen hasn't been ported to Avalonia yet.</summary>
-public sealed record NotPortedPage(string Title)
-{
-    public string Message => $"The {Title} screen hasn't been ported to the Linux front end yet (see #9).";
-}
+/// <param name="IconKey">The resource key of the rail icon's geometry in <c>Resources/Styles/Icons.axaml</c>.</param>
+public sealed record NavItem(string Title, string Route, string IconKey);
 
 /// <summary>
-/// The Avalonia counterpart of the MAUI <c>AppShell</c>: the navigation rail, the current screen, and the
-/// shared dialog overlay. Desktop-only, because it's about this front end's layout, not app behaviour.
+/// The Avalonia counterpart of the MAUI <c>AppShell</c>: the navigation rail, the current screen, the theme
+/// switcher in the rail footer, and the shared dialog overlay. Desktop-only, because it's about this front end's
+/// layout, not app behaviour.
 /// </summary>
 /// <remarks>
 /// <see cref="CurrentPage"/> holds a view model; <c>MainWindow.axaml</c> picks the view through its
@@ -28,15 +24,18 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public IReadOnlyList<NavItem> NavItems { get; } =
     [
-        new("Dashboard", "dashboard"),
-        new("Junk Files", "junk"),
-        new("Duplicates", "duplicates"),
-        new("Large Files", "large"),
-        new("Startup", "startup"),
-        new("About", "about"),
+        new("Dashboard", "dashboard", "IconDashboard"),
+        new("Junk Files", "junk", "IconJunk"),
+        new("Duplicates", "duplicates", "IconDuplicates"),
+        new("Large Files", "large", "IconLargeFiles"),
+        new("Startup", "startup", "IconStartup"),
+        new("About", "about", "IconAbout"),
     ];
 
     public DialogHostViewModel Dialog { get; }
+
+    /// <summary>Backs the System / Light / Dark switcher in the rail footer, as on MAUI's flyout footer.</summary>
+    public ThemeViewModel Theme { get; }
 
     [ObservableProperty]
     public partial NavItem? SelectedItem { get; set; }
@@ -44,14 +43,20 @@ public sealed partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     public partial object? CurrentPage { get; set; }
 
-    public ShellViewModel(IServiceProvider services, DialogHostViewModel dialog)
+    public ShellViewModel(IServiceProvider services, DialogHostViewModel dialog, ThemeViewModel theme)
     {
         _services = services;
         Dialog = dialog;
-
-        // Junk Files, not Dashboard, until the dashboard is ported: it's the one screen this scaffold wires.
-        Navigate("junk");
+        Theme = theme;
     }
+
+    /// <summary>The screen the app opens on, as on the MAUI Shell.</summary>
+    /// <remarks>
+    /// Navigated to by <c>MainWindow</c>, not by this constructor: the dashboard's view model needs
+    /// <c>INavigationService</c>, which needs this instance, so resolving it from here would be a circular
+    /// dependency the container rejects.
+    /// </remarks>
+    public const string StartRoute = "dashboard";
 
     /// <summary>Selects the rail entry for <paramref name="route"/>; an unknown route leaves the current screen alone.</summary>
     public void Navigate(string route)
@@ -73,7 +78,12 @@ public sealed partial class ShellViewModel : ObservableObject
 
     private object Resolve(NavItem item) => item.Route switch
     {
+        "dashboard" => _services.GetRequiredService<DashboardViewModel>(),
         "junk" => _services.GetRequiredService<JunkCleanupViewModel>(),
-        _ => new NotPortedPage(item.Title),
+        "duplicates" => _services.GetRequiredService<DuplicateFinderViewModel>(),
+        "large" => _services.GetRequiredService<LargeFilesViewModel>(),
+        "startup" => _services.GetRequiredService<StartupManagerViewModel>(),
+        "about" => _services.GetRequiredService<AboutViewModel>(),
+        _ => throw new ArgumentOutOfRangeException(nameof(item), item.Route, "No screen for this route."),
     };
 }

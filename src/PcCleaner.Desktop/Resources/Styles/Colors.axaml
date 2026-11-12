@@ -1,0 +1,121 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The Avalonia port of src/PcCleaner.App/Resources/Styles/Colors.xaml. Same tokens, same values; see DESIGN.md.
+
+    MAUI keeps two keys per token (Paper / PaperDark) and picks one at every use site with AppThemeBinding.
+    Avalonia picks for us: each token is defined once per ThemeVariant below, under the same name, and every
+    use site says {DynamicResource Paper}. DynamicResource is required — a StaticResource resolves once and
+    would freeze the colour of whichever theme was active when the control loaded.
+
+    Signal is spent ONLY on the primary action and on "how much space will I get back" numbers. Danger is the
+    single deliberate exception to the one-accent rule: a destructive button and its confirmation, nothing else.
+  -->
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="Paper" Color="#EEF1F3" />
+      <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+      <!-- Recessed fill: meter tracks, wells, hover states. Cards sit above it, the page sits below. -->
+      <SolidColorBrush x:Key="Sunken" Color="#E4E9EC" />
+      <SolidColorBrush x:Key="InkStrong" Color="#12181D" />
+      <SolidColorBrush x:Key="InkMuted" Color="#5B6672" />
+      <SolidColorBrush x:Key="Hairline" Color="#D7DEE3" />
+      <SolidColorBrush x:Key="Signal" Color="#0E7C7B" />
+      <SolidColorBrush x:Key="SignalMuted" Color="#E4F1EF" />
+      <SolidColorBrush x:Key="Attention" Color="#B8863B" />
+      <SolidColorBrush x:Key="AttentionMuted" Color="#F5ECDC" />
+      <SolidColorBrush x:Key="Danger" Color="#A8322D" />
+      <SolidColorBrush x:Key="OnSignal" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="OnDanger" Color="#FFFFFF" />
+      <!-- The "already in use" portion of the capacity readout: a slate with Paper's blue bias. -->
+      <SolidColorBrush x:Key="Occupied" Color="#97A4B0" />
+      <!-- Dialog scrim. Ink-tinted rather than neutral black, so the dimmed page keeps the palette's cool cast. -->
+      <SolidColorBrush x:Key="Scrim" Color="#8C12181D" />
+
+      <!-- Fluent's own control resources, re-pointed at the tokens above so the stock CheckBox and TextBox
+           templates draw in this palette instead of Fluent's blue accent and greys. Same list in both themes. -->
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="InkMuted" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="Surface" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="Sunken" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="Sunken" />
+
+      <StaticResource x:Key="TextControlForeground" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlBackground" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Hairline" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Signal" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="InkMuted" />
+    </ResourceDictionary>
+
+    <!-- Mirrored, not inverted: an ink-blue-slate base rather than flat black. -->
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="Paper" Color="#12161B" />
+      <SolidColorBrush x:Key="Surface" Color="#1A2027" />
+      <SolidColorBrush x:Key="Sunken" Color="#0D1116" />
+      <SolidColorBrush x:Key="InkStrong" Color="#EDF1F3" />
+      <SolidColorBrush x:Key="InkMuted" Color="#8B99A6" />
+      <SolidColorBrush x:Key="Hairline" Color="#2A323B" />
+      <SolidColorBrush x:Key="Signal" Color="#4FD1CB" />
+      <SolidColorBrush x:Key="SignalMuted" Color="#17302E" />
+      <SolidColorBrush x:Key="Attention" Color="#D9A857" />
+      <SolidColorBrush x:Key="AttentionMuted" Color="#3A2F1C" />
+      <SolidColorBrush x:Key="Danger" Color="#E8756D" />
+      <SolidColorBrush x:Key="OnSignal" Color="#0A1513" />
+      <SolidColorBrush x:Key="OnDanger" Color="#21100E" />
+      <SolidColorBrush x:Key="Occupied" Color="#46525F" />
+      <SolidColorBrush x:Key="Scrim" Color="#A6060A0E" />
+      <!-- Fluent's own control resources, re-pointed at the tokens above so the stock CheckBox and TextBox
+           templates draw in this palette instead of Fluent's blue accent and greys. Same list in both themes. -->
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="OnSignal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="InkMuted" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="Signal" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUnchecked" ResourceKey="Surface" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPointerOver" ResourceKey="Sunken" />
+      <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="Sunken" />
+
+      <StaticResource x:Key="TextControlForeground" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="InkStrong" />
+      <StaticResource x:Key="TextControlBackground" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="Surface" />
+      <StaticResource x:Key="TextControlBorderBrush" ResourceKey="Hairline" />
+      <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="Signal" />
+      <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="InkMuted" />
+      <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="InkMuted" />
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

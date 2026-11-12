@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.AboutView"
+             x:DataType="pvm:AboutViewModel">
+
+  <!-- The Avalonia port of src/PcCleaner.App/Pages/AboutPage.xaml, bound to the same AboutViewModel. -->
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="{StaticResource Space4}" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Grid.Row="0" Spacing="2">
+      <TextBlock Classes="eyebrow" Text="PC CLEANER" />
+      <TextBlock Classes="hero" Text="{Binding VersionText}" />
+      <TextBlock Classes="heroCaption" Text="{Binding StatusText}" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="{StaticResource Space5}" MaxWidth="620" HorizontalAlignment="Left">
+
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="FREE AND UNLOCKED" />
+          <TextBlock Classes="emptyBody"
+                     Text="No paywall, no trial limits, no upsells. Every feature here — junk cleanup, duplicates, large files, startup — is fully functional." />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="WHAT GETS DELETED, AND HOW" />
+          <TextBlock Classes="emptyBody"
+                     Text="Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files — duplicates and large files — always go to the Trash instead, so you can get them back." />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="SOURCE" />
+          <TextBlock Classes="mono" Text="github.com/dara-oladapo/pc-cleaner" />
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}">
+      <Button Classes="primary" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
+      <Button Content="Download and restart" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
+      <ProgressBar Classes="activity" IsVisible="{Binding IsBusy}" />
+    </StackPanel>
+
+  </Grid>
+</UserControl>
