@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using PcCleaner.App.Services;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.App;
 

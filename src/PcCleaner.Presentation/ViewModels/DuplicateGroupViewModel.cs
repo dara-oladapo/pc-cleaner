@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Utilities;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 public sealed partial class DuplicateGroupViewModel : ObservableObject
 {

@@ -4,8 +4,9 @@ using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Utilities;
+using PcCleaner.Presentation.Services;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 /// <summary>
 /// The landing screen: what this computer looks like right now, and one button that reads every tool.
@@ -18,6 +19,7 @@ namespace PcCleaner.App.ViewModels;
 public sealed partial class DashboardViewModel : ObservableObject
 {
     private readonly IDriveSpaceReader _driveSpaceReader;
+    private readonly INavigationService _navigation;
     private CancellationTokenSource? _runCts;
 
     public JunkCleanupViewModel Junk { get; }
@@ -86,12 +88,14 @@ public sealed partial class DashboardViewModel : ObservableObject
 
     public DashboardViewModel(
         IDriveSpaceReader driveSpaceReader,
+        INavigationService navigation,
         JunkCleanupViewModel junk,
         DuplicateFinderViewModel duplicates,
         LargeFilesViewModel largeFiles,
         StartupManagerViewModel startup)
     {
         _driveSpaceReader = driveSpaceReader;
+        _navigation = navigation;
         Junk = junk;
         Duplicates = duplicates;
         LargeFiles = largeFiles;
@@ -161,7 +165,7 @@ public sealed partial class DashboardViewModel : ObservableObject
 
     /// <summary>Opens a tool from its summary card. The card is the whole target, not a "view details" link.</summary>
     [RelayCommand]
-    private Task OpenToolAsync(string route) => Shell.Current.GoToAsync($"//{route}");
+    private Task OpenToolAsync(string route) => _navigation.GoToToolAsync(route);
 
     [RelayCommand]
     private void CancelScan()

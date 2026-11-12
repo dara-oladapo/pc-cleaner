@@ -1,18 +1,11 @@
+using PcCleaner.Presentation.Services;
 using Velopack;
 using Velopack.Sources;
 
 namespace PcCleaner.App.Services;
 
-public enum UpdateCheckStatus
-{
-    NotInstalled,
-    UpToDate,
-    UpdateAvailable,
-    CheckFailed,
-}
-
 /// <summary>Wraps Velopack's UpdateManager: checks GitHub Releases for a newer build, downloads it, and restarts into it.</summary>
-public sealed class UpdateService
+public sealed class UpdateService : IUpdateService
 {
     private const string RepoUrl = "https://github.com/dara-oladapo/pc-cleaner";
 

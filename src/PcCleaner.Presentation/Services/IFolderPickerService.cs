@@ -1,4 +1,4 @@
-namespace PcCleaner.App.Services;
+namespace PcCleaner.Presentation.Services;
 
 /// <summary>Opens the OS folder browser so scan roots can be chosen instead of typed.</summary>
 /// <remarks>

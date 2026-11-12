@@ -56,6 +56,21 @@ jobs:
       - name: Test Core
         run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release -warnaserror
 
+      # The view models and service interfaces. Plain net10.0, so it builds here even though the MAUI app can't.
+      - name: Build Presentation
+        run: dotnet build src/PcCleaner.Presentation/PcCleaner.Presentation.csproj --configuration Release -warnaserror
+
+      # The property the Linux port rests on: the shared view models must not depend on any UI framework.
+      # It's invisible in review and one convenient package reference breaks it, so it's asserted here.
+      - name: Presentation has no UI framework dependency
+        run: |
+          packages="$(dotnet list src/PcCleaner.Presentation/PcCleaner.Presentation.csproj package --include-transitive)"
+          echo "$packages"
+          if echo "$packages" | grep -iE 'Microsoft\.Maui|Avalonia'; then
+            echo "::error::PcCleaner.Presentation must not reference Microsoft.Maui or Avalonia, directly or transitively."
+            exit 1
+          fi
+
       # Stub. PcCleaner.Core was deliberately kept 100% platform-agnostic so a Linux port is possible;
       # what's missing is a UI layer (MAUI has no Linux target — Avalonia is the likely answer) and a
       # Platforms/Linux set of services: junk paths, trash via the freedesktop spec, and XDG autostart

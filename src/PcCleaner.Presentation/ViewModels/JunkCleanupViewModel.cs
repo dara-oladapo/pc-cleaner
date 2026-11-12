@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PcCleaner.App.Services;
+using PcCleaner.Presentation.Services;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Utilities;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 public sealed partial class JunkCleanupViewModel : ObservableObject
 {
