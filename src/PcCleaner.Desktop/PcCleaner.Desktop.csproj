@@ -6,8 +6,8 @@
     PcCleaner.Presentation.
 
     Plain net10.0, so unlike PcCleaner.App it restores and builds on every OS. Today only Platforms/Linux exists and
-    its services are stubs; each one has its own issue (#10-#13). Only the Junk Files screen is wired so far — the
-    rest of the screens and the design system are #9.
+    its services are stubs; each one has its own issue (#10-#13). Only the Junk Files and About screens are wired so
+    far — the rest of the screens and the design system are #9. Shipped as an AppImage via Velopack (#14, README).
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -35,6 +35,13 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <!-- Same updater and version as PcCleaner.App. On Linux it updates the AppImage the release workflow builds. -->
+    <PackageReference Include="Velopack" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The window icon. The source of truth is packaging/linux, which also feeds vpk's icon option and menu integration. -->
+    <AvaloniaResource Include="..\..\packaging\linux\icons\hicolor\256x256\apps\pccleaner.png" Link="Assets\pccleaner.png" />
   </ItemGroup>
 
   <ItemGroup>

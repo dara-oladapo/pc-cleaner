@@ -20,10 +20,22 @@ public sealed partial class AboutViewModel : ObservableObject
     [ObservableProperty]
     public partial string StatusText { get; set; } = "Tap Check for Updates to look for a newer release.";
 
+    /// <summary>
+    /// False when this copy can't update itself, so a front end can hide the button rather than offer one that can
+    /// only ever answer "not available".
+    /// </summary>
+    public bool CanSelfUpdate => _updates.IsInstalled;
+
     public AboutViewModel(IUpdateService updates)
     {
         _updates = updates;
         VersionText = _updates.CurrentVersionText;
+
+        // Say it up front: "tap Check for Updates" would be a false promise on a copy that can't update.
+        if (!_updates.IsInstalled)
+        {
+            StatusText = _updates.NotInstalledMessage;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanCheck))]
@@ -37,8 +49,7 @@ public sealed partial class AboutViewModel : ObservableObject
 
         StatusText = status switch
         {
-            UpdateCheckStatus.NotInstalled =>
-                "This is a dev build, not an installed copy — updates only work once installed via the Setup installer.",
+            UpdateCheckStatus.NotInstalled => _updates.NotInstalledMessage,
             UpdateCheckStatus.UpToDate => "You're on the latest version.",
             UpdateCheckStatus.UpdateAvailable => $"Update available: v{_updates.PendingVersionText}.",
             UpdateCheckStatus.CheckFailed => "Couldn't reach the update server — check your connection and try again.",
