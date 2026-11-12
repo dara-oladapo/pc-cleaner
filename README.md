@@ -19,6 +19,7 @@ Nothing is deleted without a confirmation that says what will go and whether it 
 ```
 src/
   PcCleaner.Core/        Platform-agnostic: models, interfaces, duplicate/large-file scanning, junk deletion logic
+    Trash/                freedesktop.org Trash spec 1.0: .trashinfo format, mountinfo parsing, trash-dir selection, the algorithm
   PcCleaner.Presentation/ UI-framework-agnostic (plain net10.0): view models, plus the service interfaces they use
     ViewModels/           Every view model (CommunityToolkit.Mvvm) — shared by the MAUI app and a future Linux front end
     Services/             IDialogService, IFolderPickerService, IThemeService, INavigationService, IUpdateService
@@ -29,7 +30,7 @@ src/
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
   PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Scaffold: Junk Files is the one wired screen
-    Platforms/Linux/      Stubs that touch nothing until #10-#13 land: junk scanner, trash, startup items, folder picker, theme
+    Platforms/Linux/      Trash (freedesktop spec, libc statx/renameat2). Still stubs until #10, #12, #13 land: junk scanner, startup items, folder picker, theme
     Services/             DialogService (in-app overlay), ShellNavigationService, UnsupportedUpdateService
 tests/
   PcCleaner.Core.Tests/   xUnit tests for the cross-platform Core logic

@@ -38,10 +38,10 @@ public static class AppServices
         // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
         services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
 
-        // Platform-specific. Linux is the only platform this front end serves today; every one of these is a
-        // stub that touches nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. Apart from the trash, each of
+        // these is still a stub that touches nothing, and each has its own issue.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
-        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
+        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11: freedesktop Trash spec
         services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
         services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();         // #13
         services.AddSingleton<IThemeService, LinuxThemeService>();                // #13
