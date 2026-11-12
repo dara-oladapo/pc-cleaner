@@ -19,10 +19,13 @@ Nothing is deleted without a confirmation that says what will go and whether it 
 ```
 src/
   PcCleaner.Core/        Platform-agnostic: models, interfaces, duplicate/large-file scanning, junk deletion logic
-  PcCleaner.App/          .NET MAUI app (UI, MVVM, DI)
+  PcCleaner.Presentation/ UI-framework-agnostic (plain net10.0): view models, plus the service interfaces they use
+    ViewModels/           Every view model (CommunityToolkit.Mvvm) — shared by the MAUI app and a future Linux front end
+    Services/             IDialogService, IFolderPickerService, IThemeService, INavigationService, IUpdateService
+  PcCleaner.App/          .NET MAUI app (XAML, MAUI service implementations, DI)
     Platforms/Windows/    Windows-specific: junk locations, Recycle Bin (SHFileOperation), registry startup items
     Platforms/MacCatalyst/  macOS-specific: junk locations, Trash (NSFileManager), LaunchAgent/Daemon management
-    Services/             UpdateService (Velopack), DialogService (confirmations), IFolderPickerService
+    Services/             UpdateService (Velopack), DialogService (confirmations), ThemeService, ShellNavigationService
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
 tests/
@@ -31,7 +34,7 @@ docs/
   prototype/index.html    Clickable prototype of every screen — the design reference for the MAUI UI
 ```
 
-The rule of thumb: anything that's pure `System.IO` logic (recursive file walking, hashing, size math) lives in `PcCleaner.Core` and is unit-tested there. Anything that touches an OS API (registry, Recycle Bin, `launchctl`, native Trash) lives under `Platforms/<OS>` in the MAUI project and is resolved via DI in `MauiProgram.cs`.
+The rule of thumb: anything that's pure `System.IO` logic (recursive file walking, hashing, size math) lives in `PcCleaner.Core` and is unit-tested there. Anything that touches an OS API (registry, Recycle Bin, `launchctl`, native Trash) lives under `Platforms/<OS>` in the MAUI project and is resolved via DI in `MauiProgram.cs`. View models live in `PcCleaner.Presentation` and reach the UI only through its service interfaces; that project must never reference MAUI or Avalonia, and the Ubuntu CI job fails if it does.
 
 Junk/cache files are deleted outright (they're regenerable). Files found by the Duplicate/Large File finder are real user files, so they're moved to the Recycle Bin / Trash instead — reversible by design.
 

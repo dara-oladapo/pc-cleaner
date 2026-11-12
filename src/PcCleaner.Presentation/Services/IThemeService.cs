@@ -1,4 +1,4 @@
-namespace PcCleaner.App.Services;
+namespace PcCleaner.Presentation.Services;
 
 /// <summary>What the user chose in the theme switcher, which is not the same as which theme is showing.</summary>
 public enum ThemePreference

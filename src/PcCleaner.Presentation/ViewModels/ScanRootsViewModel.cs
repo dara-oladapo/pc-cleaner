@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PcCleaner.App.Services;
+using PcCleaner.Presentation.Services;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 /// <summary>
 /// The "which folders do we scan" half of any tool that walks user folders — the duplicate finder and the

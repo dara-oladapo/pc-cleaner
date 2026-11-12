@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using PcCleaner.Core.Utilities;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 /// <summary>
 /// One category's worth of junk results, for the grouped list on the junk screen.

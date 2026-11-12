@@ -1,4 +1,4 @@
-namespace PcCleaner.App.Services;
+namespace PcCleaner.Presentation.Services;
 
 /// <summary>
 /// Asks the user to confirm something before it happens, using the app's own dialog rather than the
