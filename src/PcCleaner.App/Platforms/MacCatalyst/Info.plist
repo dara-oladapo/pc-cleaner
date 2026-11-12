@@ -34,6 +34,28 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- UIKit in the current Mac Catalyst SDK refuses to launch an app that hasn't adopted the UIScene
+	     life cycle ("UIScene life cycle is required for apps built with this SDK"). This routes the single
+	     window scene to SceneDelegate (Platforms/MacCatalyst/SceneDelegate.cs), which is MAUI's own
+	     MauiUISceneDelegate. The configuration name is the one MAUI looks up. One window only: the app
+	     is not built for multiple simultaneous windows. -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>__MAUI_DEFAULT_SCENE_CONFIGURATION__</string>
+					<key>UISceneDelegateClassName</key>
+					<string>SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 </dict>
