@@ -77,7 +77,7 @@ Install the CLI once: `dotnet tool install -g vpk`.
 |---|---|
 | `ubuntu-latest` | `PcCleaner.Core` build and tests only. The app project's `TargetFrameworks` evaluates to empty on Linux, so it can't be restored there at all; the app step is a stub until there's a Linux UI layer. |
 | `windows-latest` | Core tests, plus the Windows app build. The primary supported platform. |
-| `macos-latest` | Core tests, plus the Mac Catalyst app build — the first thing that has ever compiled that target (see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)). |
+| `xcode-27` | Core tests, plus the Mac Catalyst app build with Xcode 27.2. Not `macos-latest`: its newest Xcode (26.6) produces an app that crashes at launch on macOS 27. |
 
 The app build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime.
 
