@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Core.Settings;
 using PcCleaner.Desktop.Platforms.Linux;
 using PcCleaner.Desktop.Services;
 using PcCleaner.Desktop.ViewModels;
@@ -38,13 +39,18 @@ public static class AppServices
         // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
         services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
 
-        // Platform-specific. Linux is the only platform this front end serves today; every one of these is a
-        // stub that touches nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. Those marked with an issue
+        // are still stubs that touch nothing; the folder picker and theme service are real (#13).
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
         services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
-        services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();         // #13
-        services.AddSingleton<IThemeService, LinuxThemeService>();                // #13
+        services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();
+        services.AddSingleton<IThemeService, LinuxThemeService>();
+
+        // One settings file for every preference, at $XDG_CONFIG_HOME/pc-cleaner/settings.json. Resolved once:
+        // the environment doesn't change under a running process.
+        services.AddSingleton<ISettingsStore>(_ => new JsonSettingsStore(XdgPaths.SettingsFile()));
+        services.AddSingleton<ITopLevelAccessor, DesktopLifetimeTopLevelAccessor>();
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IUpdateService, UnsupportedUpdateService>();        // #14

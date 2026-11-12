@@ -92,6 +92,8 @@ System is not "whatever the OS said at launch". It maps to MAUI's `AppTheme.Unsp
 
 The choice is persisted in `Preferences` (registry on Windows, `NSUserDefaults` on macOS) and re-applied in the `App` constructor before the first window exists, so the app opens in the chosen theme rather than flashing the system one and correcting itself. An unreadable or unknown stored value falls back to System instead of throwing.
 
+The Avalonia front end on Linux keeps the same three states and the same rules. System maps to `ThemeVariant.Default`, which likewise keeps following the desktop: Avalonia reads the `org.freedesktop.appearance` `color-scheme` setting from `xdg-desktop-portal` and re-resolves the theme when the portal signals a change. The choice is stored by enum name in `$XDG_CONFIG_HOME/pc-cleaner/settings.json` (falling back to `~/.config`), written atomically, and re-applied before the main window exists. A desktop with no portal, or a portal that doesn't implement the appearance settings, gives Avalonia nothing to follow, so System shows light there; Light and Dark still work.
+
 Because every colour already goes through `AppThemeBinding`, nothing else needs to know the theme changed. Keep it that way: a new screen that hardcodes a hex value will look correct in one theme and wrong in the other, and the switcher makes that trivially easy for a user to find.
 
 ## Progress, honestly

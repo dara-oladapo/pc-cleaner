@@ -5,8 +5,8 @@
     so this sits beside PcCleaner.App rather than replacing it, and both drive the same view models from
     PcCleaner.Presentation.
 
-    Plain net10.0, so unlike PcCleaner.App it restores and builds on every OS. Today only Platforms/Linux exists and
-    its services are stubs; each one has its own issue (#10-#13). Only the Junk Files screen is wired so far — the
+    Plain net10.0, so unlike PcCleaner.App it restores and builds on every OS. Today only Platforms/Linux exists. The folder
+    picker and theme service are real (#13); the rest are stubs, each with its own issue (#10-#12). Only the Junk Files screen is wired so far — the
     rest of the screens and the design system are #9.
   -->
   <PropertyGroup>
