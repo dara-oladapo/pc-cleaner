@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.AboutView"
+             x:DataType="pvm:AboutViewModel">
+
+  <!--
+    Bound to the same AboutViewModel the MAUI AboutPage uses. Ported ahead of the other screens (#9) because it's
+    where the Linux build has to tell the truth about updates (#14): the update buttons only exist on a copy that can
+    update itself (the release AppImage), and every other copy shows the reason instead of a button that can't work.
+    Styling is stock Fluent; the design system is #9.
+  -->
+  <StackPanel Margin="32,24" Spacing="12" MaxWidth="640" HorizontalAlignment="Left">
+    <TextBlock Text="About" FontSize="24" FontWeight="SemiBold" />
+
+    <TextBlock Text="PC Cleaner — a free system cleanup utility. No subscriptions, no paywall." TextWrapping="Wrap" />
+
+    <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock Text="Version" Opacity="0.7" />
+      <TextBlock Text="{Binding VersionText}" />
+    </StackPanel>
+
+    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+
+    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CanSelfUpdate}">
+      <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
+      <Button Content="Download and restart" Command="{Binding DownloadAndRestartCommand}"
+              IsVisible="{Binding UpdateReady}" Classes="accent" />
+    </StackPanel>
+  </StackPanel>
+
+</UserControl>
