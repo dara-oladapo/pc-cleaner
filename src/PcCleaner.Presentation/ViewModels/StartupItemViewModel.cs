@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using PcCleaner.Core.Models;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 public sealed partial class StartupItemViewModel(StartupItem model) : ObservableObject
 {

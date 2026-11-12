@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    View models and the service interfaces they talk through. Plain net10.0, referencing PcCleaner.Core and
+    CommunityToolkit.Mvvm and nothing else, so the same view models can sit behind the MAUI app on Windows and
+    Mac Catalyst and behind a Linux front end later (see #1, #7).
+
+    Do not add a UI framework reference here, directly or transitively. CI fails the Linux job if
+    "dotnet list package (include-transitive)" for this project mentions Microsoft.Maui or Avalonia.
+    Anything that needs the UI framework goes behind an interface in Services/ and is implemented by the app.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PcCleaner.Core\PcCleaner.Core.csproj" />
+  </ItemGroup>
+
+</Project>

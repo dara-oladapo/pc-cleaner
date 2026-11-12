@@ -1,6 +1,6 @@
 using PcCleaner.Core.Utilities;
 
-namespace PcCleaner.App.Services;
+namespace PcCleaner.Presentation.Services;
 
 /// <summary>
 /// Builds the short list of what a destructive action is about to remove, biggest first.

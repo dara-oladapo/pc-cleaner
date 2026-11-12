@@ -1,12 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PcCleaner.App.Services;
+using PcCleaner.Presentation.Services;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 public sealed partial class AboutViewModel : ObservableObject
 {
-    private readonly UpdateService _updates;
+    private readonly IUpdateService _updates;
 
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
@@ -20,7 +20,7 @@ public sealed partial class AboutViewModel : ObservableObject
     [ObservableProperty]
     public partial string StatusText { get; set; } = "Tap Check for Updates to look for a newer release.";
 
-    public AboutViewModel(UpdateService updates)
+    public AboutViewModel(IUpdateService updates)
     {
         _updates = updates;
         VersionText = _updates.CurrentVersionText;

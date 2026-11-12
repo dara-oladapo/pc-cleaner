@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PcCleaner.App.Services;
+using PcCleaner.Presentation.Services;
 
-namespace PcCleaner.App.ViewModels;
+namespace PcCleaner.Presentation.ViewModels;
 
 /// <summary>Backs the three-way theme switcher in the navigation rail footer.</summary>
 public sealed partial class ThemeViewModel : ObservableObject

@@ -1,4 +1,4 @@
-using PcCleaner.App.ViewModels;
+using PcCleaner.Presentation.ViewModels;
 
 namespace PcCleaner.App;
 

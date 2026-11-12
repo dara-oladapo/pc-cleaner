@@ -3,7 +3,8 @@ using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Scanning;
 using PcCleaner.App.Pages;
 using PcCleaner.App.Services;
-using PcCleaner.App.ViewModels;
+using PcCleaner.Presentation.Services;
+using PcCleaner.Presentation.ViewModels;
 using Velopack;
 #if WINDOWS
 using PcCleaner.App.Platforms.Windows;
@@ -74,7 +75,8 @@ public static class MauiProgram
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IThemeService, ThemeService>();
-        services.AddSingleton<UpdateService>();
+        services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<INavigationService, ShellNavigationService>();
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
