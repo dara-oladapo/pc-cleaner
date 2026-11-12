@@ -28,6 +28,9 @@ src/
     Services/             UpdateService (Velopack), DialogService (confirmations), ThemeService, ShellNavigationService
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
+  PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Scaffold: Junk Files is the one wired screen
+    Platforms/Linux/      Stubs that touch nothing until #10-#13 land: junk scanner, trash, startup items, folder picker, theme
+    Services/             DialogService (in-app overlay), ShellNavigationService, UnsupportedUpdateService
 tests/
   PcCleaner.Core.Tests/   xUnit tests for the cross-platform Core logic
 docs/
@@ -56,6 +59,13 @@ dotnet build src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-maccatalyst
 ```
 
 Run the whole solution (each project restricted to its own supported frameworks) with `dotnet build PcCleaner.slnx`.
+
+Linux, through the Avalonia front end. Its junk scanner is still a stub that finds nothing (#10), so a Debug build can fill the list with synthetic results instead. They are invented: nothing on disk is read or deleted.
+
+```bash
+dotnet build src/PcCleaner.Desktop/PcCleaner.Desktop.csproj
+PCCLEANER_FAKE_SCAN=1 dotnet run --project src/PcCleaner.Desktop
+```
 
 Run tests:
 

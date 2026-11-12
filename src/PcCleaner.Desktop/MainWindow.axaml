@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PcCleaner.Desktop.ViewModels"
+        xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+        xmlns:views="using:PcCleaner.Desktop.Views"
+        x:Class="PcCleaner.Desktop.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="PC Cleaner"
+        Width="1120" Height="780"
+        MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+
+  <!--
+    Size and floor match the MAUI window (src/PcCleaner.App/App.xaml.cs): the floor is what keeps the 216px rail,
+    the four-across dashboard cards, and the row layout fitting.
+  -->
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="pvm:JunkCleanupViewModel">
+      <views:JunkCleanupView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:NotPortedPage">
+      <StackPanel Margin="32" Spacing="8">
+        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding Message}" Opacity="0.7" TextWrapping="Wrap" />
+      </StackPanel>
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <Panel>
+    <Grid ColumnDefinitions="216,*">
+      <Border Grid.Column="0" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" Padding="12,24">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="PC Cleaner" FontSize="18" FontWeight="SemiBold" Margin="12,0,0,20" />
+          <ListBox ItemsSource="{Binding NavItems}"
+                   SelectedItem="{Binding SelectedItem}"
+                   Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="vm:NavItem">
+                <TextBlock Text="{Binding Title}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" />
+    </Grid>
+
+    <!-- The app's own confirmation dialog. One overlay for the whole window, driven by IDialogService. -->
+    <Panel IsVisible="{Binding Dialog.IsOpen}">
+      <!-- Scrim. Dismissing without choosing is a no, never a yes; a click-to-cancel handler arrives with #9. -->
+      <Border Background="#99000000" />
+      <Border MaxWidth="520" Padding="24" CornerRadius="8"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{Binding Dialog.Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Dialog.Message}" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding Dialog.Details}" IsVisible="{Binding Dialog.HasDetails}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding}" FontFamily="monospace" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="{Binding Dialog.CancelText}" Command="{Binding Dialog.CancelCommand}" />
+            <Button Content="{Binding Dialog.AcceptText}" Command="{Binding Dialog.AcceptCommand}" Classes="accent" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Panel>
+  </Panel>
+
+</Window>
