@@ -1,0 +1,587 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The Avalonia port of src/PcCleaner.App/Resources/Styles/Styles.xaml. Same components, same token values.
+
+    Differences in mechanism, not in look:
+    - MAUI keyed styles (Style="{StaticResource PrimaryButton}") become style classes (Classes="primary").
+    - MAUI VisualStateManager states become pseudo-classes: PointerOver is :pointerover, Pressed is :pressed,
+      Disabled is :disabled, the rail's Selected is :selected. Fluent draws a Button's or ListBoxItem's fill on the
+      template's ContentPresenter, so the state setters target "/template/ ContentPresenter#PART_ContentPresenter".
+    - A selector can reach a descendant ("ListBoxItem:selected Path"), which a MAUI VSM setter can't. The rail's
+      icon and label now tint with the selected row, and a pill's label follows its pill's class.
+    - Avalonia has no TextTransform. Eyebrows and pill labels are uppercase in the source text, or go through
+      UppercaseConverter where the text comes from a view model.
+
+    Later styles win over earlier ones when both match, so within each component the order is
+    base, :pointerover, :pressed, :selected, :disabled.
+
+    Every colour is a DynamicResource from Colors.axaml, so the whole file follows the theme with no per-use
+    AppThemeBinding.
+  -->
+
+  <!-- ===================== Window ===================== -->
+
+  <!-- Foreground, FontFamily and FontSize are inherited, so setting them here is the default Label style. A global
+       TextBlock style would also hit the TextBlock inside every Button and override its foreground. -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource Paper}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+  </Style>
+
+  <!-- ===================== Typography ===================== -->
+
+  <Style Selector="TextBlock.pageTitle">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayBold}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="{StaticResource FontTitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+
+  <!-- Hero stat: the big reclaimable-size number at the top of each tool -->
+  <Style Selector="TextBlock.hero">
+    <Setter Property="FontFamily" Value="{StaticResource MonoMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontHero}" />
+    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+    <!-- Wraps like a MAUI Label does by default; About's version line can be a sentence, not a figure. -->
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style Selector="TextBlock.heroCaption">
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Small tracked label for section headers ("FOLDERS TO SCAN"). Uppercase in the text itself: see the header. -->
+  <Style Selector="TextBlock.eyebrow">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontEyebrow}" />
+    <Setter Property="LetterSpacing" Value="{StaticResource TrackEyebrow}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+  </Style>
+
+  <Style Selector="TextBlock.rowTitle">
+    <Setter Property="FontFamily" Value="{StaticResource BodySemibold}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="{StaticResource FontRowTitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+
+  <!-- Monospace path/command text. Paths trim in the middle, keeping the drive and the leaf in view. -->
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="{StaticResource MonoRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontMono}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+  </Style>
+
+  <Style Selector="TextBlock.path">
+    <Setter Property="TextTrimming" Value="PrefixCharacterEllipsis" />
+  </Style>
+
+  <!-- Tabular monospace size/count figures — every number reads like a terminal readout. Right-aligned for
+       scanning down a column. -->
+  <Style Selector="TextBlock.monoNumber">
+    <Setter Property="FontFamily" Value="{StaticResource MonoMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+    <Setter Property="TextAlignment" Value="Right" />
+  </Style>
+
+  <!-- The headline figure on a dashboard tool card -->
+  <Style Selector="TextBlock.stat">
+    <Setter Property="FontFamily" Value="{StaticResource MonoMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontStat}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- A card or tool title in the display face (the dashboard cards, "PC Cleaner" in the rail). -->
+  <Style Selector="TextBlock.displayLabel">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayBold}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+
+  <!-- ===================== Empty / done states ===================== -->
+  <!-- An empty screen is an invitation to act, not a shrug. Title says what's true, body says what to do. -->
+
+  <Style Selector="TextBlock.emptyTitle">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayBold}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="{StaticResource FontSubtitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style Selector="TextBlock.emptyBody">
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontRowTitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="LineHeight" Value="20" />
+  </Style>
+
+  <!-- ===================== Icons ===================== -->
+
+  <!--
+    Drawn 1:1 on the icons' own 20x20 grid (Stretch=None), as the prototype's SVG viewBox draws them. MAUI's
+    Aspect="Uniform" instead stretches each geometry's own bounds to fill the box, which made icons with small
+    bounds (the dashboard bars, 12px across) grow by half while tall ones (the document) barely changed, so the
+    rail's icons came out at visibly different sizes. See DESIGN.md.
+  -->
+  <Style Selector="Path.icon">
+    <Setter Property="Stroke" Value="{DynamicResource InkStrong}" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StrokeJoin" Value="Round" />
+    <Setter Property="Stretch" Value="None" />
+    <Setter Property="Width" Value="{StaticResource IconGrid}" />
+    <Setter Property="Height" Value="{StaticResource IconGrid}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Path.icon.signal">
+    <Setter Property="Stroke" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <!-- The illustration above an empty state's title: the one place an icon is scaled up, so it stretches. -->
+  <Style Selector="Path.icon.empty">
+    <Setter Property="Stroke" Value="{DynamicResource InkMuted}" />
+    <Setter Property="Stretch" Value="Uniform" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Opacity" Value="0.7" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+
+  <!-- ===================== Buttons ===================== -->
+
+  <!-- Ghost button (default/secondary): outline, reads as an instrument control, not an app-store CTA. -->
+  <Style Selector="Button">
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontFamily" Value="{StaticResource DisplayMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="16,9" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkMuted}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- Compact ghost button used inline in rows (Remove, Enable/Disable, Select none) -->
+  <Style Selector="Button.inline">
+    <Setter Property="FontSize" Value="{StaticResource FontEyebrow}" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="MinHeight" Value="30" />
+  </Style>
+
+  <!-- Primary button: solid Signal. One per screen — the action you came to this screen to take. -->
+  <Style Selector="Button.primary">
+    <Setter Property="Foreground" Value="{DynamicResource OnSignal}" />
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontFamily" Value="{StaticResource DisplayBold}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Padding" Value="20,11" />
+    <Setter Property="MinHeight" Value="42" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSignal}" />
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Opacity" Value="0.88" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSignal}" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSignal}" />
+  </Style>
+  <Style Selector="Button.primary:disabled">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+
+  <!--
+    Destructive button: Classes="primary danger". The one place Danger appears as a fill. Before it, "Scan" and
+    "Delete Selected" were the same teal, so the interface gave no warning that one of them could not be undone.
+  -->
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+  </Style>
+  <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+  </Style>
+  <Style Selector="Button.danger:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+  </Style>
+
+  <!--
+    Dashboard tool card. A Button styled as a Card rather than a Border with a tap handler (MAUI's
+    TapGestureRecognizer), so the card is reachable by Tab and opens with Enter/Space, not only by mouse.
+  -->
+  <Style Selector="Button.toolCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="{StaticResource CardPadding}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+  </Style>
+  <Style Selector="Button.toolCard:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Signal}" />
+  </Style>
+  <Style Selector="Button.toolCard:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <!-- ===================== Text input ===================== -->
+  <!-- Colours come from the Fluent resources re-pointed in Colors.axaml; this is shape and type only. -->
+
+  <Style Selector="TextBox">
+    <Setter Property="FontFamily" Value="{StaticResource BodyRegular}" />
+    <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="MinHeight" Value="{StaticResource CheckBoxSize}" />
+    <Setter Property="MinWidth" Value="{StaticResource CheckBoxSize}" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+
+  <!-- ===================== Cards & rows ===================== -->
+
+  <!-- Raised container on the page background. Used for tool cards and grouped panels. -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="{StaticResource CardPadding}" />
+  </Style>
+
+  <!-- A single result row. Rows are cards, not hairline-separated bands: at 20+ results the hairline version
+       read as one undifferentiated wall of text. -->
+  <Style Selector="Border.rowCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="{StaticResource RowPadding}" />
+    <Setter Property="Margin" Value="0,3" />
+  </Style>
+  <Style Selector="Border.rowCard:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <Style Selector="Border.divider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Opacity" Value="0.6" />
+    <Setter Property="Background" Value="{DynamicResource Hairline}" />
+  </Style>
+
+  <!-- The hairline in a junk group header, between the category name and its total. Full strength. -->
+  <Style Selector="Border.rule">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource Hairline}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- ===================== Pills / badges ===================== -->
+  <!-- The label's colour is set from the pill's own classes, so one class on the Border styles both. -->
+
+  <Style Selector="Border.pill">
+    <Setter Property="Background" Value="{DynamicResource SignalMuted}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="{StaticResource PillPadding}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.pill > TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontPill}" />
+    <Setter Property="LetterSpacing" Value="{StaticResource TrackControl}" />
+    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <Style Selector="Border.pill.attention">
+    <Setter Property="Background" Value="{DynamicResource AttentionMuted}" />
+  </Style>
+  <Style Selector="Border.pill.attention > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Attention}" />
+  </Style>
+
+  <!-- Neutral pill for states that are simply off — "Disabled", "Kept" — where Signal would overstate them.
+       Add .on to promote it to a Signal pill (the startup row's "Enabled"). -->
+  <Style Selector="Border.pill.quiet">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
+  <Style Selector="Border.pill.quiet > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+  </Style>
+  <Style Selector="Border.pill.quiet.on">
+    <Setter Property="Background" Value="{DynamicResource SignalMuted}" />
+  </Style>
+  <Style Selector="Border.pill.quiet.on > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <!-- ===================== Meter bar (signature element) ===================== -->
+  <!-- A sunken track and a Signal fill whose Width comes from ShareToWidthConverter. The track width and the
+       converter parameter both read MeterWidth, so they can't drift apart. -->
+
+  <Style Selector="Border.meterTrack">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="Height" Value="{StaticResource MeterHeight}" />
+    <Setter Property="Width" Value="{StaticResource MeterWidth}" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Border.meterFill">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+    <Setter Property="Height" Value="{StaticResource MeterHeight}" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- ===================== Capacity readout (dashboard hero) ===================== -->
+  <!-- The same meter device at hero scale, split into three real segments of the drive. -->
+
+  <Style Selector="Border.capacityBar">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Height" Value="{StaticResource CapacityBarHeight}" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+
+  <Style Selector="Border.segmentOccupied">
+    <Setter Property="Background" Value="{DynamicResource Occupied}" />
+  </Style>
+  <Style Selector="Border.segmentReclaimable">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+  </Style>
+  <Style Selector="Border.segmentFree">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
+
+  <Style Selector="Border.legendSwatch">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- ===================== Progress ===================== -->
+  <!-- The scanners report a running file count, never a percentage, so scanning shows an indeterminate bar
+       plus the real count. Do not give the activity bar a fake value. -->
+
+  <Style Selector="Border.progressPanel">
+    <Setter Property="Background" Value="{DynamicResource SignalMuted}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="16,10" />
+  </Style>
+
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
+
+  <!-- Stands in for MAUI's 16px ActivityIndicator: Avalonia has no spinner control, and a short indeterminate
+       bar says the same thing ("working, no fraction known") in the meter's own visual language. -->
+  <Style Selector="ProgressBar.activity">
+    <Setter Property="IsIndeterminate" Value="True" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Width" Value="40" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Height" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- Determinate step markers. Only where a fraction is genuinely known — the dashboard's "N of 4 tools". -->
+  <Style Selector="Border.stepMarker">
+    <Setter Property="Height" Value="3" />
+    <Setter Property="Width" Value="34" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.stepMarker.done">
+    <Setter Property="Background" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <!-- ===================== Navigation rail ===================== -->
+
+  <Style Selector="ListBox.rail">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem">
+    <Setter Property="Margin" Value="8,1" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem Path">
+    <Setter Property="Stroke" Value="{DynamicResource InkStrong}" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayMedium}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontSize" Value="{StaticResource FontControl}" />
+    <Setter Property="LetterSpacing" Value="0.2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource InkStrong}" />
+  </Style>
+
+  <Style Selector="ListBox.rail ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+  </Style>
+
+  <!-- Selected: tinted row AND tinted icon and label. MAUI's VSM couldn't reach the children; a selector can. -->
+  <Style Selector="ListBox.rail ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SignalMuted}" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem:selected Path">
+    <Setter Property="Stroke" Value="{DynamicResource Signal}" />
+  </Style>
+  <Style Selector="ListBox.rail ListBoxItem:selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+    <Setter Property="FontFamily" Value="{StaticResource DisplayBold}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- ===================== Theme switcher ===================== -->
+  <!-- Three segments — System, Light, Dark — in one recessed track, so it reads as a choice between three rather
+       than an on/off. Each segment is a Button, so it is reachable by keyboard. -->
+
+  <Style Selector="Border.themeSwitcher">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="3" />
+  </Style>
+
+  <Style Selector="Button.segment">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.segment Path">
+    <Setter Property="Stroke" Value="{DynamicResource InkMuted}" />
+    <Setter Property="StrokeThickness" Value="1.4" />
+  </Style>
+  <Style Selector="Button.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.segment:pointerover Path">
+    <Setter Property="Stroke" Value="{DynamicResource InkStrong}" />
+  </Style>
+  <Style Selector="Button.segment:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+  </Style>
+  <Style Selector="Button.segment.selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+  </Style>
+  <Style Selector="Button.segment.selected Path">
+    <Setter Property="Stroke" Value="{DynamicResource Signal}" />
+  </Style>
+
+  <!-- ===================== Dialog ===================== -->
+  <!-- The app's own confirmation, not the OS's. Centred card over a scrim; the manifest well lists what is
+       actually about to be removed. -->
+
+  <Style Selector="Border.dialogCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="24" />
+    <Setter Property="Width" Value="460" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Border.dialogManifest">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+
+</Styles>

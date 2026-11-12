@@ -4,7 +4,9 @@ PC Cleaner's visual identity, in one place, so new screens stay consistent with 
 
 A clickable prototype of every screen lives at [`docs/prototype/index.html`](docs/prototype/index.html) — open it in a browser. It uses the same fonts and the same token values as the app, so it is the fastest way to see a change before building it, and the reference the XAML is expected to match.
 
-Rendered stills of that prototype are in [`docs/prototype/screenshots/`](docs/prototype/screenshots) for anyone who wants to see the screens without running anything. They are renders of the prototype, not captures of the built app — the app has to be run on Windows or a Mac to see the real thing.
+Rendered stills of that prototype are in [`docs/prototype/screenshots/`](docs/prototype/screenshots) for anyone who wants to see the screens without running anything. They are renders of the prototype, not captures of the built app — the MAUI app has to be run on Windows or a Mac to see the real thing.
+
+The Linux front end (`src/PcCleaner.Desktop`, Avalonia) implements this same system; [the last section](#the-linux-front-end-avalonia) lists where it deliberately differs from the MAUI app and why. Headless renders of every Avalonia screen, in both themes and made from the real views and view models, are in [`docs/prototype/shots/avalonia/`](docs/prototype/shots/avalonia).
 
 ## Why this look
 
@@ -67,7 +69,7 @@ Single-weight strokes, flat terminals, geometry over illustration — the same f
 
 A locked Shell flyout, 216px, with a custom `Shell.ItemTemplate` (`Controls/IconFlyoutItem.cs` carries each destination's icon geometry). The previous bottom `TabBar` is a phone pattern: on a desktop window it spent the full width on four labels and left no room to name a fifth tool.
 
-Selection shows as a tinted row background. MAUI hands the `Selected` visual state to the template's root element only and its setters can't reach a child, so the icon and label keep one color rather than tinting with the row.
+Selection shows as a tinted row background. MAUI hands the `Selected` visual state to the template's root element only and its setters can't reach a child, so the icon and label keep one color rather than tinting with the row. The Avalonia rail does tint them (see below), which is what the prototype shows.
 
 ## Components (`Resources/Styles/Styles.xaml`)
 
@@ -116,3 +118,46 @@ Cancelling, dismissing, tapping the scrim, and "we couldn't ask" all resolve to 
 ## Extending this
 
 Adding a new screen: start from the hero block pattern (`Eyebrow` → `HeroNumber` → `HeroCaption`), reuse `Card`/`Pill`/`MonoNumber`/`InlineButton` before inventing new styles, take spacing from `Tokens.xaml` rather than typing a number, keep `Signal` as the only accent, and give the empty state as much thought as the full one.
+
+## The Linux front end (Avalonia)
+
+`src/PcCleaner.Desktop` is the same design system, not a cousin of it: the same token names and values, the same icon geometry character for character, the same three font files, the same components, bound to the same view models in `PcCleaner.Presentation`. The files map one to one:
+
+| MAUI (`src/PcCleaner.App`) | Avalonia (`src/PcCleaner.Desktop`) |
+|---|---|
+| `Resources/Styles/Colors.xaml` | `Resources/Styles/Colors.axaml` |
+| `Resources/Styles/Tokens.xaml` + `ConfigureFonts` in `MauiProgram.cs` | `Resources/Styles/Tokens.axaml` |
+| `Resources/Styles/Icons.xaml` | `Resources/Styles/Icons.axaml` |
+| `Resources/Styles/Styles.xaml` (keyed styles) | `Resources/Styles/Styles.axaml` (style classes: `Style="{StaticResource PrimaryButton}"` becomes `Classes="primary"`) |
+| `AppShell.xaml` | `MainWindow.axaml` + `ViewModels/ShellViewModel.cs` |
+| `Pages/*Page.xaml` | `Views/*View.axaml` |
+| `Controls/DialogHost.xaml` | `Views/DialogHostView.axaml` |
+
+When a token, icon or component changes, change it in both. What follows are the places the two deliberately differ, each with the reason.
+
+### Differences in mechanism
+
+- **Theme.** `AppThemeBinding Light=…, Dark=…` at every use site becomes one key per token defined twice, under `ResourceDictionary.ThemeDictionaries` `Light` and `Dark`, read with `{DynamicResource Paper}`. It must be `DynamicResource`: a `StaticResource` resolves once and freezes whichever theme was active when the control loaded. The rule in [Theme](#theme) holds unchanged — a hardcoded hex value is a bug in one of the two themes.
+- **Fluent underneath.** Avalonia needs a base theme for control templates (CheckBox, TextBox, ScrollViewer, ProgressBar), so `FluentTheme` stays loaded. Rather than restyle those templates, `Colors.axaml` re-points the Fluent resources they read (`CheckBoxCheckBackgroundFillChecked`, `TextControlBorderBrushFocused`, …) at the tokens, so a checked box is `Signal` and a focused field has a `Signal` edge, as on MAUI.
+- **Fonts.** MAUI registers each file under a role alias (`DisplayBold`); Avalonia gets the same aliases as `FontFamily` resources pointing at one file each through an `avares://` URI. One file per alias, not the folder, so `DisplayBold` can only mean the Bold cut — the same guarantee as the MAUI alias — instead of depending on `FontWeight` to pick a file. Each style still sets the matching `FontWeight`, so nothing asks a file for a weight it doesn't have and gets a synthesised bold.
+- **Visual states.** `VisualStateManager` becomes pseudo-class selectors: PointerOver is `:pointerover`, Pressed `:pressed`, Disabled `:disabled`, the rail's Selected `:selected`. Fluent draws a button's fill on its template's `ContentPresenter`, so the state setters target `/template/ ContentPresenter#PART_ContentPresenter`.
+- **No `TextTransform`.** Eyebrows and pill labels are written uppercase in the view, or go through `UppercaseConverter` where the text comes from a view model (junk category names, startup source and state). The view models' strings are shared with MAUI, so the case change stays in the view.
+- **`CollectionView` has no equivalent.** Lists are an `ItemsControl` inside a `ScrollViewer`. The grouped junk list is an `ItemsControl` over `Groups` whose template draws the group header and then an inner `ItemsControl` over the group itself (`JunkCategoryGroup` is the `ObservableCollection` of rows), so a row streamed into an existing category appears under its header mid-scan, as on MAUI. `EmptyView` becomes a panel shown while the collection's `Count` is 0 — the same condition, so after a scan that finds nothing it still shows, exactly as MAUI's does.
+- **The capacity readout's star columns are set in code-behind** (`DashboardView.axaml.cs`), not bound: an Avalonia `ColumnDefinition` is not a styled element and has no DataContext for `{Binding OccupiedShare}` to read. Same arithmetic as `ShareToStarLengthConverter`, clamped to 0..1.
+- **One dialog host.** MAUI puts a `DialogHost` in every page; here there is a single one in `MainWindow`, over the whole window, because the window is the only root. The scrim covers the rail too, which is the more honest picture of a modal question.
+- **"Folders to scan" is one control** (`ScanRootsView`), bound to the shared `ScanRootsViewModel` base, instead of the same block pasted into the Duplicates and Large Files pages.
+
+### Differences you can see
+
+- **The rail's icon and label tint with the selected row** (`Signal`, label in the bold cut), not just the row background. MAUI's `Selected` state can't reach a child; an Avalonia selector (`ListBoxItem:selected Path`) can, and the prototype has always shown it this way. The same reach lets a pill's label colour follow its pill's class, where MAUI repeats the trigger on the label.
+- **About sits at the foot of the rail**, apart from the five tools, as in the prototype. It isn't a tool, and separating it keeps the tool list a list of tools. (The MAUI flyout stacks all six.)
+- **Icons are drawn 1:1 on their 20×20 grid** (`Stretch="None"`), as the prototype's SVG `viewBox` draws them. MAUI's `Aspect="Uniform"` stretches each geometry's *own bounds* to the box, so an icon with small bounds (the dashboard bars, 12px across) grows by half while a tall one (the document) barely changes, and the rail's icons come out at visibly different sizes. The empty-state illustrations are the one place an icon is scaled up, and they still stretch.
+- **Dashboard tool cards are buttons**, not cards with a tap gesture, so they take keyboard focus and open with Enter or Space. They look the same; the hover state is the `RowCard` one (a `Signal` edge).
+- **Theme segments are plain buttons with the icon as content.** MAUI lays a transparent `Button` over the icon purely to make the segment keyboard-reachable; an Avalonia `Button` can hold the icon itself.
+- **A short indeterminate bar stands in for the 16px `ActivityIndicator`.** Avalonia has no spinner control. A 40px indeterminate `ProgressBar` says the same thing — working, no fraction known — in the meter's own visual language, and still never shows a percentage (see [Progress, honestly](#progress-honestly)).
+- **A zero-share capacity segment is collapsed, not `0*`.** When every column is `0*` — a drive that reports a zero total, or no reading yet — Avalonia's Grid still laid each column out a pixel wide, drawing three slivers on what should be an empty bar. A segment whose share is 0 now has zero width and is not drawn, so the zero case is the bare `Sunken` track. (Verified headlessly: `dashboard-zero-*.png`.)
+- **"Trash", not "Recycle Bin", in the Linux views' own copy** (button labels, captions, About). Linux desktops call it the Trash; the MAUI wording would be wrong on the only platform this front end serves. Copy that comes from the shared view models — the confirmation dialogs' titles and messages — still says "Recycle Bin" until those strings become platform-aware, which is a `PcCleaner.Presentation` change outside this port.
+- **The startup caption no longer names the registry** ("Read fresh from your autostart entries each time you reload"), for the same reason.
+- **The folder list is capped at 84px, not fixed at it** (`MaxHeight`). MAUI's `CollectionView` needs a height; an `ItemsControl` doesn't, so one or two roots no longer leave a blank well above Browse.
+- **Hero numbers wrap** rather than run off the edge, matching a MAUI `Label`'s default. Only About's version line is ever long enough to need it.
+- **The "free" legend swatch has a hairline edge.** It is `Sunken` on `Paper`, which in light mode is close to invisible without one.

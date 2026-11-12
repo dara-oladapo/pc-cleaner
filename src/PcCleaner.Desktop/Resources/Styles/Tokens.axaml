@@ -1,0 +1,74 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The Avalonia port of src/PcCleaner.App/Resources/Styles/Tokens.xaml, plus the font aliases that MAUI
+    registers in MauiProgram.ConfigureFonts. Theme-independent, so these are plain values and StaticResource
+    is fine at the use site.
+  -->
+
+  <!-- ===================== Fonts ===================== -->
+  <!--
+    Same three faces, same role-named aliases (BodyRegular, DisplayBold, ...) as the MAUI app, so a style reads
+    the same in both front ends. MAUI registers a file under an alias; Avalonia loads a font from an avares://
+    URI. Each alias points at its one file rather than at the folder, so "DisplayBold" can only ever mean the
+    Bold cut — the same guarantee the MAUI alias gives — instead of depending on FontWeight to pick a file.
+    The name after '#' is the family name Avalonia reads from that file (the legacy name-table entry, which is why the
+    heavier cuts are "IBM Plex Sans SmBld" and "Space Grotesk Medium" rather than the shared typographic family).
+    Styles still set the matching FontWeight, so nothing asks for a weight the file doesn't have and gets a faux bold.
+  -->
+  <FontFamily x:Key="BodyRegular">avares://PcCleaner.Desktop/Resources/Fonts/IBMPlexSans-Regular.ttf#IBM Plex Sans</FontFamily>
+  <FontFamily x:Key="BodySemibold">avares://PcCleaner.Desktop/Resources/Fonts/IBMPlexSans-SemiBold.ttf#IBM Plex Sans SmBld</FontFamily>
+  <FontFamily x:Key="DisplayMedium">avares://PcCleaner.Desktop/Resources/Fonts/SpaceGrotesk-Medium.ttf#Space Grotesk Medium</FontFamily>
+  <FontFamily x:Key="DisplayBold">avares://PcCleaner.Desktop/Resources/Fonts/SpaceGrotesk-Bold.ttf#Space Grotesk</FontFamily>
+  <FontFamily x:Key="MonoRegular">avares://PcCleaner.Desktop/Resources/Fonts/JetBrainsMono-Regular.ttf#JetBrains Mono</FontFamily>
+  <FontFamily x:Key="MonoMedium">avares://PcCleaner.Desktop/Resources/Fonts/JetBrainsMono-Medium.ttf#JetBrains Mono Medium</FontFamily>
+
+  <!-- ===================== Spacing scale ===================== -->
+  <!-- A 4px base. Stay on the scale; if a gap wants a value that isn't here, the layout is the problem. -->
+  <x:Double x:Key="Space1">4</x:Double>
+  <x:Double x:Key="Space2">8</x:Double>
+  <x:Double x:Key="Space3">12</x:Double>
+  <x:Double x:Key="Space4">16</x:Double>
+  <x:Double x:Key="Space5">24</x:Double>
+  <x:Double x:Key="Space6">32</x:Double>
+
+  <!-- ===================== Page rhythm ===================== -->
+  <Thickness x:Key="PagePadding">32,24</Thickness>
+  <Thickness x:Key="CardPadding">16</Thickness>
+  <Thickness x:Key="RowPadding">16,12</Thickness>
+  <Thickness x:Key="PillPadding">7,3</Thickness>
+
+  <!-- ===================== Type scale ===================== -->
+  <!-- Six steps, no more. Hero is the only oversized figure on a screen. -->
+  <x:Double x:Key="FontHero">38</x:Double>
+  <x:Double x:Key="FontTitle">22</x:Double>
+  <x:Double x:Key="FontStat">20</x:Double>
+  <x:Double x:Key="FontSubtitle">17</x:Double>
+  <x:Double x:Key="FontBody">14</x:Double>
+  <x:Double x:Key="FontRowTitle">13.5</x:Double>
+  <x:Double x:Key="FontControl">13</x:Double>
+  <x:Double x:Key="FontCaption">12</x:Double>
+  <x:Double x:Key="FontMono">11.5</x:Double>
+  <x:Double x:Key="FontEyebrow">11</x:Double>
+  <x:Double x:Key="FontPill">10</x:Double>
+
+  <!-- ===================== Component sizes ===================== -->
+  <x:Double x:Key="RailWidth">216</x:Double>
+  <!-- The grid every icon is drawn on, and the box it is drawn in at 1:1 (see Path.icon in Styles.axaml).
+       IconSize / IconSizeSmall are kept for parity with Tokens.xaml, where MAUI stretches icons to them. -->
+  <x:Double x:Key="IconGrid">20</x:Double>
+  <x:Double x:Key="IconSize">18</x:Double>
+  <x:Double x:Key="IconSizeSmall">15</x:Double>
+  <x:Double x:Key="CapacityBarHeight">46</x:Double>
+  <x:Double x:Key="MeterHeight">4</x:Double>
+  <!-- Load-bearing: the MeterTrack style and every meter fill's ConverterParameter both read this. -->
+  <x:Double x:Key="MeterWidth">132</x:Double>
+  <x:Double x:Key="CheckBoxSize">32</x:Double>
+
+  <!-- ===================== Tracking ===================== -->
+  <x:Double x:Key="TrackEyebrow">1.2</x:Double>
+  <x:Double x:Key="TrackControl">0.4</x:Double>
+  <x:Double x:Key="TrackPrimary">0.6</x:Double>
+
+</ResourceDictionary>
