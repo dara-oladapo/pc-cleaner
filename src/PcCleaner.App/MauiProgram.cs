@@ -21,7 +21,17 @@ public static class MauiProgram
         // Must run before anything else: intercepts install/update/uninstall lifecycle command-line
         // hooks from the Velopack-generated installer and exits immediately for those, before any UI
         // would otherwise start up. A no-op when launched normally (not via a Velopack-managed install).
-        VelopackApp.Build().Run();
+        // On Mac Catalyst the locator has to be supplied explicitly (see VelopackLocatorProvider); Windows is
+        // unchanged and uses Velopack's default.
+        if (VelopackLocatorProvider.IsSupported)
+        {
+            var velopack = VelopackApp.Build();
+            if (VelopackLocatorProvider.Locator is { } locator)
+            {
+                velopack.SetLocator(locator);
+            }
+            velopack.Run();
+        }
 
         var builder = MauiApp.CreateBuilder();
         builder
