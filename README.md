@@ -28,9 +28,11 @@ src/
     Services/             UpdateService (Velopack), DialogService (confirmations), ThemeService, ShellNavigationService
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
-  PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Scaffold: Junk Files is the one wired screen
+  PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Every screen, same view models
     Platforms/Linux/      Stubs that touch nothing until #10-#13 land: junk scanner, trash, startup items, folder picker, theme
     Services/             DialogService (in-app overlay), ShellNavigationService, UnsupportedUpdateService
+    Resources/Styles/     The design system ported to Avalonia: Colors (Light/Dark theme dictionaries), Tokens, Icons, Styles
+    Views/                One view per screen, plus DialogHostView and ScanRootsView
 tests/
   PcCleaner.Core.Tests/   xUnit tests for the cross-platform Core logic
 docs/
