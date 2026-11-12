@@ -60,7 +60,7 @@ dotnet build src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-maccatalyst
 
 Run the whole solution (each project restricted to its own supported frameworks) with `dotnet build PcCleaner.slnx`.
 
-Linux, through the Avalonia front end. Its junk scanner is still a stub that finds nothing (#10), so a Debug build can fill the list with synthetic results instead. They are invented: nothing on disk is read or deleted.
+Linux, through the Avalonia front end. The junk scanner is real: it sizes per-user caches (XDG `XDG_CACHE_HOME`, browser and package-manager caches), `log`/`*.log` entries in `XDG_STATE_HOME`, and the home Trash, and Clean deletes what you tick, as on Windows and macOS. It never follows a symlink out of a cache, never enters `/proc`, `/sys` or `/dev`, and skips any cache with another disk mounted inside it. System-wide caches such as `/var/cache/apt` need root and are left out until there is an elevation story (#3). The other Linux services are still stubs. A Debug build can instead fill the junk list with synthetic results under a path that doesn't exist, which is safe to press Clean on.
 
 ```bash
 dotnet build src/PcCleaner.Desktop/PcCleaner.Desktop.csproj

@@ -33,13 +33,13 @@ public static class AppServices
         services.AddSingleton<IDuplicateFileScanner, DuplicateFileScanner>();
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
-        // Not Core's JunkCleaner yet, although it is cross-platform. Until the Linux scanner (#10) exists, the
-        // only things the junk list can contain are the synthetic Debug results below, and nothing in this
-        // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
-        services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
+        // Core's real cleaner, now that the Linux scanner (#10) decides what the junk list holds. Junk is
+        // regenerable cache, so it is deleted outright, exactly as on Windows and macOS. Only junk: duplicates and
+        // large files still go through LinuxFileTrasher below, which stays a stub that moves nothing.
+        services.AddSingleton<IJunkCleaner, JunkCleaner>();
 
-        // Platform-specific. Linux is the only platform this front end serves today; every one of these is a
-        // stub that touches nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner is real
+        // (and read-only); every other one is a stub that touches nothing, and each has its own issue.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
         services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
