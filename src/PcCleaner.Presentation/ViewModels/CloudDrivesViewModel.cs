@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Core.Models;
@@ -20,16 +21,32 @@ namespace PcCleaner.Presentation.ViewModels;
 public sealed partial class CloudDrivesViewModel : ObservableObject
 {
     private readonly CloudSpaceService _service;
+    /// <summary>The <see cref="ISettingsStore"/> key for the "not used for at least N days" choice.</summary>
+    internal const string MinimumAgeDaysKey = "cloudDrives.minimumAgeDays";
+
     private readonly IDialogService _dialogs;
+    private readonly ISettingsStore? _settings;
     private CancellationTokenSource? _scanCts;
 
     /// <summary>The minimum age the current results were computed with. A release re-checks with the same value.</summary>
     private TimeSpan _scannedMinimumAge = CloudEligibilityRules.DefaultMinimumAge;
 
-    public CloudDrivesViewModel(CloudSpaceService service, IDialogService dialogs)
+    public CloudDrivesViewModel(CloudSpaceService service, IDialogService dialogs, ISettingsStore settings)
     {
         _service = service;
         _dialogs = dialogs;
+
+        // Only a value the picker offers is honoured. Anything else (an old or hand-edited value) falls back to
+        // the default rather than to a threshold the user never chose.
+        if (int.TryParse(settings.Get(MinimumAgeDaysKey), NumberStyles.None, CultureInfo.InvariantCulture, out int days)
+            && AgeOptions.Contains(days))
+        {
+            SelectedAgeDays = days;
+        }
+
+        // Assigned after loading, so loading the stored value does not write it straight back.
+        _settings = settings;
+        _scannedMinimumAge = TimeSpan.FromDays(SelectedAgeDays);
     }
 
     public ObservableCollection<CloudRootViewModel> Roots { get; } = [];
@@ -201,6 +218,8 @@ public sealed partial class CloudDrivesViewModel : ObservableObject
 
     partial void OnSelectedAgeDaysChanged(int value)
     {
+        _settings?.Set(MinimumAgeDaysKey, value.ToString(CultureInfo.InvariantCulture));
+
         if (HasScanned && TimeSpan.FromDays(value) != _scannedMinimumAge)
         {
             StatusText = "Scan again to apply the new age setting.";
