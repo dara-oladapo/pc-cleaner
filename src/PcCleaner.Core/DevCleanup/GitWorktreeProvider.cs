@@ -264,7 +264,7 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
 
         string reason = $"worktree clean, pushed, idle {idle} days";
         var unusual = facts.IgnoredEntries
-            .Where(e => !RegenerableIgnoredNames.Contains(LastSegment(e)))
+            .Where(e => !IsRegenerable(e))
             .ToList();
         if (unusual.Count == 0)
         {
@@ -441,8 +441,12 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
         }
     }
 
-    private static string LastSegment(string entry) =>
-        System.IO.Path.GetFileName(entry.TrimEnd('/', '\\'));
+    /// <summary>
+    /// An ignored path is regenerable when it sits in (or is) a build/dependency folder: git reports nested
+    /// matches such as <c>src/App/bin/Debug/</c>, so every segment is checked, not just the last.
+    /// </summary>
+    internal static bool IsRegenerable(string ignoredPath) =>
+        ignoredPath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries).Any(RegenerableIgnoredNames.Contains);
 
     private sealed record RemoveAction(string MainPath, GitWorktreeEntry Entry);
 

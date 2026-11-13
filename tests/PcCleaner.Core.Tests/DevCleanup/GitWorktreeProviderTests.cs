@@ -124,14 +124,30 @@ public class GitWorktreeProviderTests
         string repo = TestGit.CreatePushedRepo(dir, gitignore: ".env\nbin/\n");
         string wt = AddWorktree(repo, dir, "wt-env");
         File.WriteAllText(Path.Combine(wt, ".env"), "SECRET=1");
-        Directory.CreateDirectory(Path.Combine(wt, "bin"));
-        File.WriteAllText(Path.Combine(wt, "bin", "a.dll"), "x");
+        // Nested, as real projects are: git reports it as src/App/bin/Debug/, which is still build output.
+        Directory.CreateDirectory(Path.Combine(wt, "src", "App", "bin", "Debug"));
+        File.WriteAllText(Path.Combine(wt, "src", "App", "bin", "Debug", "a.dll"), "x");
 
         DevCleanupItem item = Assert.Single(await OfferedWorktrees(Provider(dir)));
 
         Assert.Equal(DevCleanupRisk.High, item.Risk);
         Assert.Contains(".env", item.Warning);
         Assert.DoesNotContain("bin", item.Warning);
+    }
+
+    [Fact]
+    public async Task IgnoredBuildOutputOnly_StaysLowRisk()
+    {
+        using var dir = new TestDirectory();
+        string repo = TestGit.CreatePushedRepo(dir, gitignore: "bin/\nobj/\n");
+        string wt = AddWorktree(repo, dir, "wt-built");
+        Directory.CreateDirectory(Path.Combine(wt, "src", "App", "bin", "Debug"));
+        File.WriteAllText(Path.Combine(wt, "src", "App", "bin", "Debug", "a.dll"), "x");
+
+        DevCleanupItem item = Assert.Single(await OfferedWorktrees(Provider(dir)));
+
+        Assert.Equal(DevCleanupRisk.Low, item.Risk);
+        Assert.Null(item.Warning);
     }
 
     [Fact]
