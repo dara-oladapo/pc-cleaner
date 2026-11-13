@@ -1,4 +1,3 @@
-using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.DevCleanup;
 using PcCleaner.Core.Scanning;
 
@@ -21,9 +20,11 @@ public class DeveloperModeGatingTests
             new GitWorktreeProvider(runner, new DevCleanupOptions { Roots = [] }),
             new BuildArtifactProvider(runner, new JunkCleaner(), new DevCleanupOptions { Roots = [] }),
         ];
-        var settings = new InMemoryAppSettings { DeveloperMode = developerMode };
-        return (new DevCleanupService(providers, settings), runner);
+        return (new DevCleanupService(providers, () => developerMode), runner);
     }
+
+    private static DevCleanupItem DockerItem() =>
+        new(DockerCleanupProvider.ProviderId, "Docker (host)", "Build cache", "r", 1, DevCleanupRisk.Low);
 
     [Fact]
     public async Task Off_MeasuresNothing_AndRunsNoCommand()
@@ -40,9 +41,8 @@ public class DeveloperModeGatingTests
     public async Task Off_RefusesToClean_AndRunsNoCommand()
     {
         var (service, runner) = Create(developerMode: false);
-        var item = new DevCleanupItem(DockerCleanupProvider.ProviderId, "Docker (host)", "Build cache", "r", 1, DevCleanupRisk.Low);
 
-        DevCleanupResult result = await service.CleanAsync([item]);
+        DevCleanupResult result = await service.CleanAsync([DockerItem()]);
 
         Assert.Empty(result.Succeeded);
         Assert.Contains("Developer mode is off", Assert.Single(result.Failed).Error);
@@ -64,12 +64,11 @@ public class DeveloperModeGatingTests
     public async Task TurningOffAfterAScan_BlocksTheClean()
     {
         var runner = new FakeProcessRunner(_ => FakeProcessRunner.Ok());
-        var settings = new InMemoryAppSettings { DeveloperMode = true };
-        var service = new DevCleanupService([new DockerCleanupProvider(runner, new RegistryWslDiskLocator(), checkWsl: false)], settings);
-        var item = new DevCleanupItem(DockerCleanupProvider.ProviderId, "Docker (host)", "Build cache", "r", 1, DevCleanupRisk.Low);
+        bool developerMode = true;
+        var service = new DevCleanupService([new DockerCleanupProvider(runner, new RegistryWslDiskLocator(), checkWsl: false)], () => developerMode);
 
-        settings.DeveloperMode = false;
-        await service.CleanAsync([item]);
+        developerMode = false;
+        await service.CleanAsync([DockerItem()]);
 
         Assert.Empty(runner.Calls);
     }
@@ -82,9 +81,7 @@ public class DeveloperModeGatingTests
     [InlineData(true, false, true, true, false)]
     public void Suggestion_ShownOnce_OnlyWhenOffAndToolsInstalled(bool on, bool shown, bool git, bool docker, bool expected)
     {
-        var settings = new InMemoryAppSettings { DeveloperMode = on, DeveloperModeSuggestionShown = shown };
-
-        bool suggest = DeveloperModeAdvisor.ShouldSuggest(settings, name => name switch
+        bool suggest = DeveloperModeAdvisor.ShouldSuggest(on, shown, name => name switch
         {
             "git" => git,
             "docker" => docker,
@@ -92,12 +89,5 @@ public class DeveloperModeGatingTests
         });
 
         Assert.Equal(expected, suggest);
-        Assert.Equal(on, settings.DeveloperMode);
-    }
-
-    [Fact]
-    public void DeveloperMode_DefaultsToOff()
-    {
-        Assert.False(new InMemoryAppSettings().DeveloperMode);
     }
 }

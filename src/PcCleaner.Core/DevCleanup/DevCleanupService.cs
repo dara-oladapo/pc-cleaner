@@ -1,24 +1,23 @@
-using PcCleaner.Core.Abstractions;
-
 namespace PcCleaner.Core.DevCleanup;
 
 /// <summary>
-/// The single entry point to developer cleanup, and the place developer mode is enforced: while
-/// <see cref="IAppSettings.DeveloperMode"/> is off it runs no provider at all, so no Docker, WSL or git
-/// command can start, whatever the UI does.
+/// The single entry point to developer cleanup, and the place developer mode is enforced: while the developer
+/// mode setting is off it runs no provider at all, so no Docker, WSL or git command can start, whatever the UI
+/// does. The setting is read on every call, so turning it off takes effect immediately.
 /// </summary>
 public sealed class DevCleanupService
 {
     private readonly IReadOnlyList<IDevCleanupProvider> _providers;
-    private readonly IAppSettings _settings;
+    private readonly Func<bool> _isDeveloperModeOn;
 
-    public DevCleanupService(IEnumerable<IDevCleanupProvider> providers, IAppSettings settings)
+    /// <param name="isDeveloperModeOn">Reads the persisted developer mode setting (default off).</param>
+    public DevCleanupService(IEnumerable<IDevCleanupProvider> providers, Func<bool> isDeveloperModeOn)
     {
         _providers = providers.ToList();
-        _settings = settings;
+        _isDeveloperModeOn = isDeveloperModeOn;
     }
 
-    public bool IsEnabled => _settings.DeveloperMode;
+    public bool IsEnabled => _isDeveloperModeOn();
 
     /// <summary>Detects and measures every provider. Empty while developer mode is off.</summary>
     public async Task<IReadOnlyList<DevCleanupReport>> MeasureAsync(
@@ -92,10 +91,10 @@ public static class DeveloperModeAdvisor
 {
     /// <summary>
     /// True once, on a machine with git or docker installed, while developer mode is off and the suggestion has
-    /// not been shown. The caller shows it and sets <see cref="IAppSettings.DeveloperModeSuggestionShown"/>.
+    /// not been shown. The caller shows it and records that it was shown, whatever the answer.
     /// </summary>
-    public static bool ShouldSuggest(IAppSettings settings, Func<string, bool> isInstalled) =>
-        !settings.DeveloperMode
-        && !settings.DeveloperModeSuggestionShown
+    public static bool ShouldSuggest(bool developerMode, bool suggestionShown, Func<string, bool> isInstalled) =>
+        !developerMode
+        && !suggestionShown
         && (isInstalled("git") || isInstalled("docker"));
 }
