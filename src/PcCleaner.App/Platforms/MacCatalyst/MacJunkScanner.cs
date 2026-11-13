@@ -1,10 +1,11 @@
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.App.Platforms.MacCatalyst;
 
-public sealed class MacJunkScanner : IJunkScanner
+public sealed class MacJunkScanner(DeveloperModeSettings developerMode) : IJunkScanner
 {
     // Overlap handling (browser, Homebrew and pip caches all live inside ~/Library/Caches), symlink refusal and
     // the per-file manifest all live in Core's JunkSourceScanner; this class only says where junk lives on macOS.
@@ -18,7 +19,9 @@ public sealed class MacJunkScanner : IJunkScanner
             DateTime.UtcNow,
             JunkSafetyRules.DefaultMinimumAge,
             filesScanned,
-            cancellationToken);
+            cancellationToken,
+            // Off: developer caches are not offered, but stay excluded from any parent root (see JunkRootPlanner).
+            includeDeveloperSources: developerMode.IsEnabled);
 
     private static List<JunkSource> GetJunkSources()
     {
