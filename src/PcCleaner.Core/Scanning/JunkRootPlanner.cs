@@ -9,7 +9,8 @@ namespace PcCleaner.Core.Scanning;
 /// <c>%LOCALAPPDATA%\Temp</c>), and one folder nested in another (<c>Temp\NuGetScratch</c> inside <c>Temp</c>;
 /// Safari, Homebrew and pip caches inside <c>~/Library/Caches</c>). Exact duplicates keep the first entry. For
 /// nesting, the child keeps its own, more specific label and the parent's walk skips the child's folder.
-/// A child nested in a temp root inherits the temp rules, so nesting never loosens safety.
+/// A child nested in a temp root inherits the temp rules, so nesting never loosens safety. In the same spirit a
+/// root is pre-selected only if every source that names it, or contains it, is.
 /// </para>
 /// </summary>
 public static class JunkRootPlanner
@@ -47,7 +48,8 @@ public static class JunkRootPlanner
 
     public static IReadOnlyList<PlannedJunkRoot> Plan(IEnumerable<JunkSource> sources, StringComparison comparison)
     {
-        // Exact duplicates: first entry wins, but if either copy is a temp root the survivor is too.
+        // Exact duplicates: first entry wins, but if either copy is a temp root the survivor is too, and if either
+        // copy is opt-in the survivor is too.
         var unique = new List<JunkSource>();
         foreach (JunkSource source in sources)
         {
@@ -57,9 +59,13 @@ public static class JunkRootPlanner
             {
                 unique.Add(normalized);
             }
-            else if (normalized.IsTemp && !unique[existing].IsTemp)
+            else
             {
-                unique[existing] = unique[existing] with { IsTemp = true };
+                unique[existing] = unique[existing] with
+                {
+                    IsTemp = unique[existing].IsTemp || normalized.IsTemp,
+                    SelectedByDefault = unique[existing].SelectedByDefault && normalized.SelectedByDefault,
+                };
             }
         }
 
@@ -69,12 +75,15 @@ public static class JunkRootPlanner
             bool isTemp = source.IsTemp
                 || unique.Any(parent => parent.IsTemp && IsStrictlyUnder(source.Path, parent.Path, comparison));
 
+            bool selectedByDefault = source.SelectedByDefault
+                && unique.All(parent => parent.SelectedByDefault || !IsStrictlyUnder(source.Path, parent.Path, comparison));
+
             var excluded = unique
                 .Where(child => IsStrictlyUnder(child.Path, source.Path, comparison))
                 .Select(child => child.Path)
                 .ToList();
 
-            planned.Add(new PlannedJunkRoot(source.Path, source.Category, source.Description, isTemp, excluded));
+            planned.Add(new PlannedJunkRoot(source.Path, source.Category, source.Description, isTemp, excluded, selectedByDefault));
         }
 
         return planned;

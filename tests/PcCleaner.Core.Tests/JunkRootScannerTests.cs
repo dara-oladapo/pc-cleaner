@@ -198,4 +198,29 @@ public class JunkRootScannerTests
         Assert.Equal(10, items.Single(i => i.Category == JunkCategory.SystemCache).SizeBytes);
         Assert.Equal(1000, items.Single(i => i.Description.StartsWith("pip Cache")).SizeBytes);
     }
+
+    [Fact]
+    public async Task JunkSourceScanner_ItemsCarrySelectedByDefault()
+    {
+        using var dir = new TestDirectory();
+        dir.WriteFileOfSize("Caches/loose.bin", 10);
+        dir.WriteFileOfSize("Caches/ms-playwright/chromium/chrome.exe", 100);
+
+        JunkSource[] sources =
+        [
+            new(Path.Combine(dir.Path, "Caches"), JunkCategory.SystemCache, "User Caches"),
+            new(Path.Combine(dir.Path, "Caches", "ms-playwright"), JunkCategory.DeveloperCache, "Playwright", SelectedByDefault: false),
+        ];
+
+        var items = new List<JunkItem>();
+        await foreach (JunkItem item in JunkSourceScanner.ScanAsync(sources, Cmp, FutureNow, MinAge))
+        {
+            items.Add(item);
+        }
+
+        Assert.True(items.Single(i => i.Category == JunkCategory.SystemCache).SelectedByDefault);
+        JunkItem playwright = items.Single(i => i.Category == JunkCategory.DeveloperCache);
+        Assert.False(playwright.SelectedByDefault);
+        Assert.Equal(100, playwright.SizeBytes);
+    }
 }
