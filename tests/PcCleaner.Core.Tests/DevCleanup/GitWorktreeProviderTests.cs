@@ -238,9 +238,9 @@ public class GitWorktreeProviderTests
     public void ParsePorcelain_ReadsMainLockedPrunableAndDetached()
     {
         string output = string.Join('\n',
-            "worktree C:/Dev/repo", "HEAD aaa", "branch refs/heads/main", "",
-            "worktree C:/Dev/repo/.claude/worktrees/a", "HEAD bbb", "detached", "locked agent running", "",
-            "worktree C:/Dev/gone", "HEAD ccc", "branch refs/heads/feat/x", "prunable gitdir file points to non-existent location", "");
+            "worktree C:/code/repo", "HEAD aaa", "branch refs/heads/main", "",
+            "worktree C:/code/repo-feature-a", "HEAD bbb", "detached", "locked agent running", "",
+            "worktree C:/code/gone", "HEAD ccc", "branch refs/heads/feat/x", "prunable gitdir file points to non-existent location", "");
 
         var entries = GitWorktreeProvider.ParsePorcelain(output);
 

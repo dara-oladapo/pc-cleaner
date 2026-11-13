@@ -37,28 +37,36 @@ public sealed class BuildArtifactProvider : IDevCleanupProvider
 
     private readonly IProcessRunner _runner;
     private readonly IJunkCleaner _cleaner;
-    private readonly DevCleanupOptions _options;
+    private readonly Func<DevCleanupOptions> _optionsSource;
     private readonly TimeProvider _time;
 
     public BuildArtifactProvider(IProcessRunner runner, IJunkCleaner cleaner, DevCleanupOptions options)
-        : this(runner, cleaner, options, TimeProvider.System)
+        : this(runner, cleaner, () => options, TimeProvider.System)
     {
     }
 
     public BuildArtifactProvider(IProcessRunner runner, IJunkCleaner cleaner, DevCleanupOptions options, TimeProvider time)
+        : this(runner, cleaner, () => options, time)
+    {
+    }
+
+    /// <param name="optionsSource">Read at the start of each call, so roots edited in Settings apply to the next scan.</param>
+    public BuildArtifactProvider(IProcessRunner runner, IJunkCleaner cleaner, Func<DevCleanupOptions> optionsSource, TimeProvider time)
     {
         _runner = runner;
         _cleaner = cleaner;
-        _options = options;
+        _optionsSource = optionsSource;
         _time = time;
     }
+
+    private DevCleanupOptions Options => _optionsSource();
 
     public string Id => ProviderId;
 
     public string DisplayName => "Build artifacts";
 
     public Task<bool> DetectAsync(CancellationToken cancellationToken = default) =>
-        Task.Run(() => ToolLocator.IsInstalled("git") && _options.Roots.Any(Directory.Exists), cancellationToken);
+        Task.Run(() => ToolLocator.IsInstalled("git") && Options.Roots.Any(Directory.Exists), cancellationToken);
 
     public async Task<DevCleanupReport> MeasureAsync(CancellationToken cancellationToken = default)
     {
@@ -101,7 +109,7 @@ public sealed class BuildArtifactProvider : IDevCleanupProvider
 
         var notes = new List<string>
         {
-            $"Looked at {candidates.Count} build/dependency folder(s) under {string.Join(", ", _options.Roots)}."
+            $"Looked at {candidates.Count} build/dependency folder(s) under {string.Join(", ", Options.Roots)}."
                 + (keptReasons.Count == 0 ? string.Empty : " Kept: " + string.Join(", ", keptReasons.OrderByDescending(k => k.Value).Select(k => $"{k.Value} {k.Key}")) + "."),
             "Deleted folders are emptied, not removed, and are rebuilt by the next build or install.",
         };
@@ -172,7 +180,7 @@ public sealed class BuildArtifactProvider : IDevCleanupProvider
     private List<(string Project, string Ecosystem, string Folder)> FindCandidates(CancellationToken cancellationToken)
     {
         var found = new List<(string, string, string)>();
-        foreach (string dir in DevTreeWalker.EnumerateDirectories(_options.Roots, _options.MaxDepth, cancellationToken))
+        foreach (string dir in DevTreeWalker.EnumerateDirectories(Options.Roots, Options.MaxDepth, cancellationToken))
         {
             string[] fileNames;
             try
@@ -219,7 +227,7 @@ public sealed class BuildArtifactProvider : IDevCleanupProvider
         }
 
         DateTime now = _time.GetUtcNow().UtcDateTime;
-        DateTime threshold = now - TimeSpan.FromDays(_options.ArtifactIdleDays);
+        DateTime threshold = now - TimeSpan.FromDays(Options.ArtifactIdleDays);
         if (!idleCache.TryGetValue(project, out DateTime? newest))
         {
             newest = await Task.Run(
