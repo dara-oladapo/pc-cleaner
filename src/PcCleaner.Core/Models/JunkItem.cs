@@ -27,6 +27,12 @@ public sealed record JunkItem(
     /// not scanned (for example a temp folder that is itself a link to somewhere else).
     /// </summary>
     public string? Notice { get; init; }
+
+    /// <summary>
+    /// Whether the item starts ticked in the results. False for large, slow-to-rebuild caches the user should
+    /// opt into rather than lose by accepting the defaults.
+    /// </summary>
+    public bool SelectedByDefault { get; init; } = true;
 }
 
 /// <summary>A file as the scan saw it. The cleaner deletes it only if all three facts still match.</summary>

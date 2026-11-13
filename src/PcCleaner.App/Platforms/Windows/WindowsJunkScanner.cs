@@ -3,10 +3,11 @@ using System.Text;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.App.Platforms.Windows;
 
-public sealed class WindowsJunkScanner : IJunkScanner
+public sealed class WindowsJunkScanner(DeveloperModeSettings developerMode) : IJunkScanner
 {
     // Overlap handling (the same Temp folder reached two ways, NuGetScratch nested inside Temp), the age filter,
     // a temp folder that is itself a link (reported as a notice, not scanned),
@@ -21,13 +22,16 @@ public sealed class WindowsJunkScanner : IJunkScanner
             DateTime.UtcNow,
             JunkSafetyRules.DefaultMinimumAge,
             filesScanned,
-            cancellationToken);
+            cancellationToken,
+            // Off: developer caches are not offered, but stay excluded from any parent root (see JunkRootPlanner).
+            includeDeveloperSources: developerMode.IsEnabled);
 
     private static List<JunkSource> GetJunkSources()
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
         // Windows\Prefetch is deliberately absent: Windows manages it, and clearing it only makes the next
         // launch of every app slower while the cache is rebuilt.
@@ -44,12 +48,14 @@ public sealed class WindowsJunkScanner : IJunkScanner
             new(Path.Combine(windowsDir, "SoftwareDistribution", "Download"), JunkCategory.SystemCache, "Windows Update Cache"),
             new(Path.Combine(localAppData, "Microsoft", "Windows", "WER"), JunkCategory.SystemLogs, "Windows Error Reporting"),
             new(Path.Combine(localAppData, "CrashDumps"), JunkCategory.SystemLogs, "Application Crash Dumps"),
+            new(Path.Combine(localAppData, "D3DSCache"), JunkCategory.SystemCache, "DirectX Shader Cache"),
 
             new(Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Chrome Cache"),
             new(Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Chrome Code Cache"),
             new(Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Edge Cache"),
             new(Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Code Cache"), JunkCategory.BrowserCache, "Edge Code Cache"),
             new(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Cache"), JunkCategory.BrowserCache, "Brave Cache"),
+            new(Path.Combine(localAppData, "Microsoft", "Windows", "INetCache"), JunkCategory.BrowserCache, "Internet Cache"),
 
             new(Path.Combine(localAppData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
             new(Path.Combine(appData, "npm-cache"), JunkCategory.PackageManagerCache, "npm Cache"),
@@ -60,6 +66,25 @@ public sealed class WindowsJunkScanner : IJunkScanner
             // inherits Temp's age rules.
             new(Path.Combine(localAppData, "Temp", "NuGetScratch"), JunkCategory.PackageManagerCache, "NuGet Scratch Cache", IsTemp: true),
         };
+
+        // Electron apps keep a Chromium profile; only its three cache folders are listed, never the profile
+        // itself (which holds sign-ins and local data).
+        AddChromiumCaches(sources, Path.Combine(appData, "Slack"), "Slack");
+        AddChromiumCaches(sources, Path.Combine(appData, "discord"), "Discord");
+        AddChromiumCaches(sources, Path.Combine(appData, "Microsoft", "Teams"), "Teams (classic)");
+
+        // New Teams is a packaged app whose WebView2 profiles are named WV2Profile_tfw (work) / _tfl (personal).
+        string newTeams = Path.Combine(
+            localAppData, "Packages", "MSTeams_8wekyb3d8bbwe", "LocalCache", "Microsoft", "MSTeams", "EBWebView");
+        if (Directory.Exists(newTeams))
+        {
+            foreach (string profileDir in Directory.EnumerateDirectories(newTeams, "WV2Profile_*"))
+            {
+                AddChromiumCaches(sources, profileDir, $"Teams ({Path.GetFileName(profileDir)})");
+            }
+        }
+
+        sources.AddRange(DeveloperCacheSources.ForWindows(localAppData, appData, userProfile));
 
         string firefoxProfiles = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (Directory.Exists(firefoxProfiles))
@@ -74,6 +99,13 @@ public sealed class WindowsJunkScanner : IJunkScanner
         }
 
         return sources;
+    }
+
+    private static void AddChromiumCaches(List<JunkSource> sources, string profileDir, string app)
+    {
+        sources.Add(new(Path.Combine(profileDir, "Cache"), JunkCategory.SystemCache, $"{app} Cache"));
+        sources.Add(new(Path.Combine(profileDir, "Code Cache"), JunkCategory.SystemCache, $"{app} Code Cache"));
+        sources.Add(new(Path.Combine(profileDir, "GPUCache"), JunkCategory.SystemCache, $"{app} GPU Cache"));
     }
 
     private static string ToLongPath(string path)

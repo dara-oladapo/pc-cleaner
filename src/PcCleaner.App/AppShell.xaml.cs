@@ -1,18 +1,18 @@
-using PcCleaner.Core.Abstractions;
+using PcCleaner.Presentation.Services;
 using PcCleaner.Presentation.ViewModels;
 
 namespace PcCleaner.App;
 
 public partial class AppShell : Shell
 {
-	private readonly IAppSettings _settings;
+	private readonly DeveloperModeSettings _developerMode;
 	private readonly SettingsViewModel _settingsViewModel;
 	private bool _suggestionChecked;
 
-	public AppShell(ThemeViewModel themeViewModel, IAppSettings settings, SettingsViewModel settingsViewModel)
+	public AppShell(ThemeViewModel themeViewModel, DeveloperModeSettings developerMode, SettingsViewModel settingsViewModel)
 	{
 		InitializeComponent();
-		_settings = settings;
+		_developerMode = developerMode;
 		_settingsViewModel = settingsViewModel;
 
 		// Scoped to the footer rather than set on the Shell: the flyout item template binds against each
@@ -20,8 +20,9 @@ public partial class AppShell : Shell
 		FlyoutFooterRoot.BindingContext = themeViewModel;
 
 		// The Developer page exists only while developer mode is on.
-		DeveloperItem.IsVisible = settings.DeveloperMode;
-		settings.Changed += (_, _) => MainThread.BeginInvokeOnMainThread(() => DeveloperItem.IsVisible = _settings.DeveloperMode);
+		DeveloperItem.IsVisible = developerMode.IsEnabled;
+		developerMode.Changed += (_, _) =>
+			MainThread.BeginInvokeOnMainThread(() => DeveloperItem.IsVisible = _developerMode.IsEnabled);
 	}
 
 	protected override async void OnAppearing()

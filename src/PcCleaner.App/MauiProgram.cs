@@ -70,6 +70,14 @@ public static class MauiProgram
         services.AddSingleton<IJunkCleaner, JunkCleaner>();
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
+        // Volumes for the "Volumes to scan" setting. DriveInfo does the enumeration everywhere; the
+        // platform probe (registered below) adds what DriveInfo can't see: virtual, read-only, hidden.
+        // Factories because both classes also have test constructors.
+        services.AddSingleton<IVolumeSource>(sp => new DriveInfoVolumeSource(sp.GetService<IVolumeTraitsProbe>()));
+        services.AddSingleton<IVolumeCatalog>(sp => new VolumeCatalog(sp.GetRequiredService<IVolumeSource>()));
+        services.AddSingleton<ISettingsStore, PreferencesSettingsStore>();
+        services.AddSingleton<ScanVolumeSettings>();
+
         // Platform-specific: where junk lives, how autostart works, how the trash/recycle bin works,
         // and how the OS asks the user to pick a folder.
 #if WINDOWS
@@ -77,11 +85,13 @@ public static class MauiProgram
         services.AddSingleton<IStartupItemManager, WindowsStartupManager>();
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
         services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, WindowsVolumeTraitsProbe>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
         services.AddSingleton<IFolderPickerService, MacFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, MacVolumeTraitsProbe>();
 #endif
 
         services.AddSingleton<IDialogService, DialogService>();
@@ -89,19 +99,23 @@ public static class MauiProgram
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<INavigationService, ShellNavigationService>();
 
-        // Developer cleanup. Every provider runs only through DevCleanupService, which does nothing while
-        // developer mode (IAppSettings, default off) is off. The junk scan can read the same setting.
-        services.AddSingleton<IAppSettings, PreferencesAppSettings>();
+        // Developer mode (default off) gates the Developer page, every docker/wsl/git command (enforced in
+        // DevCleanupService, which reads the setting on every call), and developer caches in the junk scan.
+        services.AddSingleton<DeveloperModeSettings>();
         services.AddSingleton<IProcessRunner, SystemProcessRunner>();
         services.AddSingleton<IWslDiskLocator, RegistryWslDiskLocator>();
         services.AddSingleton(new DevCleanupOptions());
-        services.AddSingleton<IDevCleanupProvider, DockerCleanupProvider>(sp =>
+        services.AddSingleton<IDevCleanupProvider>(sp =>
             new DockerCleanupProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IWslDiskLocator>()));
-        services.AddSingleton<IDevCleanupProvider, GitWorktreeProvider>(sp =>
+        services.AddSingleton<IDevCleanupProvider>(sp =>
             new GitWorktreeProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevCleanupOptions>()));
-        services.AddSingleton<IDevCleanupProvider, BuildArtifactProvider>(sp =>
+        services.AddSingleton<IDevCleanupProvider>(sp =>
             new BuildArtifactProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IJunkCleaner>(), sp.GetRequiredService<DevCleanupOptions>()));
-        services.AddSingleton<DevCleanupService>();
+        services.AddSingleton(sp =>
+        {
+            var developerMode = sp.GetRequiredService<DeveloperModeSettings>();
+            return new DevCleanupService(sp.GetServices<IDevCleanupProvider>(), () => developerMode.IsEnabled);
+        });
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
@@ -115,8 +129,6 @@ public static class MauiProgram
         services.AddSingleton<LargeFilesViewModel>();
         services.AddSingleton<StartupManagerViewModel>();
         services.AddSingleton<DashboardViewModel>();
-        services.AddSingleton<DeveloperCleanupViewModel>();
-        services.AddSingleton<SettingsViewModel>();
 
         // The shell and its theme switcher live for the life of the app, so the selected segment stays
         // correct without having to be re-read every time a page changes.
@@ -132,7 +144,13 @@ public static class MauiProgram
         services.AddTransient<DuplicateFinderPage>();
         services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
+
+        services.AddSingleton<DeveloperCleanupViewModel>();
         services.AddTransient<DeveloperCleanupPage>();
+
+        // Singleton so the volume list isn't rebuilt from scratch on every visit; the page refreshes it
+        // on appearing anyway.
+        services.AddSingleton<SettingsViewModel>();
         services.AddTransient<SettingsPage>();
 
         services.AddTransient<AboutViewModel>();

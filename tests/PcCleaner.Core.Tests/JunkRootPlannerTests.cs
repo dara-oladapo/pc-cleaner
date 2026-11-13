@@ -95,4 +95,49 @@ public class JunkRootPlannerTests
         Assert.False(caches.IsTemp);
         Assert.Empty(plan.Single(r => r.Description == "Sibling").ExcludedPaths);
     }
+
+    [Fact]
+    public void Plan_SelectedByDefault_DefaultsToTrueAndCarriesThrough()
+    {
+        var plan = JunkRootPlanner.Plan(
+            [
+                new JunkSource(P("Cheap"), JunkCategory.DeveloperCache, "Cheap"),
+                new JunkSource(P("Store"), JunkCategory.DeveloperCache, "Store", SelectedByDefault: false),
+            ],
+            StringComparison.Ordinal);
+
+        Assert.True(plan.Single(r => r.Description == "Cheap").SelectedByDefault);
+        Assert.False(plan.Single(r => r.Description == "Store").SelectedByDefault);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void Plan_ExactDuplicate_EitherCopyOptIn_SurvivorIsOptIn(bool first, bool second)
+    {
+        var plan = JunkRootPlanner.Plan(
+            [
+                new JunkSource(P("Store"), JunkCategory.DeveloperCache, "A", SelectedByDefault: first),
+                new JunkSource(P("Store"), JunkCategory.DeveloperCache, "B", SelectedByDefault: second),
+            ],
+            StringComparison.Ordinal);
+
+        Assert.False(Assert.Single(plan).SelectedByDefault);
+    }
+
+    [Fact]
+    public void Plan_NestedRoot_OptInIsInheritedByChildButNotByParent()
+    {
+        var plan = JunkRootPlanner.Plan(
+            [
+                new JunkSource(P("Caches"), JunkCategory.SystemCache, "User Caches"),
+                new JunkSource(P("Caches", "ms-playwright"), JunkCategory.DeveloperCache, "Playwright", SelectedByDefault: false),
+                new JunkSource(P("Caches", "ms-playwright", "chromium"), JunkCategory.DeveloperCache, "Chromium"),
+            ],
+            StringComparison.Ordinal);
+
+        Assert.True(plan.Single(r => r.Description == "User Caches").SelectedByDefault);
+        Assert.False(plan.Single(r => r.Description == "Playwright").SelectedByDefault);
+        Assert.False(plan.Single(r => r.Description == "Chromium").SelectedByDefault);
+    }
 }

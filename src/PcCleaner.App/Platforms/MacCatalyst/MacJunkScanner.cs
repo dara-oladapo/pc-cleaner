@@ -1,10 +1,11 @@
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.App.Platforms.MacCatalyst;
 
-public sealed class MacJunkScanner : IJunkScanner
+public sealed class MacJunkScanner(DeveloperModeSettings developerMode) : IJunkScanner
 {
     // Overlap handling (browser, Homebrew and pip caches all live inside ~/Library/Caches), symlink refusal and
     // the per-file manifest all live in Core's JunkSourceScanner; this class only says where junk lives on macOS.
@@ -18,7 +19,9 @@ public sealed class MacJunkScanner : IJunkScanner
             DateTime.UtcNow,
             JunkSafetyRules.DefaultMinimumAge,
             filesScanned,
-            cancellationToken);
+            cancellationToken,
+            // Off: developer caches are not offered, but stay excluded from any parent root (see JunkRootPlanner).
+            includeDeveloperSources: developerMode.IsEnabled);
 
     private static List<JunkSource> GetJunkSources()
     {
@@ -26,7 +29,8 @@ public sealed class MacJunkScanner : IJunkScanner
         string library = Path.Combine(home, "Library");
 
         // The specific caches nested in ~/Library/Caches are listed for their labels; "User Caches" then counts
-        // only what none of them covers, so nothing is offered twice.
+        // only what none of them covers, so nothing is offered twice. Developer caches nested in ~/Library/Caches (go-build, CocoaPods, JetBrains, Playwright) are split out the
+        // same way, which is also what lets the large ones stay unticked.
         return
         [
             new(Path.Combine(library, "Caches"), JunkCategory.SystemCache, "User Caches"),
@@ -47,6 +51,9 @@ public sealed class MacJunkScanner : IJunkScanner
             new(Path.Combine(home, ".npm", "_cacache"), JunkCategory.PackageManagerCache, "npm Cache"),
             new(Path.Combine(library, "Caches", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
             new(Path.Combine(home, ".cache", "pip"), JunkCategory.PackageManagerCache, "pip Cache"),
+            new(Path.Combine(home, ".local", "share", "NuGet", "http-cache"), JunkCategory.PackageManagerCache, "NuGet HTTP Cache"),
+
+            .. DeveloperCacheSources.ForMac(home),
         ];
     }
 }
