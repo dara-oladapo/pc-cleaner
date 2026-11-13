@@ -85,6 +85,36 @@
                     </Grid>
                 </Border>
 
+                <!-- Where the Developer page looks for git worktrees and build output. Only relevant while it is on. -->
+                <VerticalStackLayout Spacing="{StaticResource Space2}" IsVisible="{Binding DeveloperMode}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Style="{StaticResource Eyebrow}" Text="Code folders" />
+                            <Label Style="{StaticResource Caption}" Text="{Binding DevRootsStatusText}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="Use defaults" Style="{StaticResource InlineButton}"
+                                Command="{Binding ResetDevRootsCommand}" VerticalOptions="Center" />
+                    </Grid>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding DevRoots}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,5">
+                                    <Label Grid.Column="0" Style="{StaticResource Mono}" Text="{Binding .}"
+                                           LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
+                                    <Button Grid.Column="1" Text="Remove" Style="{StaticResource InlineButton}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=RemoveDevRootCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}">
+                        <Button Grid.Column="0" Text="Browse…" Command="{Binding BrowseDevRootCommand}" />
+                        <Entry Grid.Column="1" Placeholder="…or type a folder path" Text="{Binding NewDevRootPath}" />
+                        <Button Grid.Column="2" Text="Add" Command="{Binding AddDevRootCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+
             </VerticalStackLayout>
         </ScrollView>
 

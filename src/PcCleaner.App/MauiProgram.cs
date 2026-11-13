@@ -104,13 +104,19 @@ public static class MauiProgram
         services.AddSingleton<DeveloperModeSettings>();
         services.AddSingleton<IProcessRunner, SystemProcessRunner>();
         services.AddSingleton<IWslDiskLocator, RegistryWslDiskLocator>();
-        services.AddSingleton(new DevCleanupOptions());
+        // Code folders are user-editable in Settings; the providers re-read them at the start of every scan.
+        services.AddSingleton<DevRootsSettings>();
         services.AddSingleton<IDevCleanupProvider>(sp =>
             new DockerCleanupProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IWslDiskLocator>()));
         services.AddSingleton<IDevCleanupProvider>(sp =>
-            new GitWorktreeProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevCleanupOptions>()));
+            new GitWorktreeProvider(
+                sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevRootsSettings>().CurrentOptions, TimeProvider.System));
         services.AddSingleton<IDevCleanupProvider>(sp =>
-            new BuildArtifactProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IJunkCleaner>(), sp.GetRequiredService<DevCleanupOptions>()));
+            new BuildArtifactProvider(
+                sp.GetRequiredService<IProcessRunner>(),
+                sp.GetRequiredService<IJunkCleaner>(),
+                sp.GetRequiredService<DevRootsSettings>().CurrentOptions,
+                TimeProvider.System));
         services.AddSingleton(sp =>
         {
             var developerMode = sp.GetRequiredService<DeveloperModeSettings>();

@@ -12,19 +12,102 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ScanVolumeSettings _volumeSettings;
     private readonly DeveloperModeSettings _developerMode;
     private readonly IDialogService _dialogs;
+    private readonly DevRootsSettings _devRoots;
+    private readonly IFolderPickerService _folderPicker;
 
     public ObservableCollection<VolumeChoiceViewModel> Volumes { get; } = [];
+
+    /// <summary>Folders the Developer page searches for repositories and projects. Shown while developer mode is on.</summary>
+    public ObservableCollection<string> DevRoots { get; } = [];
 
     [ObservableProperty]
     public partial string VolumesStatusText { get; set; } = string.Empty;
 
-    public SettingsViewModel(ScanVolumeSettings volumeSettings, DeveloperModeSettings developerMode, IDialogService dialogs)
+    [ObservableProperty]
+    public partial string NewDevRootPath { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string DevRootsStatusText { get; set; } = string.Empty;
+
+    public SettingsViewModel(
+        ScanVolumeSettings volumeSettings,
+        DeveloperModeSettings developerMode,
+        IDialogService dialogs,
+        DevRootsSettings devRoots,
+        IFolderPickerService folderPicker)
     {
         _volumeSettings = volumeSettings;
         _developerMode = developerMode;
         _dialogs = dialogs;
+        _devRoots = devRoots;
+        _folderPicker = folderPicker;
         _developerMode.Changed += (_, _) => OnPropertyChanged(nameof(DeveloperMode));
         RefreshVolumes();
+        LoadDevRoots();
+    }
+
+    private void LoadDevRoots()
+    {
+        DevRoots.Clear();
+        foreach (string root in _devRoots.GetRoots())
+        {
+            DevRoots.Add(root);
+        }
+
+        DevRootsStatusText = DevRoots.Count == 0
+            ? "No folders. Add the folders where you keep your code."
+            : $"{DevRoots.Count} folder(s). Searched up to 6 levels deep for git repositories and projects.";
+    }
+
+    [RelayCommand]
+    private async Task BrowseDevRootAsync()
+    {
+        string? picked = await _folderPicker.PickFolderAsync();
+        if (!string.IsNullOrWhiteSpace(picked))
+        {
+            AddDevRootPath(picked);
+        }
+    }
+
+    [RelayCommand]
+    private void AddDevRoot()
+    {
+        if (AddDevRootPath(NewDevRootPath.Trim()))
+        {
+            NewDevRootPath = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveDevRoot(string path)
+    {
+        _devRoots.SetRoots(DevRoots.Where(r => r != path));
+        LoadDevRoots();
+    }
+
+    [RelayCommand]
+    private void ResetDevRoots()
+    {
+        _devRoots.Reset();
+        LoadDevRoots();
+    }
+
+    private bool AddDevRootPath(string path)
+    {
+        if (path.Length == 0)
+        {
+            return false;
+        }
+
+        if (!Directory.Exists(path))
+        {
+            DevRootsStatusText = $"'{path}' isn't a folder that exists.";
+            return false;
+        }
+
+        _devRoots.SetRoots(DevRoots.Append(path));
+        LoadDevRoots();
+        return true;
     }
 
     /// <summary>Two-way bound to the toggle. Only ever changed by the user.</summary>
