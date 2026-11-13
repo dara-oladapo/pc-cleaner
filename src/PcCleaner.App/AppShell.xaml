@@ -208,6 +208,10 @@
         <ShellContent ContentTemplate="{DataTemplate pages:StartupManagerPage}" />
     </controls:IconFlyoutItem>
 
+    <controls:IconFlyoutItem Title="Cloud Drives" Route="cloud" IconData="{StaticResource IconCloud}">
+        <ShellContent ContentTemplate="{DataTemplate pages:CloudDrivesPage}" />
+    </controls:IconFlyoutItem>
+
     <!-- Hidden unless developer mode is on (see AppShell.xaml.cs). -->
     <controls:IconFlyoutItem x:Name="DeveloperItem" Title="Developer" Route="developer" IconData="{StaticResource IconDeveloper}" IsVisible="False">
         <ShellContent ContentTemplate="{DataTemplate pages:DeveloperCleanupPage}" />
