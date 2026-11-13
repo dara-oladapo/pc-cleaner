@@ -208,6 +208,10 @@
         <ShellContent ContentTemplate="{DataTemplate pages:StartupManagerPage}" />
     </controls:IconFlyoutItem>
 
+    <controls:IconFlyoutItem Title="Cloud Drives" Route="cloud" IconData="{StaticResource IconCloud}">
+        <ShellContent ContentTemplate="{DataTemplate pages:CloudDrivesPage}" />
+    </controls:IconFlyoutItem>
+
     <controls:IconFlyoutItem Title="Settings" Route="settings" IconData="{StaticResource IconSettings}">
         <ShellContent ContentTemplate="{DataTemplate pages:SettingsPage}" />
     </controls:IconFlyoutItem>

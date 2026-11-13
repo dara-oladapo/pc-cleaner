@@ -34,6 +34,9 @@
     <!-- Three sliders at different positions: settings you set once. -->
     <PathGeometry x:Key="IconSettings" Figures="M3.5,5 L16.5,5 M3.5,10 L16.5,10 M3.5,15 L16.5,15 M7,3.2 L7,6.8 M13,8.2 L13,11.8 M9,13.2 L9,16.8" />
 
+    <!-- A cloud with a downward arrow leaving it: local copies handed back to the cloud. -->
+    <PathGeometry x:Key="IconCloud" Figures="M6,14.5 A3.5,3.5 0 0 1 5.6,7.5 A4.5,4.5 0 0 1 14.2,6.8 A3.8,3.8 0 0 1 14.5,14.5 M10,10 L10,17.5 M7.8,15.3 L10,17.5 L12.2,15.3" />
+
     <!-- Circle drawn as two half-arcs so the sweep direction is unambiguous. -->
     <PathGeometry x:Key="IconAbout" Figures="M2.8,10 A7.2,7.2 0 0 1 17.2,10 A7.2,7.2 0 0 1 2.8,10 M10,9.2 L10,13.6 M10,6.4 L10,7" />
 

@@ -85,13 +85,20 @@ public static class MauiProgram
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
         services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
         services.AddSingleton<IVolumeTraitsProbe, WindowsVolumeTraitsProbe>();
+        services.AddSingleton<ICloudDriveScanner, WindowsCloudDriveScanner>();
+        services.AddSingleton<ICloudFileReleaser, WindowsCloudFileReleaser>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
         services.AddSingleton<IFolderPickerService, MacFolderPicker>();
         services.AddSingleton<IVolumeTraitsProbe, MacVolumeTraitsProbe>();
+        services.AddSingleton<ICloudDriveScanner, MacCloudDriveScanner>();
+        services.AddSingleton<ICloudFileReleaser, MacCloudFileReleaser>();
 #endif
+
+        // Cloud drives: the eligibility rules and the measuring live in Core; the platform parts are above.
+        services.AddSingleton<CloudSpaceService>();
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IThemeService, ThemeService>();
@@ -130,6 +137,11 @@ public static class MauiProgram
         // on appearing anyway.
         services.AddSingleton<SettingsViewModel>();
         services.AddTransient<SettingsPage>();
+
+        // Not composed by the dashboard, so it does not need to be a singleton for that reason. It is one so
+        // the results survive leaving the page: a cloud scan can take minutes.
+        services.AddSingleton<CloudDrivesViewModel>();
+        services.AddTransient<CloudDrivesPage>();
 
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutPage>();
