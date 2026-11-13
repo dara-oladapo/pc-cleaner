@@ -16,9 +16,10 @@ public static class JunkSourceScanner
         DateTime nowUtc,
         TimeSpan minimumAge,
         IProgress<int>? filesScanned = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        bool includeDeveloperSources = true)
     {
-        foreach (PlannedJunkRoot root in JunkRootPlanner.Plan(sources, pathComparison))
+        foreach (PlannedJunkRoot root in JunkRootPlanner.Plan(sources, pathComparison, includeDeveloperSources))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
