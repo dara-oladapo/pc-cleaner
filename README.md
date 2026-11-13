@@ -5,7 +5,7 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 ## Features
 
 - **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) and one "Scan everything" button that runs every tool in one pass, with a summary card per tool.
-- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), groups them by category, reports reclaimable size, and deletes what you select after confirming.
+- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), developer tool caches (Yarn, pnpm, Gradle, Cargo, Go, VS Code, JetBrains, Playwright, Xcode DeviceSupport), groups them by category, reports reclaimable size, and deletes what you select after confirming. Large, slow-to-rebuild stores (NuGet global packages, Gradle, Cargo, pnpm, Playwright browsers, Xcode DeviceSupport, JetBrains indexes) are listed but left unticked.
 - **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
 - **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.

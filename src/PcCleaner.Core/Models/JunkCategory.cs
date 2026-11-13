@@ -9,4 +9,5 @@ public enum JunkCategory
     PackageManagerCache,
     EmptyFolder,
     TrashBin,
+    DeveloperCache,
 }
