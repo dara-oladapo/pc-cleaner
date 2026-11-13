@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:PcCleaner.Presentation.ViewModels;assembly=PcCleaner.Presentation"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
+             x:Class="PcCleaner.App.Pages.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Settings"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+
+    <Grid RowDefinitions="Auto,*" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Style="{StaticResource Eyebrow}" Text="PC Cleaner" />
+            <Label Style="{StaticResource PageTitle}" Text="Settings" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="{StaticResource Space5}" MaximumWidthRequest="620" HorizontalOptions="Start">
+            <Border Style="{StaticResource RowCard}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Space4}">
+                    <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                        <Label Style="{StaticResource RowTitle}" Text="Developer mode" />
+                        <Label Style="{StaticResource Caption}"
+                               Text="Adds a Developer page for Docker, git worktrees and build output. While off, the app never runs docker, wsl or git." />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1" IsToggled="{Binding DeveloperMode}" VerticalOptions="Center"
+                            SemanticProperties.Description="Developer mode" />
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+
+    </Grid>
+
+        <controls:DialogHost />
+
+    </Grid>
+</ContentPage>

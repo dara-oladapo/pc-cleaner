@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.DevCleanup;
 using PcCleaner.Core.Scanning;
 using PcCleaner.App.Pages;
 using PcCleaner.App.Services;
@@ -87,6 +88,20 @@ public static class MauiProgram
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<INavigationService, ShellNavigationService>();
+
+        // Developer cleanup. Every provider runs only through DevCleanupService, which does nothing while
+        // developer mode (IAppSettings, default off) is off. The junk scan can read the same setting.
+        services.AddSingleton<IAppSettings, PreferencesAppSettings>();
+        services.AddSingleton<IProcessRunner, SystemProcessRunner>();
+        services.AddSingleton<IWslDiskLocator, RegistryWslDiskLocator>();
+        services.AddSingleton(new DevCleanupOptions());
+        services.AddSingleton<IDevCleanupProvider, DockerCleanupProvider>(sp =>
+            new DockerCleanupProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IWslDiskLocator>()));
+        services.AddSingleton<IDevCleanupProvider, GitWorktreeProvider>(sp =>
+            new GitWorktreeProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevCleanupOptions>()));
+        services.AddSingleton<IDevCleanupProvider, BuildArtifactProvider>(sp =>
+            new BuildArtifactProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IJunkCleaner>(), sp.GetRequiredService<DevCleanupOptions>()));
+        services.AddSingleton<DevCleanupService>();
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
@@ -100,6 +115,8 @@ public static class MauiProgram
         services.AddSingleton<LargeFilesViewModel>();
         services.AddSingleton<StartupManagerViewModel>();
         services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<DeveloperCleanupViewModel>();
+        services.AddSingleton<SettingsViewModel>();
 
         // The shell and its theme switcher live for the life of the app, so the selected segment stays
         // correct without having to be re-read every time a page changes.
@@ -115,6 +132,8 @@ public static class MauiProgram
         services.AddTransient<DuplicateFinderPage>();
         services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
+        services.AddTransient<DeveloperCleanupPage>();
+        services.AddTransient<SettingsPage>();
 
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutPage>();
