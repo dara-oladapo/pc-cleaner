@@ -31,6 +31,9 @@
     <!-- An open-topped box with something leaving it: apps launching at login. -->
     <PathGeometry x:Key="IconStartup" Figures="M4,4 L4,16 L16,16 L16,4 M10,13 L10,3.5 M7,6.5 L10,3.5 L13,6.5" />
 
+    <!-- Three sliders at different positions: settings you set once. -->
+    <PathGeometry x:Key="IconSettings" Figures="M3.5,5 L16.5,5 M3.5,10 L16.5,10 M3.5,15 L16.5,15 M7,3.2 L7,6.8 M13,8.2 L13,11.8 M9,13.2 L9,16.8" />
+
     <!-- Circle drawn as two half-arcs so the sweep direction is unambiguous. -->
     <PathGeometry x:Key="IconAbout" Figures="M2.8,10 A7.2,7.2 0 0 1 17.2,10 A7.2,7.2 0 0 1 2.8,10 M10,9.2 L10,13.6 M10,6.4 L10,7" />
 

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:PcCleaner.Presentation.ViewModels;assembly=PcCleaner.Presentation"
+             xmlns:controls="clr-namespace:PcCleaner.App.Controls"
+             x:Class="PcCleaner.App.Pages.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="Settings"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+
+    <Grid RowDefinitions="Auto,*" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Style="{StaticResource Eyebrow}" Text="PC Cleaner" />
+            <Label Style="{StaticResource PageTitle}" Text="Settings" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="{StaticResource Space3}" MaximumWidthRequest="720" HorizontalOptions="Start">
+
+                <!--
+                  Volumes to scan. Only the large-file and duplicate finders read this; junk sources are
+                  fixed per-user locations and are not affected.
+                -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                        <Label Style="{StaticResource Eyebrow}" Text="Volumes to scan" />
+                        <Label Style="{StaticResource Caption}" Text="{Binding VolumesStatusText}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Refresh" Style="{StaticResource InlineButton}"
+                            Command="{Binding RefreshVolumesCommand}" VerticalOptions="Center" />
+                </Grid>
+
+                <Label Style="{StaticResource EmptyStateBody}"
+                       Text="Large Files and Duplicates look only at the volumes ticked here. The system volume is searched through each tool's folder list, never from its root; any other volume you tick is searched in full. Junk cleanup is not affected." />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Volumes}" Spacing="6">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VolumeChoiceViewModel">
+                            <Border Style="{StaticResource RowCard}">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Center"
+                                              SemanticProperties.Description="{Binding DisplayName, StringFormat='Scan {0}'}" />
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <HorizontalStackLayout Spacing="{StaticResource Space2}">
+                                            <Label Style="{StaticResource RowTitle}" Text="{Binding DisplayName}" VerticalOptions="Center" />
+                                            <Border Style="{StaticResource QuietPill}" IsVisible="{Binding IsAvailable}">
+                                                <Label Style="{StaticResource QuietPillLabel}" Text="{Binding KindText}" />
+                                            </Border>
+                                            <Border Style="{StaticResource AttentionPill}" IsVisible="{Binding IsAvailable, Converter={StaticResource InvertedBoolConverter}}">
+                                                <Label Style="{StaticResource AttentionPillLabel}" Text="{Binding KindText}" />
+                                            </Border>
+                                        </HorizontalStackLayout>
+                                        <Label Style="{StaticResource Caption}" Text="{Binding SpaceText}" />
+                                    </VerticalStackLayout>
+
+                                    <Grid Grid.Column="2" HorizontalOptions="Start" VerticalOptions="Center" IsVisible="{Binding IsAvailable}">
+                                        <BoxView Style="{StaticResource MeterTrack}" />
+                                        <BoxView Style="{StaticResource MeterFill}"
+                                                 WidthRequest="{Binding UsedShare, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
+                                    </Grid>
+
+                                    <Label Grid.Column="3" Style="{StaticResource Mono}" Text="{Binding RootPath}"
+                                           VerticalOptions="Center" MinimumWidthRequest="72" LineBreakMode="MiddleTruncation" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Style="{StaticResource Caption}"
+                       Text="Network drives, CD/DVD and system or snapshot mounts are never listed. Removable and virtual disks are listed but start unticked. A ticked volume that is not connected stays ticked and is skipped until it is back." />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+
+        <!-- The app's own confirmation dialog. Invisible until a view model asks for one. -->
+        <controls:DialogHost />
+
+    </Grid>
+</ContentPage>

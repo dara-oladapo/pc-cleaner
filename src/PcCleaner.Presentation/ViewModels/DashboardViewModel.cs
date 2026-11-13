@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,7 +21,17 @@ public sealed partial class DashboardViewModel : ObservableObject
 {
     private readonly IDriveSpaceReader _driveSpaceReader;
     private readonly INavigationService _navigation;
+    private readonly ScanVolumeSettings _volumeSettings;
     private CancellationTokenSource? _runCts;
+
+    /// <summary>
+    /// Space on each volume the large-file and duplicate scans are set to walk, including a selected one that
+    /// isn't connected, so the overview matches the Settings page.
+    /// </summary>
+    public ObservableCollection<VolumeChoiceViewModel> Volumes { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasVolumes { get; set; }
 
     public JunkCleanupViewModel Junk { get; }
 
@@ -89,6 +100,7 @@ public sealed partial class DashboardViewModel : ObservableObject
     public DashboardViewModel(
         IDriveSpaceReader driveSpaceReader,
         INavigationService navigation,
+        ScanVolumeSettings volumeSettings,
         JunkCleanupViewModel junk,
         DuplicateFinderViewModel duplicates,
         LargeFilesViewModel largeFiles,
@@ -96,6 +108,7 @@ public sealed partial class DashboardViewModel : ObservableObject
     {
         _driveSpaceReader = driveSpaceReader;
         _navigation = navigation;
+        _volumeSettings = volumeSettings;
         Junk = junk;
         Duplicates = duplicates;
         LargeFiles = largeFiles;
@@ -107,6 +120,7 @@ public sealed partial class DashboardViewModel : ObservableObject
         Duplicates.PropertyChanged += OnToolChanged;
         LargeFiles.PropertyChanged += OnToolChanged;
         Startup.Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(StartupSummaryText));
+        _volumeSettings.Changed += (_, _) => RefreshVolumes();
 
         RefreshDrive();
     }
@@ -199,8 +213,24 @@ public sealed partial class DashboardViewModel : ObservableObject
         }
     }
 
+    /// <summary>Re-reads the selected volumes. Public so the page can refresh it on appearing.</summary>
+    public void RefreshVolumes()
+    {
+        var snapshot = _volumeSettings.ReadVolumes();
+
+        Volumes.Clear();
+        foreach (var choice in _volumeSettings.GetChoices(snapshot).Where(c => c.IsSelected))
+        {
+            Volumes.Add(new VolumeChoiceViewModel(choice));
+        }
+
+        HasVolumes = Volumes.Count > 0;
+    }
+
     private void RefreshDrive()
     {
+        RefreshVolumes();
+
         _drive = _driveSpaceReader.Read();
         HasDriveInfo = _drive is not null;
 
