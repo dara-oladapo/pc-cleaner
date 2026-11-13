@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.DevCleanup;
 using PcCleaner.Core.Scanning;
 using PcCleaner.App.Pages;
 using PcCleaner.App.Services;
@@ -104,6 +105,30 @@ public static class MauiProgram
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<INavigationService, ShellNavigationService>();
+
+        // Developer mode (default off) gates the Developer page, every docker/wsl/git command (enforced in
+        // DevCleanupService, which reads the setting on every call), and developer caches in the junk scan.
+        services.AddSingleton<DeveloperModeSettings>();
+        services.AddSingleton<IProcessRunner, SystemProcessRunner>();
+        services.AddSingleton<IWslDiskLocator, RegistryWslDiskLocator>();
+        // Code folders are user-editable in Settings; the providers re-read them at the start of every scan.
+        services.AddSingleton<DevRootsSettings>();
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new DockerCleanupProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IWslDiskLocator>()));
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new GitWorktreeProvider(
+                sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevRootsSettings>().CurrentOptions, TimeProvider.System));
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new BuildArtifactProvider(
+                sp.GetRequiredService<IProcessRunner>(),
+                sp.GetRequiredService<IJunkCleaner>(),
+                sp.GetRequiredService<DevRootsSettings>().CurrentOptions,
+                TimeProvider.System));
+        services.AddSingleton(sp =>
+        {
+            var developerMode = sp.GetRequiredService<DeveloperModeSettings>();
+            return new DevCleanupService(sp.GetServices<IDevCleanupProvider>(), () => developerMode.IsEnabled);
+        });
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
@@ -132,6 +157,9 @@ public static class MauiProgram
         services.AddTransient<DuplicateFinderPage>();
         services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
+
+        services.AddSingleton<DeveloperCleanupViewModel>();
+        services.AddTransient<DeveloperCleanupPage>();
 
         // Singleton so the volume list isn't rebuilt from scratch on every visit; the page refreshes it
         // on appearing anyway.

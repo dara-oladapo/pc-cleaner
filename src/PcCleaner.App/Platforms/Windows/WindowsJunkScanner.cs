@@ -3,10 +3,11 @@ using System.Text;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Models;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.App.Platforms.Windows;
 
-public sealed class WindowsJunkScanner : IJunkScanner
+public sealed class WindowsJunkScanner(DeveloperModeSettings developerMode) : IJunkScanner
 {
     // Overlap handling (the same Temp folder reached two ways, NuGetScratch nested inside Temp), the age filter,
     // a temp folder that is itself a link (reported as a notice, not scanned),
@@ -21,7 +22,9 @@ public sealed class WindowsJunkScanner : IJunkScanner
             DateTime.UtcNow,
             JunkSafetyRules.DefaultMinimumAge,
             filesScanned,
-            cancellationToken);
+            cancellationToken,
+            // Off: developer caches are not offered, but stay excluded from any parent root (see JunkRootPlanner).
+            includeDeveloperSources: developerMode.IsEnabled);
 
     private static List<JunkSource> GetJunkSources()
     {

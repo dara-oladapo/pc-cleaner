@@ -212,6 +212,11 @@
         <ShellContent ContentTemplate="{DataTemplate pages:CloudDrivesPage}" />
     </controls:IconFlyoutItem>
 
+    <!-- Hidden unless developer mode is on (see AppShell.xaml.cs). -->
+    <controls:IconFlyoutItem x:Name="DeveloperItem" Title="Developer" Route="developer" IconData="{StaticResource IconDeveloper}" IsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate pages:DeveloperCleanupPage}" />
+    </controls:IconFlyoutItem>
+
     <controls:IconFlyoutItem Title="Settings" Route="settings" IconData="{StaticResource IconSettings}">
         <ShellContent ContentTemplate="{DataTemplate pages:SettingsPage}" />
     </controls:IconFlyoutItem>
