@@ -16,28 +16,36 @@ public sealed record DevCleanupOptions
     public int MaxDepth { get; init; } = 6;
 
     /// <summary>
-    /// <c>~/Dev</c>, <c>~/source/repos</c> and <c>~/Projects</c>; on Windows also <c>C:\Dev</c> (the system
-    /// drive's), a common place for code that is not under the profile. Only folders that exist are returned.
+    /// The usual places developers keep code, under the home folder: Visual Studio's <c>source/repos</c>,
+    /// <c>repos</c>, <c>src</c>, <c>code</c>, <c>Projects</c>, <c>Dev</c>, GitHub Desktop's
+    /// <c>Documents/GitHub</c>, and on macOS <c>Developer</c>. Only folders that exist are returned; users add
+    /// anything else in Settings.
     /// </summary>
-    public static IReadOnlyList<string> DefaultRoots()
+    public static IReadOnlyList<string> DefaultRoots() => DefaultRoots(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst(),
+        Directory.Exists);
+
+    /// <summary>Testable form of <see cref="DefaultRoots()"/>.</summary>
+    public static IReadOnlyList<string> DefaultRoots(string home, bool isMac, Func<string, bool> exists)
     {
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var candidates = new List<string>
         {
-            Path.Combine(home, "Dev"),
             Path.Combine(home, "source", "repos"),
+            Path.Combine(home, "repos"),
+            Path.Combine(home, "src"),
+            Path.Combine(home, "code"),
             Path.Combine(home, "Projects"),
+            Path.Combine(home, "Dev"),
+            Path.Combine(home, "Documents", "GitHub"),
         };
 
-        if (OperatingSystem.IsWindows())
+        if (isMac)
         {
-            string? systemDrive = Path.GetPathRoot(Environment.SystemDirectory);
-            if (!string.IsNullOrEmpty(systemDrive))
-            {
-                candidates.Add(Path.Combine(systemDrive, "Dev"));
-            }
+            candidates.Add(Path.Combine(home, "Developer"));
         }
 
-        return candidates.Where(Directory.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        // Case-insensitive file systems (Windows, macOS default) would otherwise list ~/Dev and ~/dev twice.
+        return candidates.Where(exists).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 }

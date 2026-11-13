@@ -37,32 +37,40 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
     };
 
     private readonly IProcessRunner _runner;
-    private readonly DevCleanupOptions _options;
+    private readonly Func<DevCleanupOptions> _optionsSource;
     private readonly TimeProvider _time;
 
     public GitWorktreeProvider(IProcessRunner runner, DevCleanupOptions options)
-        : this(runner, options, TimeProvider.System)
+        : this(runner, () => options, TimeProvider.System)
     {
     }
 
     public GitWorktreeProvider(IProcessRunner runner, DevCleanupOptions options, TimeProvider time)
+        : this(runner, () => options, time)
+    {
+    }
+
+    /// <param name="optionsSource">Read at the start of each call, so roots edited in Settings apply to the next scan.</param>
+    public GitWorktreeProvider(IProcessRunner runner, Func<DevCleanupOptions> optionsSource, TimeProvider time)
     {
         _runner = runner;
-        _options = options;
+        _optionsSource = optionsSource;
         _time = time;
     }
+
+    private DevCleanupOptions Options => _optionsSource();
 
     public string Id => ProviderId;
 
     public string DisplayName => "Git worktrees";
 
     public Task<bool> DetectAsync(CancellationToken cancellationToken = default) =>
-        Task.Run(() => ToolLocator.IsInstalled("git") && _options.Roots.Any(Directory.Exists), cancellationToken);
+        Task.Run(() => ToolLocator.IsInstalled("git") && Options.Roots.Any(Directory.Exists), cancellationToken);
 
     public async Task<DevCleanupReport> MeasureAsync(CancellationToken cancellationToken = default)
     {
         IReadOnlyList<string> repos = await Task.Run(
-            () => DevTreeWalker.FindRepositories(_options.Roots, _options.MaxDepth, cancellationToken), cancellationToken).ConfigureAwait(false);
+            () => DevTreeWalker.FindRepositories(Options.Roots, Options.MaxDepth, cancellationToken), cancellationToken).ConfigureAwait(false);
 
         var items = new List<DevCleanupItem>();
         var errors = new List<string>();
@@ -98,7 +106,7 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
                 }
 
                 WorktreeFacts facts = await GatherFactsAsync(entry, cancellationToken).ConfigureAwait(false);
-                WorktreeVerdict verdict = Decide(facts, _time.GetUtcNow().UtcDateTime, _options.WorktreeIdleDays);
+                WorktreeVerdict verdict = Decide(facts, _time.GetUtcNow().UtcDateTime, Options.WorktreeIdleDays);
                 if (!verdict.IsStale)
                 {
                     string bucket = verdict.Reason.Split(';', 2)[0];
@@ -135,7 +143,7 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
 
         var notes = new List<string>
         {
-            $"Checked {checkedCount} linked worktree(s) in {repos.Count} repositories under {string.Join(", ", _options.Roots)}."
+            $"Checked {checkedCount} linked worktree(s) in {repos.Count} repositories under {string.Join(", ", Options.Roots)}."
                 + (kept.Count == 0 ? string.Empty : " Kept: " + string.Join(", ", kept.OrderByDescending(k => k.Value).Select(k => $"{k.Value} {k.Key}")) + "."),
             "Removing a worktree never deletes its branch.",
         };
@@ -159,7 +167,7 @@ public sealed class GitWorktreeProvider : IDevCleanupProvider
                 {
                     // Every rule is re-checked right now: the worktree may have been used since the scan.
                     WorktreeFacts facts = await GatherFactsAsync(remove.Entry, cancellationToken).ConfigureAwait(false);
-                    WorktreeVerdict verdict = Decide(facts, _time.GetUtcNow().UtcDateTime, _options.WorktreeIdleDays);
+                    WorktreeVerdict verdict = Decide(facts, _time.GetUtcNow().UtcDateTime, Options.WorktreeIdleDays);
                     if (!verdict.IsStale)
                     {
                         failed.Add((item, $"{remove.Entry.Path}: no longer stale ({verdict.Reason}); left alone."));
