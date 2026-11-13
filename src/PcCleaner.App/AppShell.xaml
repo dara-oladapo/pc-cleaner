@@ -208,6 +208,10 @@
         <ShellContent ContentTemplate="{DataTemplate pages:StartupManagerPage}" />
     </controls:IconFlyoutItem>
 
+    <controls:IconFlyoutItem Title="Settings" Route="settings" IconData="{StaticResource IconSettings}">
+        <ShellContent ContentTemplate="{DataTemplate pages:SettingsPage}" />
+    </controls:IconFlyoutItem>
+
     <controls:IconFlyoutItem Title="About" Route="about" IconData="{StaticResource IconAbout}">
         <ShellContent ContentTemplate="{DataTemplate pages:AboutPage}" />
     </controls:IconFlyoutItem>

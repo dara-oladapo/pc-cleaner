@@ -8,6 +8,7 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 - **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), groups them by category, reports reclaimable size, and deletes what you select after confirming.
 - **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
 - **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
+- **Volumes to scan** (Settings) — choose which local volumes Duplicates and Large Files look at. Only the system volume by default; network, optical, cloud-drive and system/snapshot mounts are never offered.
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.
 - **Appearance** — Light, Dark, or System (the default), chosen from the navigation rail and remembered across restarts. System keeps following the OS rather than sampling it once at launch.
 - **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.

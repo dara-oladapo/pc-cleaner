@@ -69,6 +69,14 @@ public static class MauiProgram
         services.AddSingleton<IJunkCleaner, JunkCleaner>();
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
+        // Volumes for the "Volumes to scan" setting. DriveInfo does the enumeration everywhere; the
+        // platform probe (registered below) adds what DriveInfo can't see: virtual, read-only, hidden.
+        // Factories because both classes also have test constructors.
+        services.AddSingleton<IVolumeSource>(sp => new DriveInfoVolumeSource(sp.GetService<IVolumeTraitsProbe>()));
+        services.AddSingleton<IVolumeCatalog>(sp => new VolumeCatalog(sp.GetRequiredService<IVolumeSource>()));
+        services.AddSingleton<ISettingsStore, PreferencesSettingsStore>();
+        services.AddSingleton<ScanVolumeSettings>();
+
         // Platform-specific: where junk lives, how autostart works, how the trash/recycle bin works,
         // and how the OS asks the user to pick a folder.
 #if WINDOWS
@@ -76,11 +84,13 @@ public static class MauiProgram
         services.AddSingleton<IStartupItemManager, WindowsStartupManager>();
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
         services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, WindowsVolumeTraitsProbe>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
         services.AddSingleton<IFolderPickerService, MacFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, MacVolumeTraitsProbe>();
 #endif
 
         services.AddSingleton<IDialogService, DialogService>();
@@ -115,6 +125,11 @@ public static class MauiProgram
         services.AddTransient<DuplicateFinderPage>();
         services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
+
+        // Singleton so the volume list isn't rebuilt from scratch on every visit; the page refreshes it
+        // on appearing anyway.
+        services.AddSingleton<SettingsViewModel>();
+        services.AddTransient<SettingsPage>();
 
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutPage>();
