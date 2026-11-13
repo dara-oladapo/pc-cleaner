@@ -11,7 +11,7 @@ namespace PcCleaner.App.Platforms.MacCatalyst;
 /// </summary>
 /// <remarks>
 /// <para>
-/// iCloud Drive can be freed: <c>NSFileManager.EvictUbiquitousItem</c> is the public API for it (see
+/// iCloud Drive can be freed: <c>NSFileManager.EvictUbiquitous (evictUbiquitousItemAtURL:error:)</c> is the public API for it (see
 /// <see cref="MacCloudFileReleaser"/>).
 /// </para>
 /// <para>

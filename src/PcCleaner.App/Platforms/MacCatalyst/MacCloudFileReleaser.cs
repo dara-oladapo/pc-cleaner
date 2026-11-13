@@ -5,7 +5,7 @@ using PcCleaner.Core.Models;
 namespace PcCleaner.App.Platforms.MacCatalyst;
 
 /// <summary>
-/// Removes the local copy of an iCloud Drive file with <c>NSFileManager.EvictUbiquitousItem</c>. The file
+/// Removes the local copy of an iCloud Drive file with <c>NSFileManager.EvictUbiquitous (evictUbiquitousItemAtURL:error:)</c>. The file
 /// stays in iCloud and downloads again when opened. Nothing is deleted.
 /// </summary>
 /// <remarks>
@@ -42,7 +42,7 @@ public sealed class MacCloudFileReleaser : ICloudFileReleaser
         }
 
         using NSUrl url = NSUrl.FromFilename(path);
-        bool ok = NSFileManager.DefaultManager.EvictUbiquitousItem(url, out NSError? error);
+        bool ok = NSFileManager.DefaultManager.EvictUbiquitous(url, out NSError? error);
         return ok
             ? new CloudReleaseAttempt(path, CloudReleaseStatus.Requested, state.AllocatedBytes)
             : new CloudReleaseAttempt(path, CloudReleaseStatus.Failed, 0, Error: error?.LocalizedDescription ?? "Eviction failed.");
