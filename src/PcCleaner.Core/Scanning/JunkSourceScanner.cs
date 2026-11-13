@@ -47,6 +47,7 @@ public static class JunkSourceScanner
                     Files = scan.Files,
                     Directories = scan.Directories,
                     MinimumAge = root.IsTemp ? minimumAge : null,
+                    SelectedByDefault = root.SelectedByDefault,
                 };
             }
         }

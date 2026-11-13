@@ -8,8 +8,9 @@ public sealed partial class JunkItemViewModel(JunkItem model) : ObservableObject
 {
     public JunkItem Model { get; } = model;
 
+    /// <summary>Starts from the source's default: large, slow-to-rebuild caches are listed but left unticked.</summary>
     [ObservableProperty]
-    public partial bool IsSelected { get; set; } = true;
+    public partial bool IsSelected { get; set; } = model.SelectedByDefault;
 
     /// <summary>0..1 share of the largest item currently in the list — drives the row's inline meter bar.</summary>
     [ObservableProperty]
@@ -30,6 +31,7 @@ public sealed partial class JunkItemViewModel(JunkItem model) : ObservableObject
         JunkCategory.PackageManagerCache => "Package Cache",
         JunkCategory.EmptyFolder => "Empty Folder",
         JunkCategory.TrashBin => "Trash",
+        JunkCategory.DeveloperCache => "Developer Cache",
         _ => Model.Category.ToString(),
     };
 }
