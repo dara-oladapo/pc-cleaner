@@ -118,16 +118,18 @@ jobs:
 
   macos:
     name: Build and test (macOS)
-    runs-on: macos-latest
+    # xcode-27, not macos-latest: an app built against the Xcode 26 SDK crashes at launch on macOS 27
+    # ("_mainSceneIdentifier should have been set by now!", v0.2.0), while the same source built with
+    # Xcode 27.2 runs. macos-latest (macos-26) tops out at Xcode 26.6; the xcode-27 image (macOS 27,
+    # public preview) has Xcode 27.0/27.1/27.2.
+    runs-on: xcode-27
     env:
       # Xcode and the Mac Catalyst workload are pinned as a PAIR, identical to the macos-installer job in
       # release.yml (see the comment there for how to move them forward). Each Mac Catalyst SDK pack
-      # requires exactly one Xcode major.minor; left floating, the newest workload set (27.2.x) outran
-      # the runner's default Xcode (26.6) and the build failed with "requires Xcode 27.2".
-      #   10.0.400.1 = SDK band 10.0.4xx workload set -> Mac Catalyst SDK 26.5.10315 -> needs Xcode 26.6 (CI-confirmed:
-      #   the pack version is not the Xcode version; 26.5.10315 says "requires Xcode 26.6")
-      XCODE_VERSION: "26.6"
-      MACCATALYST_WORKLOAD_SET: "10.0.400.1"
+      # requires exactly one Xcode major.minor and the build refuses any other.
+      #   10.0.404.0 = SDK band 10.0.4xx workload set -> Mac Catalyst SDK 27.2.10000 -> needs Xcode 27.2
+      XCODE_VERSION: "27.2"
+      MACCATALYST_WORKLOAD_SET: "10.0.404.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
