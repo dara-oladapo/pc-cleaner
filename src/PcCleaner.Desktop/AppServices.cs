@@ -41,10 +41,10 @@ public static class AppServices
         // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
         services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
 
-        // Platform-specific. Linux is the only platform this front end serves today. Those marked with an issue
-        // are still stubs that touch nothing; the folder picker, theme service (#13) and startup manager (#12) are real.
+        // Platform-specific. Linux is the only platform this front end serves today. Apart from the junk scanner (#10),
+        // which is still a stub, each of these is real: the trash (#11), startup items (#12), folder picker and theme (#13).
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
-        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
+        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11: freedesktop Trash spec
         // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
         // every CI platform; this just binds it to the real environment and the real systemctl.
         services.AddSingleton<IStartupItemManager>(_ => LinuxStartupItemManager.CreateForCurrentProcess());

@@ -21,6 +21,7 @@ Nothing is deleted without a confirmation that says what will go and whether it 
 ```
 src/
   PcCleaner.Core/        Platform-agnostic: models, interfaces, duplicate/large-file scanning, junk deletion logic, the JSON settings store
+    Trash/                freedesktop.org Trash spec 1.0: .trashinfo format, mountinfo parsing, trash-dir selection, the algorithm
   PcCleaner.Presentation/ UI-framework-agnostic (plain net10.0): view models, plus the service interfaces they use
     ViewModels/           Every view model (CommunityToolkit.Mvvm) — shared by the MAUI app and a future Linux front end
     Services/             IDialogService, IFolderPickerService, IThemeService, INavigationService, IUpdateService
@@ -31,8 +32,8 @@ src/
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
   PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Every screen, same view models
-    Platforms/Linux/      Folder picker (portal/GTK) and theme service (settings in $XDG_CONFIG_HOME/pc-cleaner/settings.json);
-                          stubs that touch nothing until #10 and #11 land: junk scanner, trash. Startup items are real (#12)
+    Platforms/Linux/      Trash (freedesktop spec, libc statx/renameat2), startup items (XDG autostart + systemd user units), folder picker (portal/GTK) and theme service (settings in $XDG_CONFIG_HOME/pc-cleaner/settings.json);
+                          still a stub until #10 lands: junk scanner
     Services/             DialogService (in-app overlay), ShellNavigationService, UpdateService (Velopack, AppImage only), ITopLevelAccessor
     Resources/Styles/     The design system ported to Avalonia: Colors (Light/Dark theme dictionaries), Tokens, Icons, Styles
     Views/                One view per screen, plus DialogHostView and ScanRootsView
