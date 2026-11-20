@@ -1,20 +1,20 @@
 # PC Cleaner
 
-A free, no-paywall system cleanup utility for Windows and macOS (Linux in progress — an AppImage is built, but most Linux services are still stubs). No subscriptions, no "upgrade to clean more than 500 MB" — everything in this repo is fully functional.
+PC Cleaner, by [WiseLead Solutions](https://github.com/wiselead-solutions), is a free and open source system cleanup utility for Windows and macOS (Linux in progress — an AppImage is built, but most Linux services are still stubs). No subscriptions, no "upgrade to clean more than 500 MB", no license keys. Everything in this repo is fully functional, and it is licensed under the [Apache License 2.0](LICENSE).
 
 ## Features
 
-- **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) and one "Scan everything" button that runs every tool in one pass, with a summary card per tool.
+- **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) with a row per tool and a row per drive or volume, each with a tick. A tool's row expands to its own parts (junk categories, duplicate groups, large files, cloud folders, developer actions), ticked the same way as on the tool's page. Three actions run whatever is ticked: **Scan everything** reads and deletes nothing, **Scan and clean** asks once for all tools and then cleans, and **Scan and auto clean** cleans without asking.
 - **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), developer tool caches (Yarn, pnpm, Gradle, Cargo, Go, VS Code, JetBrains, Playwright, Xcode DeviceSupport), groups them by category, reports reclaimable size, and deletes what you select after confirming. Large, slow-to-rebuild stores (NuGet global packages, Gradle, Cargo, pnpm, Playwright browsers, Xcode DeviceSupport, JetBrains indexes) are listed but left unticked.
 - **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
-- **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
+- **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed. A file inside a cloud drive (OneDrive, Dropbox, iCloud Drive and so on) is marked **Cloud only**: it is listed, it cannot be ticked, and it is never deleted here, by either Large Files or Duplicates. To free space held by a cloud drive, use **Cloud Drives**, which makes files online-only and deletes nothing.
 - **Volumes to scan** (Settings) — choose which local volumes Duplicates and Large Files look at. Only the system volume by default; network, optical, cloud-drive and system/snapshot mounts are never offered.
 - **Developer cleanup** (opt-in) — for anyone who writes code. Off by default; turn on **Developer mode** in Settings (the app suggests it once if git or Docker is installed) and a Developer page appears. It finds Docker build cache, unused images and stopped containers (on the host, and on Windows inside running WSL distros), git worktrees that are clean, fully pushed and idle for 14 days, and git-ignored build output (`bin`/`obj`, `node_modules`, `target`, `.venv`...) of projects untouched for 30 days. It looks in your code folders (`~/source/repos`, `~/repos`, `~/src`, `~/code`, `~/Projects`, `~/Dev`, `~/Documents/GitHub`, `~/Developer` on macOS), which you can change in Settings. Worktrees are removed only with `git worktree remove` (never forced, branches kept), Docker volumes are never ticked for you, and every run asks first. While developer mode is off the app never runs docker, wsl or git.
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.
 - **Appearance** — Light, Dark, or System (the default), chosen from the navigation rail and remembered across restarts. System keeps following the OS rather than sampling it once at launch.
 - **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.
 
-Nothing is deleted without a confirmation that says what will go and whether it can be recovered. Junk is deleted permanently (caches are regenerable, and filling the Recycle Bin with them defeats the point); your own files always go to the Recycle Bin / Trash instead.
+Nothing is deleted without a confirmation that says what will go and whether it can be recovered, with one exception you choose each time: the dashboard's **Scan and auto clean**. It removes exactly what is ticked after the scan and nothing else. The default ticks are the same as everywhere else in the app: large files start unticked, one copy of every duplicate is kept, the large slow-to-rebuild caches and Docker volumes stay unticked, and cloud files are made online-only, never deleted. A scan that was stopped never goes on to clean. Junk is deleted permanently (caches are regenerable, and filling the Recycle Bin with them defeats the point); your own files always go to the Recycle Bin / Trash instead.
 
 ## Architecture
 
@@ -108,7 +108,7 @@ vpk pack `
   --packId PCCleaner --packVersion 1.0.0 `
   --packDir publish/win-x64 --mainExe PcCleaner.App.exe `
   --icon publish/win-x64/appicon.ico `
-  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" `
+  --packTitle "PC Cleaner" --packAuthors "WiseLead Solutions" `
   --outputDir releases/win
 ```
 
@@ -128,7 +128,7 @@ plutil -convert xml1 -o /tmp/PcCleaner.entitlements src/PcCleaner.App/Platforms/
 vpk pack \
   --packId PCCleaner --packVersion 1.0.0 --channel osx \
   --packDir "src/PcCleaner.App/bin/Release/net10.0-maccatalyst/PC Cleaner.app" --mainExe PcCleaner.App \
-  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" \
+  --packTitle "PC Cleaner" --packAuthors "WiseLead Solutions" \
   --signAppIdentity=- --signEntitlements /tmp/PcCleaner.entitlements \
   --outputDir releases/osx
 ```
@@ -228,3 +228,11 @@ The icon is `src/PcCleaner.App/Resources/AppIcon/appicon.svg` with `appiconfg.sv
 - **Folder picking** uses the native OS browser (`Windows.Storage.Pickers.FolderPicker` on Windows, `UIDocumentPickerViewController` on macOS) via `IFolderPickerService`, with the typed-path entry kept as a fallback. `CommunityToolkit.Maui`'s `FolderPicker` is still unusable here — its current version requires a newer `Microsoft.Maui.Controls` than this SDK's `maui-windows`/`maccatalyst` workload ships, causing a version-downgrade conflict — hence the hand-rolled platform services.
 - **Recycle Bin / Trash failures on system-owned junk paths** (e.g. `C:\Windows\SoftwareDistribution\Download`, `/Library/Caches`) are expected without elevated privileges — the cleaner reports these as partial failures rather than crashing, but doesn't yet prompt for elevation.
 - Startup item disabling for **system-scope** entries (`HKLM` Run keys on Windows, `/Library/LaunchAgents`, `/Library/LaunchDaemons` on macOS) requires admin/root and will throw; the UI surfaces the error but doesn't yet offer an elevation prompt.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building, testing and what a good pull request looks like. Security problems go through [SECURITY.md](SECURITY.md), not a public issue.
+
+## License
+
+PC Cleaner is open source under the [Apache License 2.0](LICENSE), copyright 2026 WiseLead Solutions. Third-party software and fonts are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The name "PC Cleaner", the WiseLead name and the icon are trademarks and are not covered by the code licence; see [TRADEMARKS.md](TRADEMARKS.md).

@@ -90,8 +90,11 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows
+      # maccatalyst too, as the README says for Windows. The app project lists net10.0-maccatalyst in
+      # TargetFrameworks on Windows, and restore fails with NETSDK1147 when that workload is missing,
+      # even with -f pinning the build to the Windows target. Runner image 20261116 started enforcing it.
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-windows maccatalyst
 
       # Core first: it needs no workload, so if the workload install is what's broken, the failure
       # stays readable instead of looking like a code problem.

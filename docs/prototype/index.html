@@ -8,37 +8,37 @@
      ============================================================ */
   @font-face {
     font-family: "Display";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/SpaceGrotesk-Medium.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-Medium.ttf") format("truetype");
     font-weight: 500;
     font-display: swap;
   }
   @font-face {
     font-family: "Display";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/SpaceGrotesk-Bold.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-Bold.ttf") format("truetype");
     font-weight: 700;
     font-display: swap;
   }
   @font-face {
     font-family: "Body";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/IBMPlexSans-Regular.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-Regular.ttf") format("truetype");
     font-weight: 400;
     font-display: swap;
   }
   @font-face {
     font-family: "Body";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/IBMPlexSans-SemiBold.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-SemiBold.ttf") format("truetype");
     font-weight: 600;
     font-display: swap;
   }
   @font-face {
     font-family: "Mono";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/JetBrainsMono-Regular.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-Regular.ttf") format("truetype");
     font-weight: 400;
     font-display: swap;
   }
   @font-face {
     font-family: "Mono";
-    src: url("../../src/PcCleaner.App/Resources/Fonts/JetBrainsMono-Medium.ttf") format("truetype");
+    src: url("../../src/PcCleaner.App/Resources/Fonts/DMSans-Medium.ttf") format("truetype");
     font-weight: 500;
     font-display: swap;
   }
@@ -49,29 +49,29 @@
      Light is the base; dark redefines tokens only.
      ============================================================ */
   :root {
-    --paper: #eef1f3;
-    --surface: #ffffff;
-    --sunken: #e4e9ec;
-    --ink-strong: #12181d;
-    --ink-muted: #5b6672;
-    --hairline: #d7dee3;
-    --signal: #0e7c7b;
-    --signal-muted: #e4f1ef;
+    --paper: #faf7f2;
+    --surface: #fefcf8;
+    --sunken: #f1ebe1;
+    --ink-strong: #1f1c4e;
+    --ink-muted: #5a5478;
+    --hairline: #e4dcce;
+    --signal: #1c65af;
+    --signal-muted: #e3eef8;
     --on-signal: #ffffff;
-    --attention: #b8863b;
-    --attention-muted: #f5ecdc;
-    --danger: #a8322d;
+    --attention: #9a5a1f;
+    --attention-muted: #f6e9d8;
+    --danger: #b4442f;
     --danger-muted: #f7e7e5;
     --on-danger: #ffffff;
     /* Neutral fill for the "used" part of the drive — a slate with the
        same blue bias as the paper, so it reads as chosen, not default grey. */
-    --occupied: #97a4b0;
+    --occupied: #a9a2b8;
     --shadow: 0 1px 2px rgba(18, 24, 29, 0.06), 0 4px 12px rgba(18, 24, 29, 0.05);
     --shadow-lift: 0 2px 4px rgba(18, 24, 29, 0.08), 0 12px 28px rgba(18, 24, 29, 0.1);
 
     /* Prototype chrome only — not app tokens. */
-    --chrome-bg: #dfe4e8;
-    --chrome-ink: #47525d;
+    --chrome-bg: #ece6da;
+    --chrome-ink: #4a4668;
 
     --r-sm: 4px;
     --r-md: 6px;
@@ -87,47 +87,47 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper: #12161b;
-      --surface: #1a2027;
-      --sunken: #0d1116;
-      --ink-strong: #edf1f3;
-      --ink-muted: #8b99a6;
-      --hairline: #2a323b;
-      --signal: #4fd1cb;
-      --signal-muted: #17302e;
-      --on-signal: #0a1513;
-      --attention: #d9a857;
+      --paper: #141238;
+      --surface: #1a1844;
+      --sunken: #0e0d2c;
+      --ink-strong: #f4f1ea;
+      --ink-muted: #a9a2b8;
+      --hairline: rgba(250,247,242,0.12);
+      --signal: #2699d3;
+      --signal-muted: #1f1c4e;
+      --on-signal: #141238;
+      --attention: #e8a94e;
       --attention-muted: #3a2f1c;
-      --danger: #e8756d;
+      --danger: #e0715c;
       --danger-muted: #3a1f1d;
       --on-danger: #21100e;
-      --occupied: #46525f;
+      --occupied: #5a5478;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.32);
       --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.46), 0 12px 28px rgba(0, 0, 0, 0.42);
-      --chrome-bg: #0a0d11;
+      --chrome-bg: #0e0d2c;
       --chrome-ink: #8b99a6;
     }
   }
 
   :root[data-theme="dark"] {
-    --paper: #12161b;
-    --surface: #1a2027;
-    --sunken: #0d1116;
-    --ink-strong: #edf1f3;
-    --ink-muted: #8b99a6;
-    --hairline: #2a323b;
-    --signal: #4fd1cb;
-    --signal-muted: #17302e;
-    --on-signal: #0a1513;
-    --attention: #d9a857;
+    --paper: #141238;
+    --surface: #1a1844;
+    --sunken: #0e0d2c;
+    --ink-strong: #f4f1ea;
+    --ink-muted: #a9a2b8;
+    --hairline: rgba(250,247,242,0.12);
+    --signal: #2699d3;
+    --signal-muted: #1f1c4e;
+    --on-signal: #141238;
+    --attention: #e8a94e;
     --attention-muted: #3a2f1c;
-    --danger: #e8756d;
+    --danger: #e0715c;
     --danger-muted: #3a1f1d;
     --on-danger: #21100e;
-    --occupied: #46525f;
+    --occupied: #5a5478;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.32);
     --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.46), 0 12px 28px rgba(0, 0, 0, 0.42);
-    --chrome-bg: #0a0d11;
+    --chrome-bg: #0e0d2c;
     --chrome-ink: #8b99a6;
   }
 
@@ -178,8 +178,7 @@
     font-family: "Display", sans-serif;
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     color: var(--chrome-ink);
   }
 
@@ -255,7 +254,7 @@
     font-family: "Display", sans-serif;
     font-weight: 700;
     font-size: 14px;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
   }
 
   .nav-item {
@@ -271,7 +270,7 @@
     font-family: "Display", sans-serif;
     font-size: 13px;
     font-weight: 500;
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
     text-align: left;
     cursor: pointer;
     transition: background-color 0.12s ease, color 0.12s ease;
@@ -299,8 +298,7 @@
     font-family: "Display", sans-serif;
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     color: var(--ink-muted);
     padding-left: 3px;
   }
@@ -356,8 +354,7 @@
     font-family: "Display", sans-serif;
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     color: var(--ink-muted);
   }
 
@@ -401,7 +398,7 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--ink-muted);
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
   }
 
   .bar {
@@ -474,7 +471,7 @@
     font-family: "Display", sans-serif;
     font-size: 13px;
     font-weight: 500;
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
     padding: 10px 16px;
     border-radius: var(--r-sm);
     border: 1px solid var(--hairline);
@@ -491,7 +488,7 @@
     border-color: var(--signal);
     color: var(--on-signal);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     padding: 11px 20px;
   }
 
@@ -509,7 +506,7 @@
   .btn-inline {
     font-size: 11px;
     padding: 5px 10px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
   }
 
   .btn-link {
@@ -570,7 +567,7 @@
     font-size: 13px;
     font-weight: 700;
     color: var(--ink-strong);
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
   }
 
   .tool-card-value {
@@ -725,8 +722,7 @@
     font-family: "Display", sans-serif;
     font-size: 10px;
     font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     white-space: nowrap;
   }
 
@@ -928,8 +924,7 @@
     font-family: "Display", sans-serif;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     margin: 0 0 var(--s-3);
   }
 
