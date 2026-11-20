@@ -532,10 +532,13 @@ public sealed partial class DashboardViewModel : ObservableObject
         BuildParts = () => (
             LargeFiles.Files.Take(DashboardToolViewModel.MaxParts).Select(file => new DashboardPartViewModel(
                 title: Path.GetFileName(file.Path),
-                detail: $"{Path.GetDirectoryName(file.Path)} · last changed {file.LastModifiedText}",
+                detail: file.IsCloudOnly
+                    ? $"Cloud only, in {file.CloudRoot!.DisplayName}. Never deleted here."
+                    : $"{Path.GetDirectoryName(file.Path)} · last changed {file.LastModifiedText}",
                 isSelected: () => file.IsSelected,
                 setSelected: value => file.IsSelected = value,
-                sizeText: () => file.SizeText)).ToList(),
+                sizeText: () => file.SizeText,
+                canSelect: !file.IsCloudOnly)).ToList(),
             LargeFiles.Files.Count),
     };
 

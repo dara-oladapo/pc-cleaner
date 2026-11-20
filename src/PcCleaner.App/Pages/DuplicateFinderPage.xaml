@@ -92,9 +92,16 @@
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FileEntryViewModel">
                                         <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,4" ColumnSpacing="{StaticResource Space2}">
-                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Center" />
-                                            <Label Grid.Column="1" Style="{StaticResource Mono}" Text="{Binding Path}"
-                                                   LineBreakMode="MiddleTruncation" VerticalOptions="Center" />
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" IsEnabled="{Binding CanSelect}" VerticalOptions="Center" />
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                                <Label Style="{StaticResource Mono}" Text="{Binding Path}" LineBreakMode="MiddleTruncation" />
+                                                <HorizontalStackLayout Spacing="{StaticResource Space2}" IsVisible="{Binding IsCloudOnly}">
+                                                    <Border Style="{StaticResource AttentionPill}">
+                                                        <Label Style="{StaticResource AttentionPillLabel}" Text="Cloud only" />
+                                                    </Border>
+                                                    <Label Style="{StaticResource Caption}" Text="{Binding CloudNote}" VerticalOptions="Center" />
+                                                </HorizontalStackLayout>
+                                            </VerticalStackLayout>
                                             <Label Grid.Column="2" Style="{StaticResource MonoNumber}" Text="{Binding SizeText}"
                                                    VerticalOptions="Center" MinimumWidthRequest="72" />
                                         </Grid>
