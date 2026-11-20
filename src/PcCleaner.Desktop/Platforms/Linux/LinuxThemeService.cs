@@ -1,8 +1,9 @@
 using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using PcCleaner.Core.Settings;
 using PcCleaner.Presentation.Services;
+using ISettingsStore = PcCleaner.Core.Settings.ISettingsStore;
+using PcCleaner.Core.Settings;
 
 namespace PcCleaner.Desktop.Platforms.Linux;
 

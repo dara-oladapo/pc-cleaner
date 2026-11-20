@@ -49,7 +49,9 @@ public static class AppServices
 
         // One settings file for every preference, at $XDG_CONFIG_HOME/pc-cleaner/settings.json. Resolved once:
         // the environment doesn't change under a running process.
-        services.AddSingleton<ISettingsStore>(_ => new JsonSettingsStore(XdgPaths.SettingsFile()));
+        services.AddSingleton<PcCleaner.Core.Settings.ISettingsStore>(_ => new JsonSettingsStore(XdgPaths.SettingsFile()));
+        // The Presentation layer has its own (string get/set) settings contract; both views share the one file.
+        services.AddSingleton<PcCleaner.Presentation.Services.ISettingsStore, PresentationSettingsStore>();
         services.AddSingleton<ITopLevelAccessor, DesktopLifetimeTopLevelAccessor>();
 
         services.AddSingleton<IDialogService, DialogService>();
