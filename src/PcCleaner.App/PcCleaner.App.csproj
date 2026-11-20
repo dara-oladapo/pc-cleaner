@@ -32,7 +32,7 @@
 		<Authors>WiseLead Solutions</Authors>
 		<Company>WiseLead Solutions</Company>
 		<Copyright>Copyright 2026 WiseLead Solutions</Copyright>
-		<RepositoryUrl>https://github.com/dara-oladapo/pc-cleaner</RepositoryUrl>
+		<RepositoryUrl>https://github.com/wiselead-oss/pc-cleaner</RepositoryUrl>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.pccleaner.app</ApplicationId>
