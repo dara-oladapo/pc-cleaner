@@ -80,149 +80,165 @@
                     <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
                 </VerticalStackLayout>
 
+
                 <!--
-                  Progress. "N of 4 tools finished" is a real fraction, so the dashboard is the one screen
-                  that earns a determinate marker; the file count beside it stays a count.
+                  Progress. "N of M tools finished" is a real fraction, so the dashboard is the one screen
+                  that earns a determinate marker: one per tool in this run. The file count stays a count.
                 -->
-                <Border Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsScanning}">
+                <Border Style="{StaticResource ProgressPanel}" IsVisible="{Binding IsBusy}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
-                        <HorizontalStackLayout Grid.Column="0" Spacing="5" VerticalOptions="Center">
-                            <BoxView Style="{StaticResource StepMarker}">
-                                <BoxView.Triggers>
-                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step1Done}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-                                    </DataTrigger>
-                                </BoxView.Triggers>
-                            </BoxView>
-                            <BoxView Style="{StaticResource StepMarker}">
-                                <BoxView.Triggers>
-                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step2Done}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-                                    </DataTrigger>
-                                </BoxView.Triggers>
-                            </BoxView>
-                            <BoxView Style="{StaticResource StepMarker}">
-                                <BoxView.Triggers>
-                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step3Done}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-                                    </DataTrigger>
-                                </BoxView.Triggers>
-                            </BoxView>
-                            <BoxView Style="{StaticResource StepMarker}">
-                                <BoxView.Triggers>
-                                    <DataTrigger TargetType="BoxView" Binding="{Binding Step4Done}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-                                    </DataTrigger>
-                                </BoxView.Triggers>
-                            </BoxView>
+                        <HorizontalStackLayout Grid.Column="0" Spacing="5" VerticalOptions="Center"
+                                               BindableLayout.ItemsSource="{Binding RunSteps}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DashboardToolViewModel">
+                                    <BoxView Style="{StaticResource StepMarker}">
+                                        <BoxView.Triggers>
+                                            <DataTrigger TargetType="BoxView" Binding="{Binding IsStepDone}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
+                                            </DataTrigger>
+                                        </BoxView.Triggers>
+                                    </BoxView>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
                         </HorizontalStackLayout>
                         <Label Grid.Column="1" Style="{StaticResource ProgressText}" Text="{Binding ProgressText}" />
                     </Grid>
                 </Border>
 
-                <!-- Tool summary cards. Four fixed destinations, so they're laid out, not templated. -->
-                <VerticalStackLayout Spacing="{StaticResource Space3}">
-                    <Label Style="{StaticResource Eyebrow}" Text="Tools" />
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="{StaticResource Space3}">
-
-                        <Border Grid.Column="0" Style="{StaticResource Card}">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="junk" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="{StaticResource Space2}">
-                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
-                                    <Path Data="{StaticResource IconJunk}"
-                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
-                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
-                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
-                                    <Label Text="Junk Files" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Style="{StaticResource StatValue}" Text="{Binding Junk.SelectedSizeText}" />
-                                <Label Style="{StaticResource Caption}" Text="Deleted permanently" />
-                            </VerticalStackLayout>
-                        </Border>
-
-                        <Border Grid.Column="1" Style="{StaticResource Card}">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="duplicates" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="{StaticResource Space2}">
-                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
-                                    <Path Data="{StaticResource IconDuplicates}"
-                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
-                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
-                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
-                                    <Label Text="Duplicates" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Style="{StaticResource StatValue}" Text="{Binding Duplicates.ReclaimableText}" />
-                                <Label Style="{StaticResource Caption}" Text="Moved to the Recycle Bin" />
-                            </VerticalStackLayout>
-                        </Border>
-
-                        <Border Grid.Column="2" Style="{StaticResource Card}">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="large" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="{StaticResource Space2}">
-                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
-                                    <Path Data="{StaticResource IconLargeFiles}"
-                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
-                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
-                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
-                                    <Label Text="Large Files" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Style="{StaticResource StatValue}" Text="{Binding LargeFiles.SelectedSizeText}" />
-                                <Label Style="{StaticResource Caption}" Text="Files over 100 MB" />
-                            </VerticalStackLayout>
-                        </Border>
-
-                        <Border Grid.Column="3" Style="{StaticResource Card}">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding OpenToolCommand}" CommandParameter="startup" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="{StaticResource Space2}">
-                                <HorizontalStackLayout Spacing="{StaticResource Space2}">
-                                    <Path Data="{StaticResource IconStartup}"
-                                          Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
-                                          StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
-                                          HeightRequest="17" WidthRequest="17" VerticalOptions="Center" />
-                                    <Label Text="Startup" FontFamily="DisplayBold" FontSize="{StaticResource FontControl}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Style="{StaticResource StatValue}" Text="{Binding Startup.ItemCountText}" />
-                                <Label Style="{StaticResource Caption}" Text="{Binding StartupSummaryText}" />
-                            </VerticalStackLayout>
-                        </Border>
-
-                    </Grid>
+                <!-- What the last clean did, one line per tool, and anything that could not be done. -->
+                <VerticalStackLayout Spacing="{StaticResource Space2}" IsVisible="{Binding HasRunReport}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Last run" />
+                    <Border Style="{StaticResource Card}" Padding="{StaticResource RowPadding}">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding RunReport}" Spacing="4">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Label Style="{StaticResource Caption}" Text="{Binding .}" />
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
                 </VerticalStackLayout>
 
                 <!--
-                  Per-volume space for the volumes Large Files and Duplicates are set to scan (Settings). A
-                  selected volume that isn't connected stays in the list, marked, so it never silently vanishes.
+                  Tools. The tick decides whether a run scans and cleans the tool at all. "Show" lists the
+                  tool's own parts, each with the same tick its page has: one selection, two views onto it.
+                -->
+                <VerticalStackLayout Spacing="{StaticResource Space3}">
+                    <Label Style="{StaticResource Eyebrow}" Text="Tools in this run" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tools}" Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DashboardToolViewModel">
+                                <Border Style="{StaticResource Card}" Padding="{StaticResource RowPadding}">
+                                    <VerticalStackLayout Spacing="{StaticResource Space3}">
+
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsIncluded}" VerticalOptions="Center"
+                                                      IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=IsIdle}"
+                                                      SemanticProperties.Description="{Binding Title, StringFormat='Include {0} in the run'}" />
+
+                                            <Path Grid.Column="1" Data="{StaticResource IconJunk}"
+                                                  Stroke="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}"
+                                                  StrokeThickness="1.5" StrokeLineCap="Round" StrokeLineJoin="Round" Aspect="Uniform"
+                                                  HeightRequest="17" WidthRequest="17" VerticalOptions="Center">
+                                                <Path.Triggers>
+                                                    <DataTrigger TargetType="Path" Binding="{Binding Route}" Value="duplicates">
+                                                        <Setter Property="Data" Value="{StaticResource IconDuplicates}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Path" Binding="{Binding Route}" Value="large">
+                                                        <Setter Property="Data" Value="{StaticResource IconLargeFiles}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Path" Binding="{Binding Route}" Value="cloud">
+                                                        <Setter Property="Data" Value="{StaticResource IconCloud}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Path" Binding="{Binding Route}" Value="developer">
+                                                        <Setter Property="Data" Value="{StaticResource IconDeveloper}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Path" Binding="{Binding Route}" Value="startup">
+                                                        <Setter Property="Data" Value="{StaticResource IconStartup}" />
+                                                    </DataTrigger>
+                                                </Path.Triggers>
+                                            </Path>
+
+                                            <VerticalStackLayout Grid.Column="2" Spacing="3" VerticalOptions="Center">
+                                                <Label Style="{StaticResource RowTitle}" Text="{Binding Title}" />
+                                                <Label Style="{StaticResource Caption}" Text="{Binding Caption}" />
+                                            </VerticalStackLayout>
+
+                                            <Label Grid.Column="3" Style="{StaticResource Mono}" Text="{Binding SummaryText}" VerticalOptions="Center" />
+
+                                            <Button Grid.Column="4" Style="{StaticResource InlineButton}" Text="{Binding ExpandText}"
+                                                    Command="{Binding ToggleExpandedCommand}" IsVisible="{Binding HasParts}" VerticalOptions="Center" />
+
+                                            <Button Grid.Column="5" Style="{StaticResource InlineButton}" Text="Open" VerticalOptions="Center"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=OpenToolCommand}"
+                                                    CommandParameter="{Binding Route}" />
+                                        </Grid>
+
+                                        <VerticalStackLayout IsVisible="{Binding ShowParts}" Spacing="{StaticResource Space2}">
+                                            <BoxView Style="{StaticResource RowDivider}" />
+                                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Parts}" Spacing="{StaticResource Space2}">
+                                                <BindableLayout.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:DashboardPartViewModel">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space3}">
+                                                            <!-- The slot keeps its width when there is no tick, so titles stay aligned. -->
+                                                            <Grid Grid.Column="0" WidthRequest="{StaticResource CheckBoxSize}" VerticalOptions="Center">
+                                                                <CheckBox IsChecked="{Binding IsSelected}" IsVisible="{Binding CanSelect}"
+                                                                          IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=IsIdle}"
+                                                                          SemanticProperties.Description="{Binding Title, StringFormat='Clean {0}'}" />
+                                                            </Grid>
+                                                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                                                <Label Style="{StaticResource RowTitle}" Text="{Binding Title}" LineBreakMode="MiddleTruncation" />
+                                                                <Label Style="{StaticResource Caption}" Text="{Binding Detail}" IsVisible="{Binding HasDetail}"
+                                                                       LineBreakMode="MiddleTruncation" />
+                                                            </VerticalStackLayout>
+                                                            <Label Grid.Column="2" Style="{StaticResource Mono}" Text="{Binding SizeText}" VerticalOptions="Center" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </BindableLayout.ItemTemplate>
+                                            </VerticalStackLayout>
+                                            <Label Style="{StaticResource Caption}" Text="{Binding MoreText}" IsVisible="{Binding ShowMore}" />
+                                        </VerticalStackLayout>
+
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!--
+                  Every volume Large Files and Duplicates can walk, with the same tick as the Settings page.
+                  A ticked volume that isn't connected stays in the list, marked, so it never silently vanishes.
                 -->
                 <VerticalStackLayout Spacing="{StaticResource Space3}" IsVisible="{Binding HasVolumes}">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Label Grid.Column="0" Style="{StaticResource Eyebrow}" Text="Volumes scanned" VerticalOptions="Center" />
-                        <Button Grid.Column="1" Text="Change" Style="{StaticResource InlineButton}"
-                                Command="{Binding OpenToolCommand}" CommandParameter="settings" />
-                    </Grid>
+                    <VerticalStackLayout Spacing="2">
+                        <Label Style="{StaticResource Eyebrow}" Text="Drives and volumes" />
+                        <Label Style="{StaticResource Caption}" Text="{Binding VolumesStatusText}" />
+                    </VerticalStackLayout>
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding Volumes}" Spacing="6">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:VolumeChoiceViewModel">
                                 <Border Style="{StaticResource Card}" Padding="{StaticResource RowPadding}">
-                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
-                                        <HorizontalStackLayout Grid.Column="0" Spacing="{StaticResource Space2}" VerticalOptions="Center">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalOptions="Center"
+                                                  IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=IsIdle}"
+                                                  SemanticProperties.Description="{Binding DisplayName, StringFormat='Scan {0}'}" />
+                                        <HorizontalStackLayout Grid.Column="1" Spacing="{StaticResource Space2}" VerticalOptions="Center">
                                             <Label Style="{StaticResource RowTitle}" Text="{Binding DisplayName}" VerticalOptions="Center" />
+                                            <Border Style="{StaticResource QuietPill}" IsVisible="{Binding IsAvailable}">
+                                                <Label Style="{StaticResource QuietPillLabel}" Text="{Binding KindText}" />
+                                            </Border>
                                             <Border Style="{StaticResource AttentionPill}" IsVisible="{Binding IsAvailable, Converter={StaticResource InvertedBoolConverter}}">
                                                 <Label Style="{StaticResource AttentionPillLabel}" Text="{Binding KindText}" />
                                             </Border>
                                         </HorizontalStackLayout>
-                                        <Grid Grid.Column="1" HorizontalOptions="Start" VerticalOptions="Center" IsVisible="{Binding IsAvailable}">
+                                        <Grid Grid.Column="2" HorizontalOptions="Start" VerticalOptions="Center" IsVisible="{Binding IsAvailable}">
                                             <BoxView Style="{StaticResource MeterTrack}" />
                                             <BoxView Style="{StaticResource MeterFill}"
                                                      WidthRequest="{Binding UsedShare, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
                                         </Grid>
-                                        <Label Grid.Column="2" Style="{StaticResource Mono}" Text="{Binding SpaceText}" VerticalOptions="Center" />
+                                        <Label Grid.Column="3" Style="{StaticResource Mono}" Text="{Binding SpaceText}" VerticalOptions="Center" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -233,13 +249,21 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <HorizontalStackLayout Grid.Row="2" Spacing="{StaticResource Space3}">
-            <Button Text="Scan everything" Style="{StaticResource PrimaryButton}" Command="{Binding ScanEverythingCommand}" />
-            <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+        <!--
+          One primary action, as everywhere else. The two that remove things are Danger. "Scan and clean"
+          asks once, for everything. "Scan and auto clean" is the only action in the app that does not ask,
+          and the line under the buttons says so.
+        -->
+        <VerticalStackLayout Grid.Row="2" Spacing="{StaticResource Space2}">
+            <HorizontalStackLayout Spacing="{StaticResource Space3}">
+                <Button Text="Scan everything" Style="{StaticResource PrimaryButton}" Command="{Binding ScanEverythingCommand}" />
+                <Button Text="Scan and clean" Style="{StaticResource DangerButton}" Command="{Binding ScanAndCleanCommand}" />
+                <Button Text="Scan and auto clean" Style="{StaticResource DangerButton}" Command="{Binding ScanAndAutoCleanCommand}" />
+                <Button Text="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+            </HorizontalStackLayout>
             <Label Style="{StaticResource HeroCaption}"
-                   Text="Reads every tool in one pass. Nothing is deleted until you choose it."
-                   VerticalOptions="Center" />
-        </HorizontalStackLayout>
+                   Text="Scan everything deletes nothing. Scan and clean asks once before removing what is ticked. Scan and auto clean removes what is ticked without asking." />
+        </VerticalStackLayout>
 
     </Grid>
 

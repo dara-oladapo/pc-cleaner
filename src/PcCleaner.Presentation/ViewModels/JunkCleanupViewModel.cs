@@ -116,7 +116,13 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
     private void SelectNone() => SetAllSelected(false);
 
     [RelayCommand(CanExecute = nameof(CanClean))]
-    private async Task CleanAsync()
+    private Task CleanAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>
+    /// Deletes what is ticked. <paramref name="confirm"/> is false only when the dashboard runs the clean: it
+    /// has either shown its own combined confirmation or the user pressed "Scan and auto clean".
+    /// </summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
         var selected = Items.Where(i => i.IsSelected).ToList();
         if (selected.Count == 0)
@@ -129,7 +135,7 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         // This is a permanent delete — IJunkCleaner does not use the Recycle Bin, because caches are
         // regenerable and filling the bin with them would defeat the point. That makes the confirmation
         // mandatory rather than polite, and it has to say plainly that there is no undo.
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Delete {selected.Count} location(s) permanently?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. Junk files are rebuilt by the apps that made them, but they do not go to the Recycle Bin, so this cannot be undone.",
             acceptText: "Delete permanently",

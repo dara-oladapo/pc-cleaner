@@ -125,7 +125,10 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanDeleteSelected))]
-    private async Task DeleteSelectedAsync()
+    private Task DeleteSelectedAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>Moves the ticked copies to the Recycle Bin. <paramref name="confirm"/> is false only for a dashboard run.</summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
         var pathsToDelete = Groups
             .SelectMany(g => g.Files.Where(f => f.IsSelected).Select(f => f.Path))
@@ -140,7 +143,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
 
         var selectedFiles = Groups.SelectMany(g => g.Files.Where(f => f.IsSelected)).ToList();
 
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Move {pathsToDelete.Count} copy/copies to the Recycle Bin?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. At least one copy of every file stays where it is, and anything moved can be restored from the Recycle Bin.",
             acceptText: "Move to Recycle Bin",
