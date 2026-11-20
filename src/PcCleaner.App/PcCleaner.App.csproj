@@ -29,6 +29,10 @@
 
 		<!-- Display name -->
 		<ApplicationTitle>PC Cleaner</ApplicationTitle>
+		<Authors>WiseLead Solutions</Authors>
+		<Company>WiseLead Solutions</Company>
+		<Copyright>Copyright 2026 WiseLead Solutions</Copyright>
+		<RepositoryUrl>https://github.com/dara-oladapo/pc-cleaner</RepositoryUrl>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.pccleaner.app</ApplicationId>
@@ -56,17 +60,17 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0E7C7B" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#1C65AF" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0E7C7B" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#1C65AF" BaseSize="128,128" />
 
 		<!-- Images. The UI draws its icons as vector Path geometry (Resources\Styles\Icons.xaml) so they
 		     can be tinted per theme and per selection state, so there are no raster icon assets here. -->
 		<MauiImage Include="Resources\Images\*" />
 
 		<!-- Custom Fonts -->
-		<MauiFont Include="Resources\Fonts\*" />
+		<MauiFont Include="Resources\Fonts\*.ttf" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />

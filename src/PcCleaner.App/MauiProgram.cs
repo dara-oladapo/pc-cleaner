@@ -48,17 +48,16 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
             {
-                // Aliases are named by role, not by vendor, so swapping a face is a one-line change here
-                // rather than a find-and-replace across every style. Body was Open Sans — the MAUI project
-                // template's default, and the most anonymous UI face available. IBM Plex Sans was drawn for
-                // technical documentation and sits naturally beside JetBrains Mono, which carries every
-                // figure and path in the app.
-                fonts.AddFont("IBMPlexSans-Regular.ttf", "BodyRegular");
-                fonts.AddFont("IBMPlexSans-SemiBold.ttf", "BodySemibold");
-                fonts.AddFont("SpaceGrotesk-Medium.ttf", "DisplayMedium");
-                fonts.AddFont("SpaceGrotesk-Bold.ttf", "DisplayBold");
-                fonts.AddFont("JetBrainsMono-Regular.ttf", "MonoRegular");
-                fonts.AddFont("JetBrainsMono-Medium.ttf", "MonoMedium");
+                // DM Sans is the one WiseLead face (SIL OFL 1.1, the same upstream v4.004 static files the
+                // WiseLead design system ships). Aliases are named by role, not by vendor, so a style says
+                // what the text is for and swapping a face is a one-line change here. Figures and paths use
+                // the same face; the Mono aliases are kept so no style had to change.
+                fonts.AddFont("DMSans-Regular.ttf", "BodyRegular");
+                fonts.AddFont("DMSans-SemiBold.ttf", "BodySemibold");
+                fonts.AddFont("DMSans-Medium.ttf", "DisplayMedium");
+                fonts.AddFont("DMSans-Bold.ttf", "DisplayBold");
+                fonts.AddFont("DMSans-Regular.ttf", "MonoRegular");
+                fonts.AddFont("DMSans-Medium.ttf", "MonoMedium");
             });
 
 #if DEBUG
@@ -111,6 +110,7 @@ public static class MauiProgram
 
         // Cloud drives: the eligibility rules and the measuring live in Core; the platform parts are above.
         services.AddSingleton<CloudSpaceService>();
+        services.AddSingleton<CloudLocationGuard>();
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IThemeService, ThemeService>();

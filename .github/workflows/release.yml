@@ -75,8 +75,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-windows maccatalyst
 
       - name: Restore
         run: dotnet restore src/PcCleaner.App/PcCleaner.App.csproj
@@ -107,7 +107,7 @@ jobs:
           --mainExe PcCleaner.App.exe
           --icon publish/win-x64/appicon.ico
           --packTitle "PC Cleaner"
-          --packAuthors "Dara Oladapo"
+          --packAuthors "WiseLead Solutions"
           --outputDir releases/win
           -y
 
@@ -321,7 +321,7 @@ jobs:
             --packDir "${{ steps.app.outputs.path }}" \
             --mainExe "${{ steps.app.outputs.exe }}" \
             --packTitle "PC Cleaner" \
-            --packAuthors "Dara Oladapo" \
+            --packAuthors "WiseLead Solutions" \
             --outputDir releases/osx \
             -y \
             "${SIGN_ARGS[@]}"
