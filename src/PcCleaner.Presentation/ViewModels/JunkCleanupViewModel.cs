@@ -66,10 +66,18 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         // count, not a fraction, so the UI pairs it with an indeterminate bar rather than inventing a percentage.
         var walkProgress = new Progress<int>(count => StatusText = $"Scanning... {count:N0} files in current location.");
 
+        var notices = new List<string>();
+
         try
         {
             await foreach (var item in _scanner.ScanAsync(_scanCts.Token, walkProgress))
             {
+                if (item.Notice is not null)
+                {
+                    notices.Add(item.Notice);
+                    continue;
+                }
+
                 var vm = new JunkItemViewModel(item);
                 vm.PropertyChanged += OnItemPropertyChanged;
                 Items.Add(vm);
@@ -82,6 +90,10 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
             StatusText = Items.Count == 0
                 ? "No junk found — you're clean."
                 : $"Found {Items.Count} location(s) using {ByteSizeFormatter.Format(Items.Sum(i => i.Model.SizeBytes))}.";
+            if (notices.Count > 0)
+            {
+                StatusText += " " + string.Join(" ", notices);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -141,20 +153,24 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
         {
             var result = await _cleaner.CleanAsync(selected.Select(s => s.Model).ToList());
 
-            foreach (string succeededPath in result.SucceededPaths)
+            // A file row is done when its own path succeeded; a folder row when every file in its manifest did.
+            var succeeded = result.SucceededPaths.ToHashSet();
+            foreach (var vm in selected.Where(s => s.Model.Files is { } files
+                         ? files.All(f => succeeded.Contains(f.Path))
+                         : succeeded.Contains(s.Path)))
             {
-                var vm = Items.FirstOrDefault(i => i.Path == succeededPath);
-                if (vm is not null)
-                {
-                    vm.PropertyChanged -= OnItemPropertyChanged;
-                    Items.Remove(vm);
-                    RemoveFromGroup(vm);
-                }
+                vm.PropertyChanged -= OnItemPropertyChanged;
+                Items.Remove(vm);
+                RemoveFromGroup(vm);
             }
 
             StatusText = result.AllSucceeded
                 ? $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}."
                 : $"Freed {ByteSizeFormatter.Format(result.BytesFreed)}; {result.FailedPaths.Count} item(s) could not be removed (may need admin rights).";
+            if (result.SkippedPaths.Count > 0)
+            {
+                StatusText += $" {result.SkippedPaths.Count:N0} item(s) skipped because they were in use or changed.";
+            }
 
             if (!result.AllSucceeded)
             {
@@ -193,7 +209,7 @@ public sealed partial class JunkCleanupViewModel : ObservableObject
 
         bool confirmed = await _dialogs.ConfirmAsync(
             title: "Needs administrator permission — continue?",
-            message: $"{retryPaths.Count} item(s) could not be removed from the system folders listed below, which only an administrator can clean. Continuing empties everything in these folders (the folders themselves stay), after your system asks you to approve it. Like the rest of this clean, it cannot be undone.",
+            message: $"{retryPaths.Count} item(s) could not be removed from the system folders listed below, which only an administrator can clean. Continuing cleans these folders again as administrator, after your system asks you to approve it (the folders themselves stay, and files that are recent or in use are left alone). Like the rest of this clean, it cannot be undone.",
             acceptText: "Continue",
             cancelText: "Skip",
             isDestructive: true,

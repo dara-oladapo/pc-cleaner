@@ -5,9 +5,11 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 ## Features
 
 - **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) and one "Scan everything" button that runs every tool in one pass, with a summary card per tool.
-- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), groups them by category, reports reclaimable size, and deletes what you select after confirming.
+- **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), developer tool caches (Yarn, pnpm, Gradle, Cargo, Go, VS Code, JetBrains, Playwright, Xcode DeviceSupport), groups them by category, reports reclaimable size, and deletes what you select after confirming. Large, slow-to-rebuild stores (NuGet global packages, Gradle, Cargo, pnpm, Playwright browsers, Xcode DeviceSupport, JetBrains indexes) are listed but left unticked.
 - **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
 - **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
+- **Volumes to scan** (Settings) — choose which local volumes Duplicates and Large Files look at. Only the system volume by default; network, optical, cloud-drive and system/snapshot mounts are never offered.
+- **Developer cleanup** (opt-in) — for anyone who writes code. Off by default; turn on **Developer mode** in Settings (the app suggests it once if git or Docker is installed) and a Developer page appears. It finds Docker build cache, unused images and stopped containers (on the host, and on Windows inside running WSL distros), git worktrees that are clean, fully pushed and idle for 14 days, and git-ignored build output (`bin`/`obj`, `node_modules`, `target`, `.venv`...) of projects untouched for 30 days. It looks in your code folders (`~/source/repos`, `~/repos`, `~/src`, `~/code`, `~/Projects`, `~/Dev`, `~/Documents/GitHub`, `~/Developer` on macOS), which you can change in Settings. Worktrees are removed only with `git worktree remove` (never forced, branches kept), Docker volumes are never ticked for you, and every run asks first. While developer mode is off the app never runs docker, wsl or git.
 - **Startup Manager** — lists apps that launch automatically (Registry Run keys + Startup folder on Windows; LaunchAgents/LaunchDaemons on macOS) and lets you enable/disable them reversibly.
 - **Appearance** — Light, Dark, or System (the default), chosen from the navigation rail and remembered across restarts. System keeps following the OS rather than sampling it once at launch.
 - **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.
@@ -77,7 +79,7 @@ Install the CLI once: `dotnet tool install -g vpk`.
 |---|---|
 | `ubuntu-latest` | `PcCleaner.Core` build and tests only. The app project's `TargetFrameworks` evaluates to empty on Linux, so it can't be restored there at all; the app step is a stub until there's a Linux UI layer. |
 | `windows-latest` | Core tests, plus the Windows app build. The primary supported platform. |
-| `macos-latest` | Core tests, plus the Mac Catalyst app build — the first thing that has ever compiled that target (see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)). |
+| `xcode-27` | Core tests, plus the Mac Catalyst app build with Xcode 27.2. Not `macos-latest`: its newest Xcode (26.6) produces an app that crashes at launch on macOS 27. |
 
 The app build step is the important one: `MauiXamlInflator=SourceGen` compiles XAML to C#, so a mistyped `StaticResource` key or a binding path that doesn't exist on its `x:DataType` fails the build rather than surfacing at runtime.
 
@@ -100,22 +102,72 @@ vpk pack `
 
 Produces `releases/win/PCCleaner-win-Setup.exe` plus the `.nupkg`/`RELEASES`/`releases.win.json` files `UpdateService` looks for.
 
-**macOS** (documented, not yet run — needs a Mac with Xcode; same gap as the Mac Catalyst build itself, see [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)):
+**macOS** (build and pack verified on an Apple Silicon Mac — macOS 27, Xcode 27.2; the installed app's runtime behaviour is still tracked in [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)):
 
 ```bash
-dotnet publish src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-maccatalyst -c Release --self-contained -o publish/osx
+# Release builds both maccatalyst-arm64 and maccatalyst-x64 and merges them into one universal bundle:
+# src/PcCleaner.App/bin/Release/net10.0-maccatalyst/PC Cleaner.app
+dotnet publish src/PcCleaner.App/PcCleaner.App.csproj -f net10.0-maccatalyst -c Release \
+  -p:CreatePackage=false -p:ApplicationDisplayVersion=1.0.0 -p:ApplicationVersion=1
+
+# vpk wants a .entitlements file without the BOM the project's plist has.
+plutil -convert xml1 -o /tmp/PcCleaner.entitlements src/PcCleaner.App/Platforms/MacCatalyst/Entitlements.plist
 
 vpk pack \
   --packId PCCleaner --packVersion 1.0.0 --channel osx \
-  --packDir publish/osx --mainExe PcCleaner.App \
-  --icon Resources/AppIcon/appicon.icns \
+  --packDir "src/PcCleaner.App/bin/Release/net10.0-maccatalyst/PC Cleaner.app" --mainExe PcCleaner.App \
   --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" \
+  --signAppIdentity=- --signEntitlements /tmp/PcCleaner.entitlements \
   --outputDir releases/osx
 ```
 
-(`appicon.icns` doesn't exist yet — MAUI's Windows build auto-generates an `.ico` at publish time, but the macOS `.icns` needs to be produced separately, e.g. via `iconutil` on a Mac.)
+`--packDir` is the `.app` itself, so vpk keeps MAUI's bundle (icon included) and only adds its updater. `--signAppIdentity=-` signs ad-hoc; swap in a Developer ID identity (plus `--signInstallIdentity` and `--notaryProfile`) for a signed, notarized build. Produces `releases/osx/PCCleaner-osx-Setup.pkg`, `PCCleaner-osx-Portable.zip`, `PCCleaner-1.0.0-osx-full.nupkg`, `releases.osx.json`, `assets.osx.json` and `RELEASES-osx`.
 
-**Publishing a release:** create a GitHub Release tagged with the version (e.g. `v1.0.0`) on the repo and upload everything from `releases/win/` (and `releases/osx/` once that exists) as release assets — `UpdateService` points at `https://github.com/dara-oladapo/pc-cleaner` via Velopack's `GithubSource` and reads the release feed from there. Until a release is published, "Check for Updates" will always report up to date (there's nothing to compare against yet).
+If the build fails with `This version of .NET for MacCatalyst (X.Y.…) requires Xcode X.Y`, either switch Xcode with `sudo xcode-select -s /Applications/Xcode_X.Y.app` or, for a minor-version mismatch, add `-p:ValidateXcodeVersion=false`.
+
+**Publishing a release:** push a `vX.Y.Z` tag. `.github/workflows/release.yml` builds both platforms and creates a single GitHub Release containing both sets of files. Windows and macOS live side by side in it as separate Velopack channels (`win` and `osx`), and every file name carries its channel, so they never overwrite each other. `UpdateService` points at `https://github.com/dara-oladapo/pc-cleaner` via Velopack's `GithubSource`, and each installed copy only reads its own channel's feed.
+
+### macOS signing and notarization (optional)
+
+Without an Apple Developer account the release workflow still produces a working, **unsigned** macOS installer and logs a warning; users then need the Gatekeeper steps under [Installing on macOS](#installing-on-macos). To ship a signed and notarized build, add these repository secrets (Settings → Secrets and variables → Actions). The workflow signs only when all seven are set:
+
+| Secret | What it is |
+|---|---|
+| `APPLE_CERT_P12_BASE64` | One `.p12` exported from Keychain Access holding **both** your *Developer ID Application* and *Developer ID Installer* certificates and their private keys, base64-encoded: `base64 -i certs.p12 \| pbcopy` |
+| `APPLE_CERT_PASSWORD` | The password you set when exporting the `.p12` |
+| `APPLE_SIGN_APP_IDENTITY` | e.g. `Developer ID Application: Your Name (TEAMID)` (as shown by `security find-identity -v`) |
+| `APPLE_SIGN_INSTALL_IDENTITY` | e.g. `Developer ID Installer: Your Name (TEAMID)` |
+| `APPLE_NOTARY_APPLE_ID` | The Apple ID email used for notarization |
+| `APPLE_NOTARY_PASSWORD` | An app-specific password for that Apple ID (appleid.apple.com → Sign-In and Security → App-Specific Passwords) |
+| `APPLE_TEAM_ID` | Your 10-character Team ID (developer.apple.com → Membership) |
+
+The workflow imports the certificate into a temporary keychain, stores the notary credentials with `xcrun notarytool store-credentials`, and passes `--signAppIdentity`, `--signInstallIdentity`, `--signEntitlements` and `--notaryProfile` to `vpk pack`, which signs with the hardened runtime, notarizes and staples. Notarization usually takes a few minutes but can take longer.
+
+## Installing
+
+Download from the [latest release](https://github.com/dara-oladapo/pc-cleaner/releases/latest).
+
+**Windows:** run `PCCleaner-win-Setup.exe`.
+
+### Installing on macOS
+
+Download `PCCleaner-osx-Setup.pkg` and open it. The app is a universal build, so the same installer works on Apple Silicon and Intel Macs running macOS 14 (Sonoma) or later. (`PCCleaner-osx-Portable.zip` is the same app without an installer. Unzip it and drag **PC Cleaner** into Applications.)
+
+Until releases are signed and notarized (see above), macOS blocks the first open with a message like *"PCCleaner-osx-Setup.pkg" cannot be opened because Apple cannot check it for malicious software*, or *"…" Not Opened*. To get past it once:
+
+1. Click **Done** (or **OK**) on the warning. Don't click Move to Trash.
+2. Open **System Settings → Privacy & Security** and scroll down to **Security**. You'll see a line saying the installer (or app) was blocked. Click **Open Anyway** and confirm with your password or Touch ID.
+3. The installer then runs normally. If macOS also blocks **PC Cleaner** the first time you launch it, repeat step 2 for the app.
+
+On older macOS versions (14 Sonoma and earlier) you can instead **Control-click (right-click) the `.pkg` or app → Open → Open**.
+
+If macOS says the app *"is damaged and can't be opened"* (this can happen with the portable zip), clear the download quarantine flag in Terminal and open it again:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/PC Cleaner.app"
+```
+
+After installing, grant **Full Disk Access** (System Settings → Privacy & Security → Full Disk Access → add PC Cleaner) so it can scan other apps' caches and your folders.
 
 ## macOS: App Sandbox is disabled on purpose
 

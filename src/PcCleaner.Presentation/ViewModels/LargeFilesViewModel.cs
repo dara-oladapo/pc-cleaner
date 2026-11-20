@@ -50,8 +50,9 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         ILargeFileScanner scanner,
         IFileTrasher trasher,
         IDialogService dialogs,
-        IFolderPickerService folderPicker)
-        : base(folderPicker)
+        IFolderPickerService folderPicker,
+        ScanVolumeSettings volumeSettings)
+        : base(folderPicker, volumeSettings)
     {
         _scanner = scanner;
         _trasher = trasher;
@@ -63,9 +64,10 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task ScanAsync()
     {
-        if (RootPaths.Count == 0)
+        var plan = PlanScan();
+        if (plan.Roots.Count == 0)
         {
-            StatusText = "Add at least one folder first.";
+            StatusText = NothingToScanText(plan);
             return;
         }
 
@@ -85,7 +87,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
 
         try
         {
-            await foreach (var entry in _scanner.ScanAsync(RootPaths.ToList(), DefaultMinSizeBytes, _scanCts.Token, walkProgress))
+            await foreach (var entry in _scanner.ScanAsync(plan.Roots, DefaultMinSizeBytes, _scanCts.Token, walkProgress))
             {
                 var vm = new FileEntryViewModel(entry);
                 vm.PropertyChanged += OnFilePropertyChanged;
@@ -93,9 +95,11 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
                 UpdateShares();
             }
 
-            StatusText = Files.Count == 0
-                ? "No files over 100 MB in these folders."
-                : $"Found {Files.Count} file(s) over 100 MB, {ByteSizeFormatter.Format(FoundBytes)} in total.";
+            StatusText = WithSkippedNote(
+                Files.Count == 0
+                    ? "No files over 100 MB in these folders."
+                    : $"Found {Files.Count} file(s) over 100 MB, {ByteSizeFormatter.Format(FoundBytes)} in total.",
+                plan);
         }
         catch (OperationCanceledException)
         {

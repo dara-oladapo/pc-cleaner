@@ -61,9 +61,27 @@ internal static class WindowsElevatedHelper
             return ElevationExitCodes.Rejected;
         }
 
-        var items = roots
-            .Select(r => new JunkItem(r, SizeBytes: 0, JunkCategory.SystemCache, r, IsDirectory: true))
-            .ToList();
+        // JunkCleaner only deletes what a scan manifest names, so the elevated process scans each root itself (the
+        // standard-user scan could not read these folders) and cleans exactly that set. The scan never follows a link,
+        // and the cleaner re-checks every file (including the minimum age) before deleting it.
+        var items = new List<JunkItem>();
+        foreach (string root in roots)
+        {
+            var planned = new PlannedJunkRoot(root, JunkCategory.SystemCache, root, IsTemp: true, ExcludedPaths: []);
+            JunkRootScan scan = JunkRootScanner.Scan(
+                planned, DateTime.UtcNow, JunkSafetyRules.DefaultMinimumAge, JunkRootPlanner.DefaultPathComparison);
+            if (scan.RootIsLink)
+            {
+                return ElevationExitCodes.Rejected;
+            }
+
+            items.Add(new JunkItem(root, scan.TotalBytes, JunkCategory.SystemCache, root, IsDirectory: true)
+            {
+                Files = scan.Files,
+                Directories = scan.Directories,
+                MinimumAge = JunkSafetyRules.DefaultMinimumAge,
+            });
+        }
 
         // Task.Run keeps the clean off the UI thread's synchronisation context, which this process already has by the
         // time CreateMauiApp runs; blocking on it from there would otherwise deadlock.
