@@ -100,7 +100,7 @@ public class FreedesktopTrashEmptierTests
         var result = await cleaner.CleanAsync(
         [
             new JunkItem(Trash(dir), 10, JunkCategory.TrashBin, "Trash", IsDirectory: true),
-            new JunkItem(Path.Combine(dir.Path, "cache", "pip"), 20, JunkCategory.PackageManagerCache, "pip", IsDirectory: true),
+            ScanAsItem(Path.Combine(dir.Path, "cache", "pip")),
         ]);
 
         Assert.True(result.AllSucceeded);
@@ -108,6 +108,18 @@ public class FreedesktopTrashEmptierTests
         Assert.True(Directory.Exists(Path.Combine(Trash(dir), "info")));
         Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(dir.Path, "cache", "pip")));
         Assert.True(result.BytesFreed >= 30);
+    }
+
+    /// <summary>The shared cleaner deletes only what a scan listed, so a directory item must carry its scan manifest.</summary>
+    private static JunkItem ScanAsItem(string path)
+    {
+        var root = new PlannedJunkRoot(JunkRootPlanner.Normalize(path), JunkCategory.PackageManagerCache, "pip", false, []);
+        JunkRootScan scan = JunkRootScanner.Scan(root, DateTime.UtcNow, JunkSafetyRules.DefaultMinimumAge, JunkRootPlanner.DefaultPathComparison);
+        return new JunkItem(root.Path, scan.TotalBytes, JunkCategory.PackageManagerCache, "pip", IsDirectory: true)
+        {
+            Files = scan.Files,
+            Directories = scan.Directories,
+        };
     }
 
     /// <summary>Makes deleting anything in <paramref name="directory"/> fail until disposed.</summary>
@@ -122,7 +134,13 @@ public class FreedesktopTrashEmptierTests
         // Unix ignores open handles; a read-only directory stops its entries being unlinked.
         UnixFileMode original = File.GetUnixFileMode(directory);
         File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-        return new Restore(() => File.SetUnixFileMode(directory, original));
+        return new Restore(() =>
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(directory, original);
+            }
+        });
     }
 
     private sealed class Restore(Action action) : IDisposable
