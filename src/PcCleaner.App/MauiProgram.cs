@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.DevCleanup;
 using PcCleaner.Core.Scanning;
 using PcCleaner.App.Pages;
 using PcCleaner.App.Services;
@@ -21,24 +22,33 @@ public static class MauiProgram
         // Must run before anything else: intercepts install/update/uninstall lifecycle command-line
         // hooks from the Velopack-generated installer and exits immediately for those, before any UI
         // would otherwise start up. A no-op when launched normally (not via a Velopack-managed install).
-        VelopackApp.Build().Run();
+        // On Mac Catalyst the locator has to be supplied explicitly (see VelopackLocatorProvider); Windows is
+        // unchanged and uses Velopack's default.
+        if (VelopackLocatorProvider.IsSupported)
+        {
+            var velopack = VelopackApp.Build();
+            if (VelopackLocatorProvider.Locator is { } locator)
+            {
+                velopack.SetLocator(locator);
+            }
+            velopack.Run();
+        }
 
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
             {
-                // Aliases are named by role, not by vendor, so swapping a face is a one-line change here
-                // rather than a find-and-replace across every style. Body was Open Sans — the MAUI project
-                // template's default, and the most anonymous UI face available. IBM Plex Sans was drawn for
-                // technical documentation and sits naturally beside JetBrains Mono, which carries every
-                // figure and path in the app.
-                fonts.AddFont("IBMPlexSans-Regular.ttf", "BodyRegular");
-                fonts.AddFont("IBMPlexSans-SemiBold.ttf", "BodySemibold");
-                fonts.AddFont("SpaceGrotesk-Medium.ttf", "DisplayMedium");
-                fonts.AddFont("SpaceGrotesk-Bold.ttf", "DisplayBold");
-                fonts.AddFont("JetBrainsMono-Regular.ttf", "MonoRegular");
-                fonts.AddFont("JetBrainsMono-Medium.ttf", "MonoMedium");
+                // DM Sans is the one WiseLead face (SIL OFL 1.1, the same upstream v4.004 static files the
+                // WiseLead design system ships). Aliases are named by role, not by vendor, so a style says
+                // what the text is for and swapping a face is a one-line change here. Figures and paths use
+                // the same face; the Mono aliases are kept so no style had to change.
+                fonts.AddFont("DMSans-Regular.ttf", "BodyRegular");
+                fonts.AddFont("DMSans-SemiBold.ttf", "BodySemibold");
+                fonts.AddFont("DMSans-Medium.ttf", "DisplayMedium");
+                fonts.AddFont("DMSans-Bold.ttf", "DisplayBold");
+                fonts.AddFont("DMSans-Regular.ttf", "MonoRegular");
+                fonts.AddFont("DMSans-Medium.ttf", "MonoMedium");
             });
 
 #if DEBUG
@@ -59,6 +69,14 @@ public static class MauiProgram
         services.AddSingleton<IJunkCleaner, JunkCleaner>();
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
+        // Volumes for the "Volumes to scan" setting. DriveInfo does the enumeration everywhere; the
+        // platform probe (registered below) adds what DriveInfo can't see: virtual, read-only, hidden.
+        // Factories because both classes also have test constructors.
+        services.AddSingleton<IVolumeSource>(sp => new DriveInfoVolumeSource(sp.GetService<IVolumeTraitsProbe>()));
+        services.AddSingleton<IVolumeCatalog>(sp => new VolumeCatalog(sp.GetRequiredService<IVolumeSource>()));
+        services.AddSingleton<ISettingsStore, PreferencesSettingsStore>();
+        services.AddSingleton<ScanVolumeSettings>();
+
         // Platform-specific: where junk lives, how autostart works, how the trash/recycle bin works,
         // and how the OS asks the user to pick a folder.
 #if WINDOWS
@@ -66,17 +84,51 @@ public static class MauiProgram
         services.AddSingleton<IStartupItemManager, WindowsStartupManager>();
         services.AddSingleton<IFileTrasher, WindowsFileTrasher>();
         services.AddSingleton<IFolderPickerService, WindowsFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, WindowsVolumeTraitsProbe>();
+        services.AddSingleton<ICloudDriveScanner, WindowsCloudDriveScanner>();
+        services.AddSingleton<ICloudFileReleaser, WindowsCloudFileReleaser>();
 #elif MACCATALYST
         services.AddSingleton<IJunkScanner, MacJunkScanner>();
         services.AddSingleton<IStartupItemManager, MacStartupManager>();
         services.AddSingleton<IFileTrasher, MacFileTrasher>();
         services.AddSingleton<IFolderPickerService, MacFolderPicker>();
+        services.AddSingleton<IVolumeTraitsProbe, MacVolumeTraitsProbe>();
+        services.AddSingleton<ICloudDriveScanner, MacCloudDriveScanner>();
+        services.AddSingleton<ICloudFileReleaser, MacCloudFileReleaser>();
 #endif
+
+        // Cloud drives: the eligibility rules and the measuring live in Core; the platform parts are above.
+        services.AddSingleton<CloudSpaceService>();
+        services.AddSingleton<CloudLocationGuard>();
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IUpdateService, UpdateService>();
         services.AddSingleton<INavigationService, ShellNavigationService>();
+
+        // Developer mode (default off) gates the Developer page, every docker/wsl/git command (enforced in
+        // DevCleanupService, which reads the setting on every call), and developer caches in the junk scan.
+        services.AddSingleton<DeveloperModeSettings>();
+        services.AddSingleton<IProcessRunner, SystemProcessRunner>();
+        services.AddSingleton<IWslDiskLocator, RegistryWslDiskLocator>();
+        // Code folders are user-editable in Settings; the providers re-read them at the start of every scan.
+        services.AddSingleton<DevRootsSettings>();
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new DockerCleanupProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IWslDiskLocator>()));
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new GitWorktreeProvider(
+                sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<DevRootsSettings>().CurrentOptions, TimeProvider.System));
+        services.AddSingleton<IDevCleanupProvider>(sp =>
+            new BuildArtifactProvider(
+                sp.GetRequiredService<IProcessRunner>(),
+                sp.GetRequiredService<IJunkCleaner>(),
+                sp.GetRequiredService<DevRootsSettings>().CurrentOptions,
+                TimeProvider.System));
+        services.AddSingleton(sp =>
+        {
+            var developerMode = sp.GetRequiredService<DeveloperModeSettings>();
+            return new DevCleanupService(sp.GetServices<IDevCleanupProvider>(), () => developerMode.IsEnabled);
+        });
     }
 
     private static void RegisterViewModelsAndPages(IServiceCollection services)
@@ -105,6 +157,19 @@ public static class MauiProgram
         services.AddTransient<DuplicateFinderPage>();
         services.AddTransient<LargeFilesPage>();
         services.AddTransient<StartupManagerPage>();
+
+        services.AddSingleton<DeveloperCleanupViewModel>();
+        services.AddTransient<DeveloperCleanupPage>();
+
+        // Singleton so the volume list isn't rebuilt from scratch on every visit; the page refreshes it
+        // on appearing anyway.
+        services.AddSingleton<SettingsViewModel>();
+        services.AddTransient<SettingsPage>();
+
+        // Not composed by the dashboard, so it does not need to be a singleton for that reason. It is one so
+        // the results survive leaving the page: a cloud scan can take minutes.
+        services.AddSingleton<CloudDrivesViewModel>();
+        services.AddTransient<CloudDrivesPage>();
 
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutPage>();

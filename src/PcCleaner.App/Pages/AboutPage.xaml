@@ -13,7 +13,7 @@
     <Grid RowDefinitions="Auto,*,Auto" Padding="{StaticResource PagePadding}" RowSpacing="{StaticResource Space4}">
 
         <VerticalStackLayout Grid.Row="0" Spacing="2">
-            <Label Style="{StaticResource Eyebrow}" Text="PC Cleaner" />
+            <Label Style="{StaticResource Eyebrow}" Text="PC Cleaner by WiseLead Solutions" />
             <Label Style="{StaticResource HeroNumber}" Text="{Binding VersionText}" />
             <Label Style="{StaticResource HeroCaption}" Text="{Binding StatusText}" />
         </VerticalStackLayout>
@@ -22,15 +22,15 @@
             <VerticalStackLayout Spacing="{StaticResource Space5}" MaximumWidthRequest="620" HorizontalOptions="Start">
 
                 <VerticalStackLayout Spacing="{StaticResource Space1}">
-                    <Label Style="{StaticResource Eyebrow}" Text="Free and unlocked" />
+                    <Label Style="{StaticResource Eyebrow}" Text="Free and open source" />
                     <Label Style="{StaticResource EmptyStateBody}"
-                           Text="No paywall, no trial limits, no upsells. Every feature here — junk cleanup, duplicates, large files, startup — is fully functional." />
+                           Text="No paywall, no trial limits, no upsells. Every feature is fully functional, and the source is open under the Apache License 2.0, so you can read it, change it and share it." />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="{StaticResource Space1}">
                     <Label Style="{StaticResource Eyebrow}" Text="What gets deleted, and how" />
                     <Label Style="{StaticResource EmptyStateBody}"
-                           Text="Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files — duplicates and large files — always go to the Recycle Bin instead, so you can get them back." />
+                           Text="Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files, duplicates and large files, always go to the Recycle Bin instead, so you can get them back." />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="{StaticResource Space1}">

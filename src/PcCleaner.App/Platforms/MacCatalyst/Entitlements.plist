@@ -13,6 +13,21 @@
         -->
         <key>com.apple.security.app-sandbox</key>
         <false/>
+
+        <!--
+          Hardened-runtime exceptions the .NET runtime needs. Notarization requires the hardened runtime,
+          and the release workflow passes this file to vpk's signEntitlements option when it signs, so
+          without these the signed build would be killed the first time the runtime JITs code. These are
+          the set Microsoft documents for .NET on macOS:
+          https://learn.microsoft.com/dotnet/core/install/macos-notarization-issues
+          They have no effect on an unsigned/ad-hoc build.
+        -->
+        <key>com.apple.security.cs.allow-jit</key>
+        <true/>
+        <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+        <true/>
+        <key>com.apple.security.cs.disable-library-validation</key>
+        <true/>
     </dict>
 </plist>
 

@@ -53,7 +53,7 @@ public static class AppServices
         services.AddSingleton<ITopLevelAccessor, DesktopLifetimeTopLevelAccessor>();
 
         services.AddSingleton<IDialogService, DialogService>();
-        services.AddSingleton<IUpdateService, UnsupportedUpdateService>();        // #14
+        services.AddSingleton<IUpdateService, UpdateService>();                   // Velopack; AppImage only
         services.AddSingleton<INavigationService, ShellNavigationService>();
     }
 

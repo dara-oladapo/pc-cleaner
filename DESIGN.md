@@ -8,7 +8,15 @@ Rendered stills of that prototype are in [`docs/prototype/screenshots/`](docs/pr
 
 ## Why this look
 
-The two default "AI tool" aesthetics are cream-paper-serif-terracotta and near-black-with-one-acid-accent. Both are template answers, not choices made for this app. Instead: a cool "lab report" palette (pale blue-gray, not cream) with one functional accent color, and monospace tabular numerals as the running signature — every size and count in the app reads like a terminal/`du -h` readout, reinforcing "precise diagnostic tool" over "sales funnel with a scan button."
+PC Cleaner is a WiseLead product, so it looks like one. The colour values, the type and the rules here come from the WiseLead design system (Threshold); the values are used as plain constants, and the design system's own packages are not part of this repository.
+
+Three rules from that system shape every screen:
+
+- **One blue.** Products are told apart by mark and name, never by accent colour, so WiseLead Blue is the only accent here.
+- **Welcoming, not shouting.** No uppercase and no wide letter-spacing anywhere. Labels are sentence case, wording is calm, and an error says what to do next.
+- **Improve, not overhaul.** The structure and flows of a screen stay as they are. The brand layer (colour, type, tone) is what changes.
+
+Beyond that, the app's own signature is the capacity readout below: one honest bar of the real drive, rather than the circular gauge other cleaners open on.
 
 ## The signature element: the capacity readout
 
@@ -18,38 +26,43 @@ Avast Cleanup and CleanMyMac both open on a big circular gauge; this is the deli
 
 ## Color tokens
 
-Defined in `Resources/Styles/Colors.xaml`. Light and dark are each intentional palettes (dark isn't just light-inverted).
+Defined in `Resources/Styles/Colors.xaml`. The values are the WiseLead design system's; the keys keep this app's role names, and the table says which design-system token each mirrors. Light and dark are each intentional palettes (dark is the design system's ink theme, not light inverted).
 
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `Paper` / `PaperDark` | `#EEF1F3` | `#12161B` | Page background |
-| `Surface` / `SurfaceDark` | `#FFFFFF` | `#1A2027` | Cards, rows, the nav rail |
-| `Sunken` / `SunkenDark` | `#E4E9EC` | `#0D1116` | Meter tracks, hover fills, wells |
-| `InkStrong` / `InkStrongDark` | `#12181D` | `#EDF1F3` | Primary text |
-| `InkMuted` / `InkMutedDark` | `#5B6672` | `#8B99A6` | Secondary text, captions |
-| `Hairline` / `HairlineDark` | `#D7DEE3` | `#2A323B` | Borders, dividers |
-| `Signal` / `SignalDark` | `#0E7C7B` | `#4FD1CB` | The accent — primary buttons, hero numbers, meter fills, pills |
-| `Attention` / `AttentionDark` | `#B8863B` | `#D9A857` | Sparingly — "needs admin/root" badges only |
-| `Danger` / `DangerDark` | `#A8322D` | `#E8756D` | Destructive actions and their confirmations, nothing else |
-| `Occupied` / `OccupiedDark` | `#97A4B0` | `#46525F` | The in-use portion of the capacity bar |
+| Token | Light | Dark | WiseLead token | Use |
+|---|---|---|---|---|
+| `Paper` / `PaperDark` | `#FAF7F2` | `#141238` | `WlBgDefault` | Page background |
+| `Surface` / `SurfaceDark` | `#FEFCF8` | `#1A1844` | `WlBgElevated` | Cards, rows, the nav rail |
+| `Sunken` / `SunkenDark` | `#F1EBE1` | `#0E0D2C` | `WlBgSunken` | Meter tracks, hover fills, wells |
+| `InkStrong` / `InkStrongDark` | `#1F1C4E` | `#F4F1EA` | `WlInk` (Blue One) | Primary text |
+| `InkMuted` / `InkMutedDark` | `#5A5478` | `#A9A2B8` | `WlInkSoft` | Secondary text, captions |
+| `Hairline` / `HairlineDark` | `#E4DCCE` | `#1FFAF7F2` | `WlBorderDefault` | Borders, dividers |
+| `Signal` / `SignalDark` | `#1C65AF` | `#2699D3` | `WlCyanDeep` (Blue Two) / `WlCyan` (Blue Three) | The accent: primary buttons, hero numbers, meter fills, pills |
+| `Attention` / `AttentionDark` | `#9A5A1F` | `#E8A94E` | `WlAmberDeep` / `WlWarningDark` | Sparingly: "needs admin/root" badges only |
+| `Danger` / `DangerDark` | `#B4442F` | `#E0715C` | `WlDanger` / `WlDangerDark` | Destructive actions and their confirmations, nothing else |
+| `Occupied` / `OccupiedDark` | `#A9A2B8` | `#5A5478` | `WlNeutral400` / `WlNeutral600` | The in-use portion of the capacity bar |
 
-Rule: `Signal` is the only saturated color used to draw attention. If a new screen wants to emphasise something, reach for `Signal` weight/placement (bold, size, position) before reaching for a new color.
+`SignalMuted` and `AttentionMuted` (pill backgrounds) are tints of Blue Two and Amber, chosen to keep the text above 4.5:1. They are marked "derived" in `Colors.xaml` because they are not design-system tokens.
 
-**The one exception, and why it exists.** `Danger` is a second saturated color, and it earns its place: before it, "Scan" and "Delete Selected" were the identical teal button, so a single color meant both "look at this" and "destroy this irreversibly". Junk cleaning is a permanent delete with no Recycle Bin round-trip, and an interface that gives no warning about that is a defect, not a minimalism. `Danger` appears **only** on a destructive button and on its confirmation dialog. Do not reach for it to mean "error", "warning", or "important".
+Rule: `Signal` is the only saturated colour used to draw attention. If a new screen wants to emphasise something, reach for `Signal` weight and placement (bold, size, position) before reaching for a new colour.
+
+**The one exception, and why it exists.** `Danger` is a second saturated colour, and it earns its place: before it, "Scan" and "Delete Selected" were the identical button, so a single colour meant both "look at this" and "destroy this irreversibly". Junk cleaning is a permanent delete with no Recycle Bin round-trip, and an interface that gives no warning about that is a defect, not minimalism. `Danger` appears **only** on a destructive button and on its confirmation dialog. Do not reach for it to mean "error", "warning", or "important".
 
 ## Type
 
-| Role | Family | Where |
+One face, DM Sans, as everywhere in WiseLead (SIL Open Font License 1.1, the same upstream v4.004 static files the design system ships; licence in `Resources/Fonts/OFL.txt`).
+
+| Weight | Aliases | Where |
 |---|---|---|
-| Display | Space Grotesk (`DisplayMedium` / `DisplayBold`) | Page titles, button labels, eyebrows, pill labels, nav items |
-| Tabular numbers | JetBrains Mono (`MonoRegular` / `MonoMedium`) | Every size, count, and path in the app — the signature device |
-| Body | IBM Plex Sans (`BodyRegular` / `BodySemibold`) | Everything else — deliberately kept quiet/supporting |
+| Regular | `BodyRegular`, `MonoRegular` | Body text, paths, captions |
+| Medium | `DisplayMedium`, `MonoMedium` | Buttons, labels, nav items, figures |
+| SemiBold | `BodySemibold` | Row titles |
+| Bold | `DisplayBold` | Page titles, primary buttons, hero numbers |
 
-Body was Open Sans until the redesign. Open Sans is the .NET MAUI project template's default and the most anonymous UI face available — the templated choice the rest of this document argues against. IBM Plex Sans was drawn for technical documentation, sits naturally beside JetBrains Mono, and is OFL-licensed.
+Aliases are named by role rather than by vendor, so a style says what the text is for and swapping a face is one line in `MauiProgram.cs`. The `Mono` aliases are kept so no style had to change; they now resolve to DM Sans, and `Mono` / `MonoNumber` still mark paths and figures, with `MonoNumber` right-aligned for scanning down a column.
 
-Aliases are named by role rather than by vendor (`BodyRegular`, not `OpenSansRegular`), so swapping a face is one line in `MauiProgram.cs` instead of a find-and-replace through every style. Font files live in `Resources/Fonts/`.
+No uppercase and no letter-spacing: `TextTransform` is never set and the tracking tokens are zero. Labels are written in sentence case in the XAML itself.
 
-Sizes come from `Resources/Styles/Tokens.xaml` (`FontHero` … `FontPill`). Stay on the scale.
+Sizes come from `Resources/Styles/Tokens.xaml` (`FontHero` ... `FontPill`). Stay on the scale.
 
 ## Tokens (`Resources/Styles/Tokens.xaml`)
 
@@ -72,7 +85,7 @@ Selection shows as a tinted row background. MAUI hands the `Selected` visual sta
 ## Components (`Resources/Styles/Styles.xaml`)
 
 - **`PrimaryButton`** — solid `Signal` fill, 4px radius (not pill-shaped — reads as an instrument control). One per screen: the action you came to that screen to take.
-- **`DangerButton`** — same shape, `Danger` fill. Destructive actions only, and always paired with a confirmation.
+- **`DangerButton`** — same shape, `Danger` fill. Destructive actions only, and always paired with a confirmation. The single exception is the dashboard's "Scan and auto clean", which exists to skip the confirmation; the line under the dashboard buttons says so in plain words.
 - **Default `Button`** — ghost/outline, for secondary actions (Stop scan, Add, Browse).
 - **`InlineButton`** — compact ghost button for in-row actions (Remove, Enable/Disable, Select none).
 - **`Card`** / **`RowCard`** — raised containers. Result rows are cards rather than hairline-separated bands: at twenty-plus results the hairline version read as one undifferentiated wall.
@@ -106,7 +119,7 @@ The dashboard is the single exception: "2 of 4 tools finished" is a real fractio
 
 **Every prompt, dialog, and alert is app UI.** No screen ever calls `DisplayAlert` or any other platform dialog. An OS alert ignores the design system, renders differently on Windows and Mac Catalyst, can't show what is about to be deleted, and reads as a system warning rather than part of this app — which would make the most consequential moment in the product the least consistent one. `Controls/DialogHost.xaml` is the app's own dialog: a scrim plus a centred card, hosted in every page's outer `Grid` and invisible until a view model asks for one. (It's also why the build no longer emits CS0618 — `Page.DisplayAlert` is obsolete in .NET 10.)
 
-Every delete goes through `IDialogService.ConfirmAsync` before anything is touched. The copy differs by consequence:
+Every delete goes through `IDialogService.ConfirmAsync` before anything is touched, except a dashboard "Scan and auto clean", which the user chooses precisely to skip it. A dashboard "Scan and clean" shows one dialog for all tools, with a line per tool saying what happens to its items; the tools then clean without asking again. The copy differs by consequence:
 
 - Junk cleaning is a **permanent** delete (`IJunkCleaner` deliberately bypasses the Recycle Bin, since caches are regenerable and filling the bin with them defeats the point). Its dialog says so, names the size, and its affirmative is `Danger`.
 - Duplicates and large files are the user's own files and go to the Recycle Bin. Their dialogs name the destination and say it can be restored.

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  The Linux app icon: src/PcCleaner.App/Resources/AppIcon/appicon.svg (background) with appiconfg.svg (foreground)
+  composited on top, the same pairing MauiIcon renders for Windows and macOS. Edit those two first and keep this in
+  step; the 256x256 PNG beside it in hicolor/256x256/apps is rendered from this file.
+-->
+<svg width="456" height="456" viewBox="0 0 456 456" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="456" height="456" fill="#0E7C7B" />
+    <rect x="150" y="260" width="54" height="96"  rx="10" fill="#FFFFFF" />
+    <rect x="222" y="200" width="54" height="156" rx="10" fill="#FFFFFF" />
+    <rect x="294" y="140" width="54" height="216" rx="10" fill="#FFFFFF" />
+</svg>
