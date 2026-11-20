@@ -21,6 +21,8 @@
       <conv:ShareToWidthConverter x:Key="ShareToWidthConverter" />
       <conv:UppercaseConverter x:Key="UppercaseConverter" />
       <conv:ResourceKeyToGeometryConverter x:Key="ResourceKeyToGeometryConverter" />
+      <conv:RouteToGeometryConverter x:Key="RouteToGeometryConverter" />
+      <conv:RouteHasPageConverter x:Key="RouteHasPageConverter" />
     </ResourceDictionary>
   </Application.Resources>
 

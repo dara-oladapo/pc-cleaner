@@ -316,7 +316,9 @@ public sealed class XdgAutostartStoreTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => store.SetEnabled("app.desktop", false));
     }
 
-    [Fact]
+    // Unix PATH semantics: separators, absolute-path detection and a bare executable name are Unix conventions the
+    // store only has to honour on Linux. Windows paths ('C:\...', backslashes) take a different branch of DefaultProgramExists.
+    [LinuxOnlyFact]
     public void DefaultTryExecCheck_SearchesPath()
     {
         string bin = Path.Combine(_dir.Path, "bin");
