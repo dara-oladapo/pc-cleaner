@@ -5,5 +5,5 @@ blank_issues_enabled: true
 
 contact_links:
   - name: Question or general discussion
-    url: https://github.com/wiselead-solutions/pc-cleaner/discussions
+    url: https://github.com/wiselead-oss/pc-cleaner/discussions
     about: Not sure whether something is a bug? Ask here first — no template to fill in.
