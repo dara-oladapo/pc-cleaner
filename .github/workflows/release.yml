@@ -1,25 +1,27 @@
 name: Release
 
-# Builds the Windows and macOS installers and publishes them together as one GitHub Release. Trigger by
-# pushing a tag like `v0.2.0`, or run manually via workflow_dispatch with an explicit version (useful for
+# Builds the Windows, macOS and Linux packages and publishes them together as one GitHub Release. Trigger
+# by pushing a tag like `v0.2.0`, or run manually via workflow_dispatch with an explicit version (useful for
 # re-running a release without re-tagging).
 #
 # Shape:
 #
-#   version            resolves the version once, so both platforms package the same number
+#   version            resolves the version once, so every platform packages the same number
 #   windows-installer  dotnet publish + vpk pack  -> Setup.exe, full nupkg, RELEASES, releases.win.json
 #   macos-installer    dotnet publish + vpk pack  -> Setup.pkg, Portable.zip, osx nupkg, releases.osx.json
-#   publish            downloads both artifact sets and creates the release in one `gh release create`
+#   linux-installer    dotnet publish + vpk pack  -> PCCleaner.AppImage, linux nupkg, releases.linux.json
+#   publish            downloads every artifact set and creates the release in one `gh release create`
 #
-# Creating the release once, after both builds, means a release never exists with only one platform's
+# Creating the release once, after all builds, means a release never exists with only some platforms'
 # files on it: Velopack's GithubSource reads the *latest* release, so a half-uploaded release would tell
-# Mac users "no update" (or Windows users the same) until someone noticed.
+# Mac users "no update" (or Windows or Linux users the same) until someone noticed.
 #
-# Velopack keeps the two platforms apart by channel. Windows packs into the default `win` channel and
-# macOS into `osx`; every feed/asset file carries the channel in its name (releases.win.json vs
-# releases.osx.json, RELEASES vs RELEASES-osx, PCCleaner-X-full.nupkg vs PCCleaner-X-osx-full.nupkg,
-# PCCleaner-win-* vs PCCleaner-osx-* installers — confirmed on a real vpk 1.2 run), so both sets sit in the same
-# release without colliding. The publish job checks that before uploading anything.
+# Velopack keeps the platforms apart by channel. Windows packs into the default `win` channel, macOS into
+# `osx` and Linux into `linux`; every feed/asset file carries the channel in its name (releases.win.json vs
+# releases.osx.json vs releases.linux.json, RELEASES vs RELEASES-osx vs RELEASES-linux,
+# PCCleaner-X-full.nupkg vs PCCleaner-X-osx-full.nupkg vs PCCleaner-X-linux-full.nupkg — confirmed on real
+# vpk 1.2 runs), so all three sets sit in the same release without colliding. The publish job checks that
+# before uploading anything.
 
 on:
   push:
@@ -346,8 +348,77 @@ jobs:
           if-no-files-found: error
           path: releases/osx/*
 
+  # Linux ships as an AppImage built by Velopack: one file, no install step, and it updates itself through
+  # the same GithubSource as the other two platforms (README's "Linux packaging" section has the reasoning,
+  # including why not Flatpak). The app is the Avalonia front end, PcCleaner.Desktop — MAUI has no Linux
+  # target.
+  linux-installer:
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Run tests
+        run: dotnet test tests/PcCleaner.Core.Tests/PcCleaner.Core.Tests.csproj --configuration Release
+
+      # Self-contained, so the AppImage runs on a machine with no .NET installed. -p:Version stamps the
+      # assembly with the release number, which is what the About screen shows on a copy that can't
+      # self-update; a Velopack-run copy reports the version from the package manifest instead.
+      - name: Publish self-contained linux-x64
+        run: >
+          dotnet publish src/PcCleaner.Desktop/PcCleaner.Desktop.csproj
+          -c Release
+          -r linux-x64
+          --self-contained
+          -p:Version=${{ needs.version.outputs.version }}
+          -o publish/linux-x64
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk
+
+      # --channel linux is vpk's default on Linux; it's spelled out because the channel is what keeps these
+      # files apart from Windows' and macOS' in the shared release (releases.linux.json, RELEASES-linux,
+      # PCCleaner-<ver>-linux-full.nupkg, PCCleaner.AppImage). UpdateManager reads the channel back from the
+      # installed package's manifest, so the app checks releases.linux.json without being told to.
+      #
+      # --icon becomes the AppImage's icon and the one in the .desktop entry vpk embeds; the same artwork is
+      # in packaging/linux for anyone integrating the AppImage into their menu by hand.
+      - name: Pack AppImage
+        run: |
+          vpk pack \
+            --packId PCCleaner \
+            --packVersion "$VERSION" \
+            --channel linux \
+            --runtime linux-x64 \
+            --packDir publish/linux-x64 \
+            --mainExe PcCleaner.Desktop \
+            --icon packaging/linux/icons/hicolor/256x256/apps/pccleaner.png \
+            --categories Utility \
+            --packTitle "PC Cleaner" \
+            --packAuthors "Dara Oladapo" \
+            --outputDir releases/linux \
+            -y
+          ls -la releases/linux
+          test -x releases/linux/PCCleaner.AppImage
+
+      # Everything vpk wrote: PCCleaner.AppImage, the linux nupkg and the linux feed files.
+      - name: Upload Linux release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux
+          if-no-files-found: error
+          path: releases/linux/*
+
   publish:
-    needs: [version, windows-installer, macos-installer]
+    needs: [version, windows-installer, macos-installer, linux-installer]
     runs-on: ubuntu-latest
     steps:
       - name: Download release files
@@ -355,15 +426,15 @@ jobs:
         with:
           path: releases
           pattern: release-*
-          # One subfolder per artifact: releases/release-win/*, releases/release-osx/*
+          # One subfolder per artifact: releases/release-win/*, releases/release-osx/*, releases/release-linux/*
 
       - name: Check for filename collisions
         shell: bash
         run: |
-          ls -la releases/release-win releases/release-osx
-          DUPES=$( (ls releases/release-win; ls releases/release-osx) | sort | uniq -d)
+          ls -la releases/release-win releases/release-osx releases/release-linux
+          DUPES=$( (ls releases/release-win; ls releases/release-osx; ls releases/release-linux) | sort | uniq -d)
           if [ -n "$DUPES" ]; then
-            echo "::error::Windows and macOS produced files with the same name — they would overwrite each other in the release: $DUPES"
+            echo "::error::Two platforms produced files with the same name — they would overwrite each other in the release: $DUPES"
             exit 1
           fi
 
@@ -376,6 +447,7 @@ jobs:
           gh release create "v$VERSION" \
             releases/release-win/* \
             releases/release-osx/* \
+            releases/release-linux/* \
             --repo "${{ github.repository }}" \
             --title "PC Cleaner v$VERSION" \
             --generate-notes \

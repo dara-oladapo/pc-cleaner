@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.JunkCleanupView"
+             x:DataType="pvm:JunkCleanupViewModel">
+
+  <!--
+    The Avalonia port of src/PcCleaner.App/Pages/JunkCleanupPage.xaml, bound to the same JunkCleanupViewModel.
+    Results stream into Groups one at a time as the scanner yields them, so the list grows during the scan.
+
+    CollectionView has no Avalonia equivalent. MAUI's IsGrouped list over JunkCategoryGroup becomes an ItemsControl
+    of groups inside a ScrollViewer: each group draws its own header (the GroupHeaderTemplate) and then an inner
+    ItemsControl over the group itself, which is the ObservableCollection of rows. Both levels are bound to live
+    collections, so a row added to an existing category appears under that category's header mid-scan.
+  -->
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="{StaticResource Space4}" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Grid.Row="0" Spacing="2">
+      <TextBlock Classes="eyebrow" Text="SELECTED TO REMOVE" />
+      <TextBlock Classes="hero" Text="{Binding SelectedSizeText}" />
+      <TextBlock Classes="heroCaption" Text="{Binding StatusText}" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="progressPanel" IsVisible="{Binding IsScanning}">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space3}">
+        <ProgressBar Grid.Column="0" Classes="activity" />
+        <TextBlock Grid.Column="1" Classes="mono" Text="{Binding StatusText}" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <!-- Bulk selection. With 14+ locations, ticking every box by hand was the slowest part of the job. -->
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{StaticResource Space2}" IsVisible="{Binding HasScanned}">
+      <Button Grid.Column="0" Classes="inline" Content="Select all" Command="{Binding SelectAllCommand}" />
+      <Button Grid.Column="1" Classes="inline" Content="Select none" Command="{Binding SelectNoneCommand}" />
+      <TextBlock Grid.Column="2" Classes="mono" Text="{Binding SelectionSummary}"
+                 TextAlignment="Right" VerticalAlignment="Center" />
+    </Grid>
+
+    <Panel Grid.Row="3">
+      <!-- Empty state, in place of CollectionView.EmptyView: shown while there are no groups to list. -->
+      <StackPanel Spacing="{StaticResource Space3}" Margin="0,32" MaxWidth="560"
+                  HorizontalAlignment="Left" VerticalAlignment="Center"
+                  IsVisible="{Binding !Groups.Count}">
+        <Path Classes="icon empty" Data="{StaticResource IconSearch}" />
+        <TextBlock Classes="emptyTitle" Text="Nothing scanned yet" />
+        <TextBlock Classes="emptyBody"
+                   Text="Scan to find temp files, browser caches, system logs, and package manager caches. Nothing is removed until you choose it." />
+      </StackPanel>
+
+      <ScrollViewer IsVisible="{Binding !!Groups.Count}" Padding="0,0,12,0">
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pvm:JunkCategoryGroup">
+              <StackPanel>
+                <!-- Group header: eyebrow name, a hairline rule, the category total. -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}" Margin="0,16,0,6">
+                  <TextBlock Grid.Column="0" Classes="eyebrow" VerticalAlignment="Center"
+                             Text="{Binding Name, Converter={StaticResource UppercaseConverter}}" />
+                  <Border Grid.Column="1" Classes="rule" />
+                  <TextBlock Grid.Column="2" Classes="mono" Text="{Binding TotalText}" VerticalAlignment="Center" />
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="pvm:JunkItemViewModel">
+                      <Border Classes="rowCard">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+
+                          <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
+                                    AutomationProperties.Name="{Binding Description}" />
+
+                          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock Classes="rowTitle" Text="{Binding Description}" />
+                            <TextBlock Classes="mono path" Text="{Binding Path}" />
+                          </StackPanel>
+
+                          <Panel Grid.Column="2" VerticalAlignment="Center">
+                            <Border Classes="meterTrack" />
+                            <Border Classes="meterFill"
+                                    Width="{Binding ShareOfMax, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
+                          </Panel>
+
+                          <TextBlock Grid.Column="3" Classes="monoNumber" Text="{Binding SizeText}"
+                                     VerticalAlignment="Center" MinWidth="72" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+
+    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="{StaticResource Space3}">
+      <Button Classes="primary" Content="Scan" Command="{Binding ScanCommand}" />
+      <Button Content="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+      <!-- Red, and only here: this delete does not go to the Trash. -->
+      <Button Classes="primary danger" Content="Clean selected" Command="{Binding CleanCommand}" />
+      <TextBlock Classes="heroCaption" VerticalAlignment="Center"
+                 Text="Cleaning deletes permanently — junk does not go to the Trash." />
+    </StackPanel>
+
+  </Grid>
+</UserControl>
