@@ -30,10 +30,12 @@ src/
     Services/             UpdateService (Velopack), DialogService (confirmations), ThemeService, ShellNavigationService
     Controls/             IconFlyoutItem — carries nav-rail icon geometry through Shell's item template
     Resources/Styles/     Colors, Tokens, Icons, Styles — the design system (see DESIGN.md)
-  PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Scaffold: Junk Files is the one wired screen
+  PcCleaner.Desktop/      Avalonia front end for Linux (plain net10.0, builds on every OS). Every screen, same view models
     Platforms/Linux/      Folder picker (portal/GTK) and theme service (settings in $XDG_CONFIG_HOME/pc-cleaner/settings.json);
-                          stubs that touch nothing until #10-#12 land: junk scanner, trash, startup items
+                          stubs that touch nothing until #10 and #11 land: junk scanner, trash. Startup items are real (#12)
     Services/             DialogService (in-app overlay), ShellNavigationService, UpdateService (Velopack, AppImage only), ITopLevelAccessor
+    Resources/Styles/     The design system ported to Avalonia: Colors (Light/Dark theme dictionaries), Tokens, Icons, Styles
+    Views/                One view per screen, plus DialogHostView and ScanRootsView
 packaging/
   linux/                  Linux app icon (hicolor theme layout) and .desktop entry for menu integration
 tests/
@@ -115,7 +117,7 @@ vpk pack `
 
 Produces `releases/win/PCCleaner-win-Setup.exe` plus the `.nupkg`/`RELEASES`/`releases.win.json` files `UpdateService` looks for.
 
-**macOS** (build and pack verified on an Apple Silicon Mac — macOS 27, Xcode 27.2; the installed app's runtime behaviour is still tracked in [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)):
+**macOS** (build and pack verified on an Apple Silicon Mac — macOS 27, Xcode 27.2; the installed app's runtime behaviour is still tracked in [#4](https://github.com/wiselead-oss/pc-cleaner/issues/4)):
 
 ```bash
 # Release builds both maccatalyst-arm64 and maccatalyst-x64 and merges them into one universal bundle:
@@ -153,7 +155,7 @@ Produces `releases/linux/PCCleaner.AppImage` plus `PCCleaner-1.0.0-linux-full.nu
 
 If the build fails with `This version of .NET for MacCatalyst (X.Y.…) requires Xcode X.Y`, either switch Xcode with `sudo xcode-select -s /Applications/Xcode_X.Y.app` or, for a minor-version mismatch, add `-p:ValidateXcodeVersion=false`.
 
-**Publishing a release:** push a `vX.Y.Z` tag. `.github/workflows/release.yml` builds all three platforms and creates a single GitHub Release containing every set of files. Windows, macOS and Linux live side by side in it as separate Velopack channels (`win`, `osx` and `linux`), and every file name carries its channel, so they never overwrite each other. `UpdateService` points at `https://github.com/dara-oladapo/pc-cleaner` via Velopack's `GithubSource`, and each installed copy only reads its own channel's feed.
+**Publishing a release:** push a `vX.Y.Z` tag. `.github/workflows/release.yml` builds all three platforms and creates a single GitHub Release containing every set of files. Windows, macOS and Linux live side by side in it as separate Velopack channels (`win`, `osx` and `linux`), and every file name carries its channel, so they never overwrite each other. `UpdateService` points at `https://github.com/wiselead-oss/pc-cleaner` via Velopack's `GithubSource`, and each installed copy only reads its own channel's feed.
 
 ### macOS signing and notarization (optional)
 
@@ -173,7 +175,7 @@ The workflow imports the certificate into a temporary keychain, stores the notar
 
 ## Installing
 
-Download from the [latest release](https://github.com/dara-oladapo/pc-cleaner/releases/latest).
+Download from the [latest release](https://github.com/wiselead-oss/pc-cleaner/releases/latest).
 
 **Windows:** run `PCCleaner-win-Setup.exe`.
 

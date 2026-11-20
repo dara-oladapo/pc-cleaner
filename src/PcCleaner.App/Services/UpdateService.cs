@@ -7,7 +7,7 @@ namespace PcCleaner.App.Services;
 /// <summary>Wraps Velopack's UpdateManager: checks GitHub Releases for a newer build, downloads it, and restarts into it.</summary>
 public sealed class UpdateService : IUpdateService
 {
-    private const string RepoUrl = "https://github.com/dara-oladapo/pc-cleaner";
+    private const string RepoUrl = "https://github.com/wiselead-oss/pc-cleaner";
 
     // Null where Velopack has no usable locator (a Mac Catalyst build that vpk didn't pack): constructing an
     // UpdateManager there throws, and there's nothing to update anyway.

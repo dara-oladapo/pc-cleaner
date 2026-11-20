@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Settings;
+using PcCleaner.Core.Startup.Linux;
 using PcCleaner.Desktop.Platforms.Linux;
 using PcCleaner.Desktop.Services;
 using PcCleaner.Desktop.ViewModels;
@@ -40,10 +41,12 @@ public static class AppServices
         services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
 
         // Platform-specific. Linux is the only platform this front end serves today. Those marked with an issue
-        // are still stubs that touch nothing; the folder picker and theme service are real (#13).
+        // are still stubs that touch nothing; the folder picker, theme service (#13) and startup manager (#12) are real.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
-        services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
+        // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
+        // every CI platform; this just binds it to the real environment and the real systemctl.
+        services.AddSingleton<IStartupItemManager>(_ => LinuxStartupItemManager.CreateForCurrentProcess());
         services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();
         services.AddSingleton<IThemeService, LinuxThemeService>();
 

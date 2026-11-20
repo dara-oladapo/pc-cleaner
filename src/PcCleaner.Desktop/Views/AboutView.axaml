@@ -4,29 +4,44 @@
              x:Class="PcCleaner.Desktop.Views.AboutView"
              x:DataType="pvm:AboutViewModel">
 
-  <!--
-    Bound to the same AboutViewModel the MAUI AboutPage uses. Ported ahead of the other screens (#9) because it's
-    where the Linux build has to tell the truth about updates (#14): the update buttons only exist on a copy that can
-    update itself (the release AppImage), and every other copy shows the reason instead of a button that can't work.
-    Styling is stock Fluent; the design system is #9.
-  -->
-  <StackPanel Margin="32,24" Spacing="12" MaxWidth="640" HorizontalAlignment="Left">
-    <TextBlock Text="About" FontSize="24" FontWeight="SemiBold" />
+  <!-- The Avalonia port of src/PcCleaner.App/Pages/AboutPage.xaml, bound to the same AboutViewModel. -->
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="{StaticResource Space4}" Margin="{StaticResource PagePadding}">
 
-    <TextBlock Text="PC Cleaner — a free system cleanup utility. No subscriptions, no paywall." TextWrapping="Wrap" />
-
-    <StackPanel Orientation="Horizontal" Spacing="6">
-      <TextBlock Text="Version" Opacity="0.7" />
-      <TextBlock Text="{Binding VersionText}" />
+    <StackPanel Grid.Row="0" Spacing="2">
+      <TextBlock Classes="eyebrow" Text="PC CLEANER" />
+      <TextBlock Classes="hero" Text="{Binding VersionText}" />
+      <TextBlock Classes="heroCaption" Text="{Binding StatusText}" />
     </StackPanel>
 
-    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="{StaticResource Space5}" MaxWidth="620" HorizontalAlignment="Left">
 
-    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CanSelfUpdate}">
-      <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
-      <Button Content="Download and restart" Command="{Binding DownloadAndRestartCommand}"
-              IsVisible="{Binding UpdateReady}" Classes="accent" />
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="FREE AND UNLOCKED" />
+          <TextBlock Classes="emptyBody"
+                     Text="No paywall, no trial limits, no upsells. Every feature here — junk cleanup, duplicates, large files, startup — is fully functional." />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="WHAT GETS DELETED, AND HOW" />
+          <TextBlock Classes="emptyBody"
+                     Text="Junk and cache files are removed permanently, because the apps that made them will make them again. Your own files — duplicates and large files — always go to the Trash instead, so you can get them back." />
+        </StackPanel>
+
+        <StackPanel Spacing="{StaticResource Space1}">
+          <TextBlock Classes="eyebrow" Text="SOURCE" />
+          <TextBlock Classes="mono" Text="github.com/wiselead-oss/pc-cleaner" />
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Only a copy that can update itself (the release AppImage) gets update buttons; any other copy shows the reason in the status line above (#14). -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}" IsVisible="{Binding CanSelfUpdate}">
+      <Button Classes="primary" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
+      <Button Content="Download and restart" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
+      <ProgressBar Classes="activity" IsVisible="{Binding IsBusy}" />
     </StackPanel>
-  </StackPanel>
 
+  </Grid>
 </UserControl>

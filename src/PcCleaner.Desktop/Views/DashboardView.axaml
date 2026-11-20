@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.DashboardView"
+             x:DataType="pvm:DashboardViewModel">
+
+  <!-- The Avalonia port of src/PcCleaner.App/Pages/DashboardPage.xaml, bound to the same DashboardViewModel. -->
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="{StaticResource Space4}" Margin="{StaticResource PagePadding}">
+
+    <StackPanel Grid.Row="0" Spacing="2">
+      <TextBlock Classes="eyebrow" Text="THIS COMPUTER" />
+      <TextBlock Classes="pageTitle" Text="{Binding DriveNameText}" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="{StaticResource Space5}">
+
+        <!--
+          The capacity readout. Avast and CleanMyMac both open on a circular gauge; this goes the other way and
+          draws the actual drive as one honest bar. The reclaimable slice sits against the free segment because
+          that is where it is about to go.
+        -->
+        <StackPanel Spacing="{StaticResource Space3}" IsVisible="{Binding HasDriveInfo}">
+
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="2">
+              <TextBlock Classes="hero" Text="{Binding ReclaimableText}" />
+              <TextBlock Classes="heroCaption" Text="{Binding StatusText}" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Classes="mono" Text="{Binding CapacityText}" VerticalAlignment="Bottom" />
+          </Grid>
+
+          <!--
+            Three star-width columns, one per segment, so the bar divides whatever width it has by the drive's real
+            proportions. The widths are set from code-behind (see DashboardView.axaml.cs): an Avalonia
+            ColumnDefinition isn't in the logical tree, so it has no DataContext for a binding to read.
+            The columns start at 0 wide: until the view model says otherwise, the bar is an empty Sunken track.
+          -->
+          <Border Classes="capacityBar">
+            <Grid x:Name="CapacitySegments" ColumnDefinitions="0,0,0">
+              <Border Grid.Column="0" Classes="segmentOccupied" IsVisible="False" />
+              <Border Grid.Column="1" Classes="segmentReclaimable" IsVisible="False" />
+              <Border Grid.Column="2" Classes="segmentFree" IsVisible="False" />
+            </Grid>
+          </Border>
+
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space5}">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+              <Border Classes="legendSwatch" Background="{DynamicResource Occupied}" />
+              <TextBlock Classes="monoNumber" Text="{Binding OccupiedText}" VerticalAlignment="Center" />
+              <TextBlock Classes="caption" Text="in use" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+              <Border Classes="legendSwatch" Background="{DynamicResource Signal}" />
+              <TextBlock Classes="monoNumber" Text="{Binding ReclaimableText}" VerticalAlignment="Center" />
+              <TextBlock Classes="caption" Text="reclaimable" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+              <!-- Free is drawn in the track colour, so its swatch carries a hairline to stay visible on Paper. -->
+              <Border Classes="legendSwatch" Background="{DynamicResource Sunken}"
+                      BorderBrush="{DynamicResource Hairline}" BorderThickness="1" />
+              <TextBlock Classes="monoNumber" Text="{Binding FreeText}" VerticalAlignment="Center" />
+              <TextBlock Classes="caption" Text="free" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Fallback when the drive can't be read: still report the figure, just without the bar. -->
+        <StackPanel Spacing="2" IsVisible="{Binding !HasDriveInfo}">
+          <TextBlock Classes="eyebrow" Text="RECLAIMABLE" />
+          <TextBlock Classes="hero" Text="{Binding ReclaimableText}" />
+          <TextBlock Classes="heroCaption" Text="{Binding StatusText}" />
+        </StackPanel>
+
+        <!--
+          Progress. "N of 4 tools finished" is a real fraction, so the dashboard is the one screen that earns a
+          determinate marker; the file count beside it stays a count.
+        -->
+        <Border Classes="progressPanel" IsVisible="{Binding IsScanning}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+              <Border Classes="stepMarker" Classes.done="{Binding Step1Done}" />
+              <Border Classes="stepMarker" Classes.done="{Binding Step2Done}" />
+              <Border Classes="stepMarker" Classes.done="{Binding Step3Done}" />
+              <Border Classes="stepMarker" Classes.done="{Binding Step4Done}" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Classes="mono" Text="{Binding ProgressText}" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <!-- Tool summary cards. Four fixed destinations, so they're laid out, not templated. -->
+        <StackPanel Spacing="{StaticResource Space3}">
+          <TextBlock Classes="eyebrow" Text="TOOLS" />
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="{StaticResource Space3}">
+
+            <Button Grid.Column="0" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="junk">
+              <StackPanel Spacing="{StaticResource Space2}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                  <Path Classes="icon signal" Data="{StaticResource IconJunk}" />
+                  <TextBlock Classes="displayLabel" Text="Junk Files" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="stat" Text="{Binding Junk.SelectedSizeText}" />
+                <TextBlock Classes="caption" Text="Deleted permanently" />
+              </StackPanel>
+            </Button>
+
+            <Button Grid.Column="1" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="duplicates">
+              <StackPanel Spacing="{StaticResource Space2}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                  <Path Classes="icon signal" Data="{StaticResource IconDuplicates}" />
+                  <TextBlock Classes="displayLabel" Text="Duplicates" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="stat" Text="{Binding Duplicates.ReclaimableText}" />
+                <TextBlock Classes="caption" Text="Moved to the Trash" />
+              </StackPanel>
+            </Button>
+
+            <Button Grid.Column="2" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="large">
+              <StackPanel Spacing="{StaticResource Space2}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                  <Path Classes="icon signal" Data="{StaticResource IconLargeFiles}" />
+                  <TextBlock Classes="displayLabel" Text="Large Files" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="stat" Text="{Binding LargeFiles.SelectedSizeText}" />
+                <TextBlock Classes="caption" Text="Files over 100 MB" />
+              </StackPanel>
+            </Button>
+
+            <Button Grid.Column="3" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="startup">
+              <StackPanel Spacing="{StaticResource Space2}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                  <Path Classes="icon signal" Data="{StaticResource IconStartup}" />
+                  <TextBlock Classes="displayLabel" Text="Startup" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Classes="stat" Text="{Binding Startup.ItemCountText}" />
+                <TextBlock Classes="caption" Text="{Binding StartupSummaryText}" />
+              </StackPanel>
+            </Button>
+
+          </Grid>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}">
+      <Button Classes="primary" Content="Scan everything" Command="{Binding ScanEverythingCommand}" />
+      <Button Content="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+      <TextBlock Classes="heroCaption" VerticalAlignment="Center"
+                 Text="Reads every tool in one pass. Nothing is deleted until you choose it." />
+    </StackPanel>
+
+  </Grid>
+</UserControl>
