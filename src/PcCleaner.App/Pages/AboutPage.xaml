@@ -35,7 +35,7 @@
 
                 <VerticalStackLayout Spacing="{StaticResource Space1}">
                     <Label Style="{StaticResource Eyebrow}" Text="Source" />
-                    <Label Style="{StaticResource Mono}" Text="github.com/dara-oladapo/pc-cleaner" />
+                    <Label Style="{StaticResource Mono}" Text="github.com/wiselead-solutions/pc-cleaner" />
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
