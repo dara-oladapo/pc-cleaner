@@ -45,11 +45,10 @@ public static class AppServices
         // TODO(#10 follow-up): JunkCleaner does not re-check for mount points at clean time; see LinuxJunkCleaner.
         services.AddSingleton<IJunkCleaner>(_ => new LinuxJunkCleaner(new JunkCleaner()));
 
-        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner (#10), startup
-        // manager (#12), folder picker and theme service (#13) are real; every other one is a stub that touches
-        // nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner (#10), trash (#11),
+        // startup items (#12), folder picker and theme (#13) are all real.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
-        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
+        services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11: freedesktop Trash spec
         // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
         // every CI platform; this just binds it to the real environment and the real systemctl.
         services.AddSingleton<IStartupItemManager>(_ => LinuxStartupItemManager.CreateForCurrentProcess());
