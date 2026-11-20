@@ -102,7 +102,7 @@ vpk pack `
 
 Produces `releases/win/PCCleaner-win-Setup.exe` plus the `.nupkg`/`RELEASES`/`releases.win.json` files `UpdateService` looks for.
 
-**macOS** (build and pack verified on an Apple Silicon Mac — macOS 27, Xcode 27.2; the installed app's runtime behaviour is still tracked in [#4](https://github.com/dara-oladapo/pc-cleaner/issues/4)):
+**macOS** (build and pack verified on an Apple Silicon Mac — macOS 27, Xcode 27.2; the installed app's runtime behaviour is still tracked in [#4](https://github.com/wiselead-solutions/pc-cleaner/issues/4)):
 
 ```bash
 # Release builds both maccatalyst-arm64 and maccatalyst-x64 and merges them into one universal bundle:
@@ -125,7 +125,7 @@ vpk pack \
 
 If the build fails with `This version of .NET for MacCatalyst (X.Y.…) requires Xcode X.Y`, either switch Xcode with `sudo xcode-select -s /Applications/Xcode_X.Y.app` or, for a minor-version mismatch, add `-p:ValidateXcodeVersion=false`.
 
-**Publishing a release:** push a `vX.Y.Z` tag. `.github/workflows/release.yml` builds both platforms and creates a single GitHub Release containing both sets of files. Windows and macOS live side by side in it as separate Velopack channels (`win` and `osx`), and every file name carries its channel, so they never overwrite each other. `UpdateService` points at `https://github.com/dara-oladapo/pc-cleaner` via Velopack's `GithubSource`, and each installed copy only reads its own channel's feed.
+**Publishing a release:** push a `vX.Y.Z` tag. `.github/workflows/release.yml` builds both platforms and creates a single GitHub Release containing both sets of files. Windows and macOS live side by side in it as separate Velopack channels (`win` and `osx`), and every file name carries its channel, so they never overwrite each other. `UpdateService` points at `https://github.com/wiselead-solutions/pc-cleaner` via Velopack's `GithubSource`, and each installed copy only reads its own channel's feed.
 
 ### macOS signing and notarization (optional)
 
@@ -145,7 +145,7 @@ The workflow imports the certificate into a temporary keychain, stores the notar
 
 ## Installing
 
-Download from the [latest release](https://github.com/dara-oladapo/pc-cleaner/releases/latest).
+Download from the [latest release](https://github.com/wiselead-solutions/pc-cleaner/releases/latest).
 
 **Windows:** run `PCCleaner-win-Setup.exe`.
 
