@@ -32,6 +32,10 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.pccleaner.app</ApplicationId>
+		<!-- macOS gets a real bundle id: it becomes CFBundleIdentifier, which keys the app's preferences, its
+		     Full Disk Access grant, and its signing/notarization record. The template placeholder is left for
+		     Windows, where the unpackaged build has already shipped with it. -->
+		<ApplicationId Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">com.daraoladapo.pccleaner</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
@@ -41,7 +45,10 @@
 		<WindowsPackageType>None</WindowsPackageType>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+		<!-- Mac Catalyst 17.0 = macOS 14 Sonoma. The .NET 10 Mac Catalyst workload for Xcode 27 (27.0.x packs)
+		     rejects anything lower (error: "SupportedOSPlatformVersion value '15.0' ... is lower than the minimum
+		     value '17.0'"), and SDK feature-band rolls pick that workload up without warning. -->
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>

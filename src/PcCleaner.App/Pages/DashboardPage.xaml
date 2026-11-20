@@ -196,6 +196,40 @@
                     </Grid>
                 </VerticalStackLayout>
 
+                <!--
+                  Per-volume space for the volumes Large Files and Duplicates are set to scan (Settings). A
+                  selected volume that isn't connected stays in the list, marked, so it never silently vanishes.
+                -->
+                <VerticalStackLayout Spacing="{StaticResource Space3}" IsVisible="{Binding HasVolumes}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Style="{StaticResource Eyebrow}" Text="Volumes scanned" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="Change" Style="{StaticResource InlineButton}"
+                                Command="{Binding OpenToolCommand}" CommandParameter="settings" />
+                    </Grid>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Volumes}" Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:VolumeChoiceViewModel">
+                                <Border Style="{StaticResource Card}" Padding="{StaticResource RowPadding}">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+                                        <HorizontalStackLayout Grid.Column="0" Spacing="{StaticResource Space2}" VerticalOptions="Center">
+                                            <Label Style="{StaticResource RowTitle}" Text="{Binding DisplayName}" VerticalOptions="Center" />
+                                            <Border Style="{StaticResource AttentionPill}" IsVisible="{Binding IsAvailable, Converter={StaticResource InvertedBoolConverter}}">
+                                                <Label Style="{StaticResource AttentionPillLabel}" Text="{Binding KindText}" />
+                                            </Border>
+                                        </HorizontalStackLayout>
+                                        <Grid Grid.Column="1" HorizontalOptions="Start" VerticalOptions="Center" IsVisible="{Binding IsAvailable}">
+                                            <BoxView Style="{StaticResource MeterTrack}" />
+                                            <BoxView Style="{StaticResource MeterFill}"
+                                                     WidthRequest="{Binding UsedShare, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
+                                        </Grid>
+                                        <Label Grid.Column="2" Style="{StaticResource Mono}" Text="{Binding SpaceText}" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
             </VerticalStackLayout>
         </ScrollView>
 

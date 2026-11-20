@@ -47,7 +47,7 @@ public static class AppServices
         services.AddSingleton<IThemeService, LinuxThemeService>();                // #13
 
         services.AddSingleton<IDialogService, DialogService>();
-        services.AddSingleton<IUpdateService, UnsupportedUpdateService>();        // #14
+        services.AddSingleton<IUpdateService, UpdateService>();                   // Velopack; AppImage only
         services.AddSingleton<INavigationService, ShellNavigationService>();
     }
 
