@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Presentation.Services;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.Presentation.ViewModels;
@@ -14,6 +15,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     private readonly IDuplicateFileScanner _scanner;
     private readonly IFileTrasher _trasher;
     private readonly IDialogService _dialogs;
+    private readonly CloudLocationGuard _cloudGuard;
     private CancellationTokenSource? _scanCts;
 
     public ObservableCollection<DuplicateGroupViewModel> Groups { get; } = [];
@@ -44,12 +46,15 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         IDuplicateFileScanner scanner,
         IFileTrasher trasher,
         IDialogService dialogs,
-        IFolderPickerService folderPicker)
-        : base(folderPicker)
+        IFolderPickerService folderPicker,
+        ScanVolumeSettings volumeSettings,
+        CloudLocationGuard cloudGuard)
+        : base(folderPicker, volumeSettings)
     {
         _scanner = scanner;
         _trasher = trasher;
         _dialogs = dialogs;
+        _cloudGuard = cloudGuard;
     }
 
     protected override void ReportRootPathProblem(string message) => StatusText = message;
@@ -57,9 +62,10 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task ScanAsync()
     {
-        if (RootPaths.Count == 0)
+        var plan = PlanScan();
+        if (plan.Roots.Count == 0)
         {
-            StatusText = "Add at least one folder first.";
+            StatusText = NothingToScanText(plan);
             return;
         }
 
@@ -69,6 +75,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         }
 
         Groups.Clear();
+        _cloudGuard.Refresh();
         IsScanning = true;
         StatusText = "Scanning for duplicates...";
         _scanCts = new CancellationTokenSource();
@@ -79,18 +86,20 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
 
         try
         {
-            await foreach (var group in _scanner.ScanAsync(RootPaths.ToList(), MinFileSizeBytes, _scanCts.Token, walkProgress))
+            await foreach (var group in _scanner.ScanAsync(plan.Roots, MinFileSizeBytes, _scanCts.Token, walkProgress))
             {
-                var vm = new DuplicateGroupViewModel(group);
+                var vm = new DuplicateGroupViewModel(group, _cloudGuard.FindContaining);
                 vm.PropertyChanged += OnGroupPropertyChanged;
                 Groups.Add(vm);
                 UpdateReclaimable();
                 UpdateShares();
             }
 
-            StatusText = Groups.Count == 0
-                ? "No duplicates found in these folders."
-                : $"Found {Groups.Count} group(s) of identical files.";
+            StatusText = WithSkippedNote(
+                Groups.Count == 0
+                    ? "No duplicates found in these folders."
+                    : $"Found {Groups.Count} group(s) of identical files.",
+                plan);
         }
         catch (OperationCanceledException)
         {
@@ -121,11 +130,18 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanDeleteSelected))]
-    private async Task DeleteSelectedAsync()
+    private Task DeleteSelectedAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>Moves the ticked copies to the Recycle Bin. <paramref name="confirm"/> is false only for a dashboard run.</summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
-        var pathsToDelete = Groups
-            .SelectMany(g => g.Files.Where(f => f.IsSelected).Select(f => f.Path))
+        // Ticked copies only, and never one in a cloud drive. A ticked copy is checked against the cloud folders
+        // again here, in case one was set up since the scan: the last line of the never-delete rule.
+        _cloudGuard.Refresh();
+        var selectedFiles = Groups
+            .SelectMany(g => g.Files.Where(f => f.IsSelected && !f.IsCloudOnly && !_cloudGuard.IsInsideCloudDrive(f.Path)))
             .ToList();
+        var pathsToDelete = selectedFiles.Select(f => f.Path).ToList();
 
         if (pathsToDelete.Count == 0)
         {
@@ -134,9 +150,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
 
         long bytes = ReclaimableBytesSelected;
 
-        var selectedFiles = Groups.SelectMany(g => g.Files.Where(f => f.IsSelected)).ToList();
-
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Move {pathsToDelete.Count} copy/copies to the Recycle Bin?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. At least one copy of every file stays where it is, and anything moved can be restored from the Recycle Bin.",
             acceptText: "Move to Recycle Bin",

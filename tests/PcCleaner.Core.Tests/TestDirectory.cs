@@ -33,11 +33,32 @@ public sealed class TestDirectory : IDisposable
         {
             if (Directory.Exists(Path))
             {
+                RemoveLinks(Path);
                 Directory.Delete(Path, recursive: true);
             }
         }
         catch (IOException)
         {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    // Unlink any junction/symlink a test created (non-recursive delete removes the link, never its target) so the
+    // recursive delete below only ever sees real directories.
+    private static void RemoveLinks(string dir)
+    {
+        foreach (string sub in Directory.GetDirectories(dir))
+        {
+            if (new DirectoryInfo(sub).Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                Directory.Delete(sub);
+            }
+            else
+            {
+                RemoveLinks(sub);
+            }
         }
     }
 }

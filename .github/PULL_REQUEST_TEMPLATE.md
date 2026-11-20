@@ -31,6 +31,9 @@ This app removes files. A scanner that reports a path it shouldn't, a selection 
 pre-ticks something risky, or a delete that skips its confirmation is the most damaging class of
 bug here — junk cleaning is a permanent delete with no Recycle Bin round-trip. If this PR touches
 any of that, say what you did to convince yourself it's safe.
+
+The dashboard's "Scan and auto clean" is the one action that removes things without a confirmation.
+Anything that changes what is ticked by default changes what it removes.
 -->
 
 ## UI changes
