@@ -35,8 +35,8 @@
     <x:Double x:Key="FontControl">13</x:Double>
     <x:Double x:Key="FontCaption">12</x:Double>
     <x:Double x:Key="FontMono">11.5</x:Double>
-    <x:Double x:Key="FontEyebrow">11</x:Double>
-    <x:Double x:Key="FontPill">10</x:Double>
+    <x:Double x:Key="FontEyebrow">12</x:Double>
+    <x:Double x:Key="FontPill">11</x:Double>
 
     <!-- ===================== Component sizes ===================== -->
     <x:Double x:Key="RailWidth">216</x:Double>
@@ -48,8 +48,8 @@
     <x:Double x:Key="CheckBoxSize">32</x:Double>
 
     <!-- ===================== Tracking ===================== -->
-    <x:Double x:Key="TrackEyebrow">1.2</x:Double>
-    <x:Double x:Key="TrackControl">0.4</x:Double>
-    <x:Double x:Key="TrackPrimary">0.6</x:Double>
+    <x:Double x:Key="TrackEyebrow">0</x:Double>
+    <x:Double x:Key="TrackControl">0</x:Double>
+    <x:Double x:Key="TrackPrimary">0</x:Double>
 
 </ResourceDictionary>
