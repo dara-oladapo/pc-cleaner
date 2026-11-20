@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Presentation.Services;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.Presentation.ViewModels;
@@ -19,6 +20,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
     private readonly ILargeFileScanner _scanner;
     private readonly IFileTrasher _trasher;
     private readonly IDialogService _dialogs;
+    private readonly CloudLocationGuard _cloudGuard;
     private CancellationTokenSource? _scanCts;
 
     public ObservableCollection<FileEntryViewModel> Files { get; } = [];
@@ -51,12 +53,14 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         IFileTrasher trasher,
         IDialogService dialogs,
         IFolderPickerService folderPicker,
-        ScanVolumeSettings volumeSettings)
+        ScanVolumeSettings volumeSettings,
+        CloudLocationGuard cloudGuard)
         : base(folderPicker, volumeSettings)
     {
         _scanner = scanner;
         _trasher = trasher;
         _dialogs = dialogs;
+        _cloudGuard = cloudGuard;
     }
 
     protected override void ReportRootPathProblem(string message) => StatusText = message;
@@ -77,6 +81,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         }
 
         Files.Clear();
+        _cloudGuard.Refresh();
         IsScanning = true;
         StatusText = "Scanning...";
         _scanCts = new CancellationTokenSource();
@@ -89,7 +94,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         {
             await foreach (var entry in _scanner.ScanAsync(plan.Roots, DefaultMinSizeBytes, _scanCts.Token, walkProgress))
             {
-                var vm = new FileEntryViewModel(entry);
+                var vm = new FileEntryViewModel(entry, _cloudGuard.FindContaining(entry.Path));
                 vm.PropertyChanged += OnFilePropertyChanged;
                 InsertBySizeDescending(vm);
                 UpdateShares();
@@ -98,7 +103,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
             StatusText = WithSkippedNote(
                 Files.Count == 0
                     ? "No files over 100 MB in these folders."
-                    : $"Found {Files.Count} file(s) over 100 MB, {ByteSizeFormatter.Format(FoundBytes)} in total.",
+                    : $"Found {Files.Count} file(s) over 100 MB, {ByteSizeFormatter.Format(FoundBytes)} in total.{CloudOnlyNote()}",
                 plan);
         }
         catch (OperationCanceledException)
@@ -133,7 +138,10 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
     /// <summary>Moves what is ticked to the Recycle Bin. <paramref name="confirm"/> is false only for a dashboard run.</summary>
     public async Task CleanSelectedAsync(bool confirm)
     {
-        var selected = Files.Where(f => f.IsSelected).ToList();
+        // Ticked files only, and never one in a cloud drive: a ticked file is checked against the cloud folders
+        // again here, in case one was set up since the scan. This is the last line of the never-delete rule.
+        _cloudGuard.Refresh();
+        var selected = Files.Where(f => f.IsSelected && !f.IsCloudOnly && !_cloudGuard.IsInsideCloudDrive(f.Path)).ToList();
         if (selected.Count == 0)
         {
             return;
@@ -178,6 +186,12 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
         IsDeleting = false;
         UpdateSelection();
         UpdateShares();
+    }
+
+    private string CloudOnlyNote()
+    {
+        int cloud = Files.Count(f => f.IsCloudOnly);
+        return cloud == 0 ? string.Empty : $" {cloud:N0} of them are in a cloud drive. They are marked Cloud only and are never deleted here.";
     }
 
     private bool CanDeleteSelected() => !IsDeleting && !IsScanning && Files.Any(f => f.IsSelected);

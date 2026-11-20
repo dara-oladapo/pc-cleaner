@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Presentation.Services;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Utilities;
 
 namespace PcCleaner.Presentation.ViewModels;
@@ -14,6 +15,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     private readonly IDuplicateFileScanner _scanner;
     private readonly IFileTrasher _trasher;
     private readonly IDialogService _dialogs;
+    private readonly CloudLocationGuard _cloudGuard;
     private CancellationTokenSource? _scanCts;
 
     public ObservableCollection<DuplicateGroupViewModel> Groups { get; } = [];
@@ -45,12 +47,14 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         IFileTrasher trasher,
         IDialogService dialogs,
         IFolderPickerService folderPicker,
-        ScanVolumeSettings volumeSettings)
+        ScanVolumeSettings volumeSettings,
+        CloudLocationGuard cloudGuard)
         : base(folderPicker, volumeSettings)
     {
         _scanner = scanner;
         _trasher = trasher;
         _dialogs = dialogs;
+        _cloudGuard = cloudGuard;
     }
 
     protected override void ReportRootPathProblem(string message) => StatusText = message;
@@ -71,6 +75,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         }
 
         Groups.Clear();
+        _cloudGuard.Refresh();
         IsScanning = true;
         StatusText = "Scanning for duplicates...";
         _scanCts = new CancellationTokenSource();
@@ -83,7 +88,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         {
             await foreach (var group in _scanner.ScanAsync(plan.Roots, MinFileSizeBytes, _scanCts.Token, walkProgress))
             {
-                var vm = new DuplicateGroupViewModel(group);
+                var vm = new DuplicateGroupViewModel(group, _cloudGuard.FindContaining);
                 vm.PropertyChanged += OnGroupPropertyChanged;
                 Groups.Add(vm);
                 UpdateReclaimable();
@@ -130,9 +135,13 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     /// <summary>Moves the ticked copies to the Recycle Bin. <paramref name="confirm"/> is false only for a dashboard run.</summary>
     public async Task CleanSelectedAsync(bool confirm)
     {
-        var pathsToDelete = Groups
-            .SelectMany(g => g.Files.Where(f => f.IsSelected).Select(f => f.Path))
+        // Ticked copies only, and never one in a cloud drive. A ticked copy is checked against the cloud folders
+        // again here, in case one was set up since the scan: the last line of the never-delete rule.
+        _cloudGuard.Refresh();
+        var selectedFiles = Groups
+            .SelectMany(g => g.Files.Where(f => f.IsSelected && !f.IsCloudOnly && !_cloudGuard.IsInsideCloudDrive(f.Path)))
             .ToList();
+        var pathsToDelete = selectedFiles.Select(f => f.Path).ToList();
 
         if (pathsToDelete.Count == 0)
         {
@@ -140,8 +149,6 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         }
 
         long bytes = ReclaimableBytesSelected;
-
-        var selectedFiles = Groups.SelectMany(g => g.Files.Where(f => f.IsSelected)).ToList();
 
         bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Move {pathsToDelete.Count} copy/copies to the Recycle Bin?",

@@ -99,6 +99,7 @@ public static class MauiProgram
 
         // Cloud drives: the eligibility rules and the measuring live in Core; the platform parts are above.
         services.AddSingleton<CloudSpaceService>();
+        services.AddSingleton<CloudLocationGuard>();
 
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IThemeService, ThemeService>();
