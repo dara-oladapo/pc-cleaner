@@ -75,8 +75,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-windows maccatalyst
 
       - name: Restore
         run: dotnet restore src/PcCleaner.App/PcCleaner.App.csproj
