@@ -1,0 +1,15 @@
+[Desktop Entry]
+# Menu entry for PC Cleaner on Linux. The AppImage carries its own copy (written by vpk pack), which AppImage
+# integration tools such as Gear Lever or AppImageLauncher install for you. This file is for integrating by hand:
+# README.md, "Linux packaging", has the steps. Exec must be the absolute path of the AppImage — $HOME is not expanded
+# here — and Icon names the hicolor icon installed from packaging/linux/icons.
+Type=Application
+Name=PC Cleaner
+GenericName=System Cleaner
+Comment=Find and remove junk files, duplicates and large files; manage startup apps
+Exec=/home/YOU/Applications/PCCleaner.AppImage
+Icon=pccleaner
+Terminal=false
+Categories=Utility;
+Keywords=clean;junk;cache;duplicates;disk;space;startup;
+StartupWMClass=PCCleaner

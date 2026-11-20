@@ -1,0 +1,143 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PcCleaner.Desktop.ViewModels"
+        xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+        xmlns:services="using:PcCleaner.Presentation.Services"
+        xmlns:views="using:PcCleaner.Desktop.Views"
+        x:Class="PcCleaner.Desktop.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="PC Cleaner"
+        Icon="avares://PcCleaner.Desktop/Assets/pccleaner.png"
+        Width="1120" Height="780"
+        MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+
+  <!--
+    The Avalonia counterpart of src/PcCleaner.App/AppShell.xaml. Size and floor match the MAUI window
+    (src/PcCleaner.App/App.xaml.cs): the floor is what keeps the 216px rail, the four-across dashboard cards, and the
+    row layout fitting.
+  -->
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="pvm:DashboardViewModel">
+      <views:DashboardView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:JunkCleanupViewModel">
+      <views:JunkCleanupView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:DuplicateFinderViewModel">
+      <views:DuplicateFinderView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:LargeFilesViewModel">
+      <views:LargeFilesView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:StartupManagerViewModel">
+      <views:StartupManagerView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:AboutViewModel">
+      <views:AboutView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <Panel>
+    <Grid ColumnDefinitions="216,*">
+
+      <!--
+        The navigation rail. A rail, not a tab bar, for the reason given in AppShell.xaml: a bottom tab bar is a
+        phone pattern that spends the full window width on a handful of labels.
+      -->
+      <Border Grid.Column="0"
+              Background="{DynamicResource Surface}"
+              BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,1,0">
+        <DockPanel>
+
+          <!-- Header: the app mark on a Signal tile, then the name. -->
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="24,24,16,24">
+            <Border Grid.Column="0" Width="26" Height="26" CornerRadius="4" Background="{DynamicResource Signal}">
+              <Path Classes="icon"
+                    Data="{StaticResource IconDashboard}"
+                    Stroke="{DynamicResource OnSignal}"
+                    StrokeThickness="1.8"
+                    HorizontalAlignment="Center" />
+            </Border>
+            <TextBlock Grid.Column="1" Classes="displayLabel" Text="PC Cleaner"
+                       FontSize="{StaticResource FontBody}" Margin="10,0,0,0" VerticalAlignment="Center" />
+          </Grid>
+
+          <!--
+            Footer: the theme switcher. A setting you choose once and stop thinking about, so it lives in the rail
+            rather than costing a nav destination.
+          -->
+          <StackPanel DockPanel.Dock="Bottom" Margin="12,8,12,16" Spacing="6">
+            <TextBlock Classes="eyebrow" Text="APPEARANCE" Margin="3,0,0,0" />
+            <Border Classes="themeSwitcher">
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="2">
+                <Button Grid.Column="0" Classes="segment" Classes.selected="{Binding Theme.IsSystem}"
+                        Command="{Binding Theme.ChooseCommand}"
+                        CommandParameter="{x:Static services:ThemePreference.System}"
+                        ToolTip.Tip="Match the system theme"
+                        AutomationProperties.Name="Match the system theme">
+                  <Path Classes="icon" Data="{StaticResource IconThemeSystem}" />
+                </Button>
+                <Button Grid.Column="1" Classes="segment" Classes.selected="{Binding Theme.IsLight}"
+                        Command="{Binding Theme.ChooseCommand}"
+                        CommandParameter="{x:Static services:ThemePreference.Light}"
+                        ToolTip.Tip="Always use the light theme"
+                        AutomationProperties.Name="Always use the light theme">
+                  <Path Classes="icon" Data="{StaticResource IconThemeLight}" />
+                </Button>
+                <Button Grid.Column="2" Classes="segment" Classes.selected="{Binding Theme.IsDark}"
+                        Command="{Binding Theme.ChooseCommand}"
+                        CommandParameter="{x:Static services:ThemePreference.Dark}"
+                        ToolTip.Tip="Always use the dark theme"
+                        AutomationProperties.Name="Always use the dark theme">
+                  <Path Classes="icon" Data="{StaticResource IconThemeDark}" />
+                </Button>
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <!--
+            The destinations. A DockPanel as the items panel so the last one (About) can dock to the bottom, apart
+            from the tools; scrolling is off so the panel gets the rail's real height to dock against.
+          -->
+          <ListBox Classes="rail"
+                   ItemsSource="{Binding NavItems}"
+                   SelectedItem="{Binding SelectedItem}"
+                   ScrollViewer.VerticalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <DockPanel LastChildFill="False" />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="DockPanel.Dock" Value="Top" />
+              </Style>
+              <Style Selector="ListBoxItem:nth-last-child(1)">
+                <Setter Property="DockPanel.Dock" Value="Bottom" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="vm:NavItem">
+                <Grid ColumnDefinitions="Auto,*">
+                  <Path Grid.Column="0" Classes="icon"
+                        Data="{Binding IconKey, Converter={StaticResource ResourceKeyToGeometryConverter}}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="10,0,0,0" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+        </DockPanel>
+      </Border>
+
+      <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" />
+    </Grid>
+
+    <!-- The app's own confirmation dialog: one overlay for the whole window, driven by IDialogService. -->
+    <views:DialogHostView DataContext="{Binding Dialog}" />
+  </Panel>
+
+</Window>
