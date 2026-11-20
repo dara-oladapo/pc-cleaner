@@ -33,23 +33,50 @@ public sealed class WindowsCloudDriveScanner : ICloudDriveScanner
             return roots;
         }
 
-        using RegistryKey? manager = Registry.LocalMachine.OpenSubKey(SyncRootManagerKey);
-        if (manager is null)
+        RegistryKey? manager;
+        string[] ids;
+        try
+        {
+            manager = Registry.LocalMachine.OpenSubKey(SyncRootManagerKey);
+            if (manager is null)
+            {
+                return roots;
+            }
+
+            ids = manager.GetSubKeyNames();
+        }
+        catch (Exception ex) when (IsRegistryAccessFailure(ex))
         {
             return roots;
         }
 
+        using RegistryKey managerKey = manager;
         var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (string id in manager.GetSubKeyNames())
+        foreach (string id in ids)
         {
             if (!CloudProviderClassifier.IsCloudStorage(id))
             {
                 continue;
             }
 
-            using RegistryKey? rootKey = manager.OpenSubKey(id);
-            using RegistryKey? users = rootKey?.OpenSubKey("UserSyncRoots");
-            if (users?.GetValue(sid) is not string path || string.IsNullOrWhiteSpace(path))
+            // A sync root registered by another account on this PC is readable only by that account, and
+            // opening it throws. It is not this user's drive, so it is skipped rather than failing the scan.
+            RegistryKey? rootKey = null;
+            string? path;
+            try
+            {
+                rootKey = managerKey.OpenSubKey(id);
+                using RegistryKey? users = rootKey?.OpenSubKey("UserSyncRoots");
+                path = users?.GetValue(sid) as string;
+            }
+            catch (Exception ex) when (IsRegistryAccessFailure(ex))
+            {
+                rootKey?.Dispose();
+                continue;
+            }
+
+            using RegistryKey? rootKeyScope = rootKey;
+            if (string.IsNullOrWhiteSpace(path))
             {
                 continue;
             }
@@ -82,6 +109,9 @@ public sealed class WindowsCloudDriveScanner : ICloudDriveScanner
 
         return roots;
     }
+
+    private static bool IsRegistryAccessFailure(Exception ex) =>
+        ex is System.Security.SecurityException or UnauthorizedAccessException or IOException;
 
     public Task<IReadOnlyList<CloudFileState>> GetLocalFilesAsync(
         CloudSyncRoot root,

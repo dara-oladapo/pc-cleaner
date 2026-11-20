@@ -35,7 +35,7 @@
         <Setter Property="MinimumHeightRequest" Value="40"/>
     </Style>
 
-    <!-- Default Label: quiet body text (IBM Plex Sans stays in a supporting role) -->
+    <!-- Default Label: quiet body text -->
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkStrong}, Dark={StaticResource InkStrongDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -86,7 +86,7 @@
         </Setter>
     </Style>
 
-    <!-- Primary button: solid Signal teal. One per screen — the action you came to this screen to take. -->
+    <!-- Primary button: solid Signal blue. One per screen — the action you came to this screen to take. -->
     <Style TargetType="Button" x:Key="PrimaryButton">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource OnSignal}, Dark={StaticResource OnSignalDark}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
@@ -118,7 +118,7 @@
 
     <!--
       Destructive button. The one place Danger red appears as a fill.
-      Previously "Scan" and "Delete Selected" were the same teal, so the interface gave no warning
+      Previously "Scan" and "Delete Selected" were the same colour, so the interface gave no warning
       that one of them could not be undone.
     -->
     <Style TargetType="Button" x:Key="DangerButton" BasedOn="{StaticResource PrimaryButton}">
@@ -178,13 +178,12 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
     </Style>
 
-    <!-- Small tracked label for section headers ("FOLDERS TO SCAN") -->
+    <!-- Small label for section headers ("Folders to scan"). Sentence case and untracked: the UI welcomes people, it does not shout. -->
     <Style TargetType="Label" x:Key="Eyebrow">
         <Setter Property="FontFamily" Value="DisplayMedium" />
         <Setter Property="FontSize" Value="{StaticResource FontEyebrow}" />
         <Setter Property="CharacterSpacing" Value="{StaticResource TrackEyebrow}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource InkMuted}, Dark={StaticResource InkMutedDark}}" />
-        <Setter Property="TextTransform" Value="Uppercase" />
     </Style>
 
     <Style TargetType="Label" x:Key="RowTitle">
@@ -290,7 +289,6 @@
         <Setter Property="FontSize" Value="{StaticResource FontPill}" />
         <Setter Property="CharacterSpacing" Value="{StaticResource TrackControl}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Signal}, Dark={StaticResource SignalDark}}" />
-        <Setter Property="TextTransform" Value="Uppercase" />
     </Style>
 
     <Style TargetType="Border" x:Key="AttentionPill" BasedOn="{StaticResource Pill}">
@@ -366,7 +364,7 @@
     <Style TargetType="Label" x:Key="NavItemLabel">
         <Setter Property="FontFamily" Value="DisplayMedium" />
         <Setter Property="FontSize" Value="{StaticResource FontControl}" />
-        <Setter Property="CharacterSpacing" Value="0.2" />
+        <Setter Property="CharacterSpacing" Value="0" />
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 

@@ -152,7 +152,10 @@ public sealed partial class CloudDrivesViewModel : ObservableObject
     private void CancelScan() => _scanCts?.Cancel();
 
     [RelayCommand(CanExecute = nameof(CanFreeUp))]
-    private async Task FreeUpAsync()
+    private Task FreeUpAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>Makes the ticked folders' eligible files online-only. <paramref name="confirm"/> is false only for a dashboard run.</summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
         var selected = Roots.Where(r => r.IsSelected && r.Root.CanFreeUp).ToList();
         var requests = selected.SelectMany(r => r.SelectedRequests()).ToList();
@@ -164,7 +167,7 @@ public sealed partial class CloudDrivesViewModel : ObservableObject
         long bytes = SelectedBytes;
         string providers = string.Join(", ", selected.Select(r => r.ProviderText).Distinct());
 
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Free up {ByteSizeFormatter.Format(bytes)} on this device?",
             message: $"{requests.Count:N0} file(s) become online-only. They stay in {providers} and download again when you open them. Nothing is deleted. " +
                      "You need an internet connection to open them afterwards. Each file is checked again first; any that changed, were opened, or were set to always stay on this device since the scan are left alone.",
