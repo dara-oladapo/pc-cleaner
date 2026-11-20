@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
              x:Class="PcCleaner.Desktop.Views.DashboardView"
-             x:DataType="pvm:DashboardViewModel">
+             x:DataType="pvm:DashboardViewModel"
+             x:Name="Root">
 
   <!-- The Avalonia port of src/PcCleaner.App/Pages/DashboardPage.xaml, bound to the same DashboardViewModel. -->
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="{StaticResource Space4}" Margin="{StaticResource PagePadding}">
@@ -73,81 +74,182 @@
         </StackPanel>
 
         <!--
-          Progress. "N of 4 tools finished" is a real fraction, so the dashboard is the one screen that earns a
-          determinate marker; the file count beside it stays a count.
+          Progress. "N of M tools finished" is a real fraction, so the dashboard is the one screen that earns a
+          determinate marker: one per tool in this run. The file count stays a count.
         -->
-        <Border Classes="progressPanel" IsVisible="{Binding IsScanning}">
+        <Border Classes="progressPanel" IsVisible="{Binding IsBusy}">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-              <Border Classes="stepMarker" Classes.done="{Binding Step1Done}" />
-              <Border Classes="stepMarker" Classes.done="{Binding Step2Done}" />
-              <Border Classes="stepMarker" Classes.done="{Binding Step3Done}" />
-              <Border Classes="stepMarker" Classes.done="{Binding Step4Done}" />
-            </StackPanel>
+            <ItemsControl Grid.Column="0" ItemsSource="{Binding RunSteps}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="5" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="pvm:DashboardToolViewModel">
+                  <Border Classes="stepMarker" Classes.done="{Binding IsStepDone}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <TextBlock Grid.Column="1" Classes="mono" Text="{Binding ProgressText}" VerticalAlignment="Center" />
           </Grid>
         </Border>
 
-        <!-- Tool summary cards. Four fixed destinations, so they're laid out, not templated. -->
+        <!-- What the last clean did, one line per tool, and anything that could not be done. -->
+        <StackPanel Spacing="{StaticResource Space2}" IsVisible="{Binding HasRunReport}">
+          <TextBlock Classes="eyebrow" Text="LAST RUN" />
+          <Border Classes="card" Padding="{StaticResource RowPadding}">
+            <ItemsControl ItemsSource="{Binding RunReport}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="caption" Text="{Binding}" Margin="0,2" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </StackPanel>
+
+        <!--
+          Tools. The tick decides whether a run scans and cleans the tool at all. "Show" lists the tool's own
+          parts, each with the same tick its page has: one selection, two views onto it.
+        -->
         <StackPanel Spacing="{StaticResource Space3}">
-          <TextBlock Classes="eyebrow" Text="TOOLS" />
-          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="{StaticResource Space3}">
+          <TextBlock Classes="eyebrow" Text="TOOLS IN THIS RUN" />
+          <ItemsControl ItemsSource="{Binding Tools}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pvm:DashboardToolViewModel">
+                <Border Classes="card" Padding="{StaticResource RowPadding}">
+                  <StackPanel Spacing="{StaticResource Space3}">
 
-            <Button Grid.Column="0" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="junk">
-              <StackPanel Spacing="{StaticResource Space2}">
-                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
-                  <Path Classes="icon signal" Data="{StaticResource IconJunk}" />
-                  <TextBlock Classes="displayLabel" Text="Junk Files" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Classes="stat" Text="{Binding Junk.SelectedSizeText}" />
-                <TextBlock Classes="caption" Text="Deleted permanently" />
-              </StackPanel>
-            </Button>
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+                      <CheckBox Grid.Column="0" IsChecked="{Binding IsIncluded}" VerticalAlignment="Center"
+                                IsEnabled="{Binding #Root.((pvm:DashboardViewModel)DataContext).IsIdle}"
+                                AutomationProperties.Name="{Binding Title, StringFormat='Include {0} in the run'}" />
 
-            <Button Grid.Column="1" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="duplicates">
-              <StackPanel Spacing="{StaticResource Space2}">
-                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
-                  <Path Classes="icon signal" Data="{StaticResource IconDuplicates}" />
-                  <TextBlock Classes="displayLabel" Text="Duplicates" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Classes="stat" Text="{Binding Duplicates.ReclaimableText}" />
-                <TextBlock Classes="caption" Text="Moved to the Trash" />
-              </StackPanel>
-            </Button>
+                      <Path Grid.Column="1" Classes="icon signal"
+                            Data="{Binding Route, Converter={StaticResource RouteToGeometryConverter}}" />
 
-            <Button Grid.Column="2" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="large">
-              <StackPanel Spacing="{StaticResource Space2}">
-                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
-                  <Path Classes="icon signal" Data="{StaticResource IconLargeFiles}" />
-                  <TextBlock Classes="displayLabel" Text="Large Files" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Classes="stat" Text="{Binding LargeFiles.SelectedSizeText}" />
-                <TextBlock Classes="caption" Text="Files over 100 MB" />
-              </StackPanel>
-            </Button>
+                      <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Classes="rowTitle" Text="{Binding Title}" />
+                        <TextBlock Classes="caption" Text="{Binding Caption}" />
+                      </StackPanel>
 
-            <Button Grid.Column="3" Classes="toolCard" Command="{Binding OpenToolCommand}" CommandParameter="startup">
-              <StackPanel Spacing="{StaticResource Space2}">
-                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
-                  <Path Classes="icon signal" Data="{StaticResource IconStartup}" />
-                  <TextBlock Classes="displayLabel" Text="Startup" VerticalAlignment="Center" />
-                </StackPanel>
-                <TextBlock Classes="stat" Text="{Binding Startup.ItemCountText}" />
-                <TextBlock Classes="caption" Text="{Binding StartupSummaryText}" />
-              </StackPanel>
-            </Button>
+                      <TextBlock Grid.Column="3" Classes="mono" Text="{Binding SummaryText}" VerticalAlignment="Center" />
 
-          </Grid>
+                      <Button Grid.Column="4" Classes="inline" Content="{Binding ExpandText}"
+                              Command="{Binding ToggleExpandedCommand}" IsVisible="{Binding HasParts}"
+                              VerticalAlignment="Center" />
+
+                      <!-- Only tools with a screen on this front end get an Open button; see RouteHasPageConverter. -->
+                      <Button Grid.Column="5" Classes="inline" Content="Open" VerticalAlignment="Center"
+                              IsVisible="{Binding Route, Converter={StaticResource RouteHasPageConverter}}"
+                              Command="{Binding #Root.((pvm:DashboardViewModel)DataContext).OpenToolCommand}"
+                              CommandParameter="{Binding Route}" />
+                    </Grid>
+
+                    <StackPanel IsVisible="{Binding ShowParts}" Spacing="{StaticResource Space2}">
+                      <Border Classes="divider" />
+                      <ItemsControl ItemsSource="{Binding Parts}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <StackPanel Spacing="{StaticResource Space2}" />
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="pvm:DashboardPartViewModel">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space3}">
+                              <!-- The slot keeps its width when there is no tick, so titles stay aligned. -->
+                              <Panel Grid.Column="0" Width="{StaticResource CheckBoxSize}" VerticalAlignment="Center">
+                                <CheckBox IsChecked="{Binding IsSelected}" IsVisible="{Binding CanSelect}"
+                                          IsEnabled="{Binding #Root.((pvm:DashboardViewModel)DataContext).IsIdle}"
+                                          AutomationProperties.Name="{Binding Title, StringFormat='Clean {0}'}" />
+                              </Panel>
+                              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Classes="rowTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Classes="caption" Text="{Binding Detail}" IsVisible="{Binding HasDetail}"
+                                           TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                              <TextBlock Grid.Column="2" Classes="mono" Text="{Binding SizeText}" VerticalAlignment="Center" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <TextBlock Classes="caption" Text="{Binding MoreText}" IsVisible="{Binding ShowMore}" />
+                    </StackPanel>
+
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!--
+          Every volume Large Files and Duplicates can walk, with the same tick as the Settings page. A ticked
+          volume that isn't connected stays in the list, marked, so it never silently vanishes.
+        -->
+        <StackPanel Spacing="{StaticResource Space3}" IsVisible="{Binding HasVolumes}">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="eyebrow" Text="DRIVES AND VOLUMES" />
+            <TextBlock Classes="caption" Text="{Binding VolumesStatusText}" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding Volumes}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pvm:VolumeChoiceViewModel">
+                <Border Classes="card" Padding="{StaticResource RowPadding}">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{StaticResource Space3}">
+                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
+                              IsEnabled="{Binding #Root.((pvm:DashboardViewModel)DataContext).IsIdle}"
+                              AutomationProperties.Name="{Binding DisplayName, StringFormat='Scan {0}'}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{StaticResource Space2}" VerticalAlignment="Center">
+                      <TextBlock Classes="rowTitle" Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                      <Border Classes="pill quiet" IsVisible="{Binding IsAvailable}">
+                        <TextBlock Text="{Binding KindText, Converter={StaticResource UppercaseConverter}}" />
+                      </Border>
+                      <Border Classes="pill attention" IsVisible="{Binding !IsAvailable}">
+                        <TextBlock Text="{Binding KindText, Converter={StaticResource UppercaseConverter}}" />
+                      </Border>
+                    </StackPanel>
+                    <Panel Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding IsAvailable}">
+                      <Border Classes="meterTrack" />
+                      <Border Classes="meterFill"
+                              Width="{Binding UsedShare, Converter={StaticResource ShareToWidthConverter}, ConverterParameter={StaticResource MeterWidth}}" />
+                    </Panel>
+                    <TextBlock Grid.Column="3" Classes="mono" Text="{Binding SpaceText}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
 
       </StackPanel>
     </ScrollViewer>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}">
-      <Button Classes="primary" Content="Scan everything" Command="{Binding ScanEverythingCommand}" />
-      <Button Content="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
-      <TextBlock Classes="heroCaption" VerticalAlignment="Center"
-                 Text="Reads every tool in one pass. Nothing is deleted until you choose it." />
+    <!--
+      One primary action, as everywhere else. The two that remove things are danger. "Scan and clean" asks once,
+      for everything. "Scan and auto clean" is the only action in the app that does not ask, and the line under
+      the buttons says so.
+    -->
+    <StackPanel Grid.Row="2" Spacing="{StaticResource Space2}">
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space3}">
+        <Button Classes="primary" Content="Scan everything" Command="{Binding ScanEverythingCommand}" />
+        <Button Classes="danger" Content="Scan and clean" Command="{Binding ScanAndCleanCommand}" />
+        <Button Classes="danger" Content="Scan and auto clean" Command="{Binding ScanAndAutoCleanCommand}" />
+        <Button Content="Stop scan" Command="{Binding CancelScanCommand}" IsVisible="{Binding IsScanning}" />
+      </StackPanel>
+      <TextBlock Classes="heroCaption" TextWrapping="Wrap"
+                 Text="Scan everything deletes nothing. Scan and clean asks once before removing what is ticked. Scan and auto clean removes what is ticked without asking." />
     </StackPanel>
 
   </Grid>
