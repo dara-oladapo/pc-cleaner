@@ -5,8 +5,9 @@
     so this sits beside PcCleaner.App rather than replacing it, and both drive the same view models from
     PcCleaner.Presentation.
 
-    Plain net10.0, so unlike PcCleaner.App it restores and builds on every OS. Today only Platforms/Linux exists. Its
-    junk scanner (#10) and startup manager (#12) are real; the other services are stubs, each with its own issue (#11, #13).
+    Plain net10.0, so unlike PcCleaner.App it restores and builds on every OS. Today only Platforms/Linux exists. The junk
+    scanner (#10), startup manager (#12), folder picker and theme service (#13) are real; the other services are stubs, each
+    with its own issue (#11).
     Every screen and the design system are ported (#9); DESIGN.md lists where the two front ends deliberately differ.
     Shipped as an AppImage via Velopack (#14, README).
   -->
