@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.DevCleanup;
 using PcCleaner.Core.Platform.Linux;
 using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Settings;
@@ -62,6 +63,25 @@ public static class AppServices
         services.AddSingleton<PcCleaner.Presentation.Services.ISettingsStore, PresentationSettingsStore>();
         services.AddSingleton<ITopLevelAccessor, DesktopLifetimeTopLevelAccessor>();
 
+        // Volumes for the "Volumes to scan" setting; DriveInfo enumerates, there is no Linux traits probe yet.
+        // Factories because both classes also have test constructors.
+        services.AddSingleton<IVolumeSource>(sp => new DriveInfoVolumeSource(sp.GetService<IVolumeTraitsProbe>()));
+        services.AddSingleton<IVolumeCatalog>(sp => new VolumeCatalog(sp.GetRequiredService<IVolumeSource>()));
+        services.AddSingleton<ScanVolumeSettings>();
+
+        // Cloud Drives and Developer are MAUI-only tools for now. The dashboard composes their view models, so
+        // they are registered, but the Linux scanner finds no sync roots and developer mode has no providers.
+        services.AddSingleton<ICloudDriveScanner, InertCloudDriveScanner>();
+        services.AddSingleton<ICloudFileReleaser, InertCloudFileReleaser>();
+        services.AddSingleton<CloudSpaceService>();
+        services.AddSingleton<CloudLocationGuard>();
+        services.AddSingleton<DeveloperModeSettings>();
+        services.AddSingleton(sp =>
+        {
+            var developerMode = sp.GetRequiredService<DeveloperModeSettings>();
+            return new DevCleanupService([], () => developerMode.IsEnabled);
+        });
+
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IUpdateService, UpdateService>();                   // Velopack; AppImage only
         services.AddSingleton<INavigationService, ShellNavigationService>();
@@ -77,6 +97,8 @@ public static class AppServices
         services.AddSingleton<DuplicateFinderViewModel>();
         services.AddSingleton<LargeFilesViewModel>();
         services.AddSingleton<StartupManagerViewModel>();
+        services.AddSingleton<CloudDrivesViewModel>();
+        services.AddSingleton<DeveloperCleanupViewModel>();
         services.AddSingleton<DashboardViewModel>();
 
         services.AddSingleton<ThemeViewModel>();

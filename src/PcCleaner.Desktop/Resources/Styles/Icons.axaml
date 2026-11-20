@@ -27,6 +27,12 @@
   <!-- An open-topped box with something leaving it: apps launching at login. -->
   <StreamGeometry x:Key="IconStartup">M4,4 L4,16 L16,16 L16,4 M10,13 L10,3.5 M7,6.5 L10,3.5 L13,6.5</StreamGeometry>
 
+  <!-- A cloud with a download arrow: files kept online, the local copy released. -->
+  <StreamGeometry x:Key="IconCloud">M6,14.5 A3.5,3.5 0 0 1 5.6,7.5 A4.5,4.5 0 0 1 14.2,6.8 A3.8,3.8 0 0 1 14.5,14.5 M10,10 L10,17.5 M7.8,15.3 L10,17.5 L12.2,15.3</StreamGeometry>
+
+  <!-- Angle brackets and a slash: code. -->
+  <StreamGeometry x:Key="IconDeveloper">M6.5,5.5 L2.5,10 L6.5,14.5 M13.5,5.5 L17.5,10 L13.5,14.5 M11.5,4 L8.5,16</StreamGeometry>
+
   <!-- Circle drawn as two half-arcs so the sweep direction is unambiguous. -->
   <StreamGeometry x:Key="IconAbout">M2.8,10 A7.2,7.2 0 0 1 17.2,10 A7.2,7.2 0 0 1 2.8,10 M10,9.2 L10,13.6 M10,6.4 L10,7</StreamGeometry>
 
