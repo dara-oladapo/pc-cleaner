@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Core.Startup.Linux;
 using PcCleaner.Desktop.Platforms.Linux;
 using PcCleaner.Desktop.Services;
 using PcCleaner.Desktop.ViewModels;
@@ -38,11 +39,13 @@ public static class AppServices
         // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
         services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
 
-        // Platform-specific. Linux is the only platform this front end serves today; every one of these is a
-        // stub that touches nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. Each has its own issue; the
+        // ones still marked as stubs touch nothing.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
-        services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
+        // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
+        // every CI platform; this just binds it to the real environment and the real systemctl.
+        services.AddSingleton<IStartupItemManager>(_ => LinuxStartupItemManager.CreateForCurrentProcess());
         services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();         // #13
         services.AddSingleton<IThemeService, LinuxThemeService>();                // #13
 
