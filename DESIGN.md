@@ -72,7 +72,7 @@ Selection shows as a tinted row background. MAUI hands the `Selected` visual sta
 ## Components (`Resources/Styles/Styles.xaml`)
 
 - **`PrimaryButton`** — solid `Signal` fill, 4px radius (not pill-shaped — reads as an instrument control). One per screen: the action you came to that screen to take.
-- **`DangerButton`** — same shape, `Danger` fill. Destructive actions only, and always paired with a confirmation.
+- **`DangerButton`** — same shape, `Danger` fill. Destructive actions only, and always paired with a confirmation. The single exception is the dashboard's "Scan and auto clean", which exists to skip the confirmation; the line under the dashboard buttons says so in plain words.
 - **Default `Button`** — ghost/outline, for secondary actions (Stop scan, Add, Browse).
 - **`InlineButton`** — compact ghost button for in-row actions (Remove, Enable/Disable, Select none).
 - **`Card`** / **`RowCard`** — raised containers. Result rows are cards rather than hairline-separated bands: at twenty-plus results the hairline version read as one undifferentiated wall.
@@ -104,7 +104,7 @@ The dashboard is the single exception: "2 of 4 tools finished" is a real fractio
 
 **Every prompt, dialog, and alert is app UI.** No screen ever calls `DisplayAlert` or any other platform dialog. An OS alert ignores the design system, renders differently on Windows and Mac Catalyst, can't show what is about to be deleted, and reads as a system warning rather than part of this app — which would make the most consequential moment in the product the least consistent one. `Controls/DialogHost.xaml` is the app's own dialog: a scrim plus a centred card, hosted in every page's outer `Grid` and invisible until a view model asks for one. (It's also why the build no longer emits CS0618 — `Page.DisplayAlert` is obsolete in .NET 10.)
 
-Every delete goes through `IDialogService.ConfirmAsync` before anything is touched. The copy differs by consequence:
+Every delete goes through `IDialogService.ConfirmAsync` before anything is touched, except a dashboard "Scan and auto clean", which the user chooses precisely to skip it. A dashboard "Scan and clean" shows one dialog for all tools, with a line per tool saying what happens to its items; the tools then clean without asking again. The copy differs by consequence:
 
 - Junk cleaning is a **permanent** delete (`IJunkCleaner` deliberately bypasses the Recycle Bin, since caches are regenerable and filling the bin with them defeats the point). Its dialog says so, names the size, and its affirmative is `Danger`.
 - Duplicates and large files are the user's own files and go to the Recycle Bin. Their dialogs name the destination and say it can be restored.

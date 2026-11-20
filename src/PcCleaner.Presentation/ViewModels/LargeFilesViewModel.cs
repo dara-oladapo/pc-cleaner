@@ -128,7 +128,10 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanDeleteSelected))]
-    private async Task DeleteSelectedAsync()
+    private Task DeleteSelectedAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>Moves what is ticked to the Recycle Bin. <paramref name="confirm"/> is false only for a dashboard run.</summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
         var selected = Files.Where(f => f.IsSelected).ToList();
         if (selected.Count == 0)
@@ -140,7 +143,7 @@ public sealed partial class LargeFilesViewModel : ScanRootsViewModel
 
         // These are the user's own files, not regenerable junk, so they go to the Recycle Bin — but they
         // still deserve a confirmation that says how much and where it is going.
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Move {selected.Count} file(s) to the Recycle Bin?",
             message: $"This frees {ByteSizeFormatter.Format(bytes)}. These are your own files, not junk — you can restore them from the Recycle Bin.",
             acceptText: "Move to Recycle Bin",

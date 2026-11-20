@@ -148,7 +148,10 @@ public sealed partial class DeveloperCleanupViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanClean))]
-    private async Task CleanAsync()
+    private Task CleanAsync() => CleanSelectedAsync(confirm: true);
+
+    /// <summary>Runs the ticked cleanup actions. <paramref name="confirm"/> is false only for a dashboard run.</summary>
+    public async Task CleanSelectedAsync(bool confirm)
     {
         var selected = Items.Where(i => i.IsSelected).ToList();
         if (selected.Count == 0)
@@ -165,7 +168,7 @@ public sealed partial class DeveloperCleanupViewModel : ObservableObject
             message += " " + string.Join(" ", warnings);
         }
 
-        bool confirmed = await _dialogs.ConfirmAsync(
+        bool confirmed = !confirm || await _dialogs.ConfirmAsync(
             title: $"Run {selected.Count} developer cleanup action(s)?",
             message: message,
             acceptText: "Clean up",

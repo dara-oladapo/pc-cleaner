@@ -4,7 +4,7 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 
 ## Features
 
-- **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) and one "Scan everything" button that runs every tool in one pass, with a summary card per tool.
+- **Dashboard** — opens on your drive drawn as a single capacity bar (occupied / reclaimable / free) with a row per tool and a row per drive or volume, each with a tick. A tool's row expands to its own parts (junk categories, duplicate groups, large files, cloud folders, developer actions), ticked the same way as on the tool's page. Three actions run whatever is ticked: **Scan everything** reads and deletes nothing, **Scan and clean** asks once for all tools and then cleans, and **Scan and auto clean** cleans without asking.
 - **Junk Cleanup** — finds temp files, browser caches, OS logs, and package manager caches (npm/pip/NuGet/Homebrew), developer tool caches (Yarn, pnpm, Gradle, Cargo, Go, VS Code, JetBrains, Playwright, Xcode DeviceSupport), groups them by category, reports reclaimable size, and deletes what you select after confirming. Large, slow-to-rebuild stores (NuGet global packages, Gradle, Cargo, pnpm, Playwright browsers, Xcode DeviceSupport, JetBrains indexes) are listed but left unticked.
 - **Duplicates** — scans folders you choose (plus sensible defaults), groups files by content hash, and moves selected copies to the Recycle Bin / Trash (never a hard delete).
 - **Large Files** — lists everything over 100 MB in those folders, biggest first, with the date each file last changed.
@@ -14,7 +14,7 @@ A free, no-paywall system cleanup utility for Windows and macOS (Linux planned).
 - **Appearance** — Light, Dark, or System (the default), chosen from the navigation rail and remembered across restarts. System keeps following the OS rather than sampling it once at launch.
 - **About / Updates** — shows the installed version and checks GitHub Releases for a newer one via [Velopack](https://velopack.io); download-and-restart happens in-app, no browser round-trip.
 
-Nothing is deleted without a confirmation that says what will go and whether it can be recovered. Junk is deleted permanently (caches are regenerable, and filling the Recycle Bin with them defeats the point); your own files always go to the Recycle Bin / Trash instead.
+Nothing is deleted without a confirmation that says what will go and whether it can be recovered, with one exception you choose each time: the dashboard's **Scan and auto clean**. It removes exactly what is ticked after the scan and nothing else. The default ticks are the same as everywhere else in the app: large files start unticked, one copy of every duplicate is kept, the large slow-to-rebuild caches and Docker volumes stay unticked, and cloud files are made online-only, never deleted. A scan that was stopped never goes on to clean. Junk is deleted permanently (caches are regenerable, and filling the Recycle Bin with them defeats the point); your own files always go to the Recycle Bin / Trash instead.
 
 ## Architecture
 
