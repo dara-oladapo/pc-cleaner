@@ -30,7 +30,7 @@
 
         <StackPanel Spacing="{StaticResource Space1}">
           <TextBlock Classes="eyebrow" Text="SOURCE" />
-          <TextBlock Classes="mono" Text="github.com/dara-oladapo/pc-cleaner" />
+          <TextBlock Classes="mono" Text="github.com/wiselead-oss/pc-cleaner" />
         </StackPanel>
 
       </StackPanel>
