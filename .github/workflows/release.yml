@@ -107,7 +107,7 @@ jobs:
           --mainExe PcCleaner.App.exe
           --icon publish/win-x64/appicon.ico
           --packTitle "PC Cleaner"
-          --packAuthors "Dara Oladapo"
+          --packAuthors "WiseLead Solutions"
           --outputDir releases/win
           -y
 
@@ -321,7 +321,7 @@ jobs:
             --packDir "${{ steps.app.outputs.path }}" \
             --mainExe "${{ steps.app.outputs.exe }}" \
             --packTitle "PC Cleaner" \
-            --packAuthors "Dara Oladapo" \
+            --packAuthors "WiseLead Solutions" \
             --outputDir releases/osx \
             -y \
             "${SIGN_ARGS[@]}"

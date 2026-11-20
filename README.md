@@ -1,6 +1,6 @@
 # PC Cleaner
 
-A free, no-paywall system cleanup utility for Windows and macOS (Linux planned). No subscriptions, no "upgrade to clean more than 500 MB" — everything in this repo is fully functional.
+PC Cleaner, by [WiseLead Solutions](https://github.com/wiselead-solutions), is a free and open source system cleanup utility for Windows and macOS (Linux planned). No subscriptions, no "upgrade to clean more than 500 MB", no license keys. Everything in this repo is fully functional, and it is licensed under the [Apache License 2.0](LICENSE).
 
 ## Features
 
@@ -96,7 +96,7 @@ vpk pack `
   --packId PCCleaner --packVersion 1.0.0 `
   --packDir publish/win-x64 --mainExe PcCleaner.App.exe `
   --icon publish/win-x64/appicon.ico `
-  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" `
+  --packTitle "PC Cleaner" --packAuthors "WiseLead Solutions" `
   --outputDir releases/win
 ```
 
@@ -116,7 +116,7 @@ plutil -convert xml1 -o /tmp/PcCleaner.entitlements src/PcCleaner.App/Platforms/
 vpk pack \
   --packId PCCleaner --packVersion 1.0.0 --channel osx \
   --packDir "src/PcCleaner.App/bin/Release/net10.0-maccatalyst/PC Cleaner.app" --mainExe PcCleaner.App \
-  --packTitle "PC Cleaner" --packAuthors "Dara Oladapo" \
+  --packTitle "PC Cleaner" --packAuthors "WiseLead Solutions" \
   --signAppIdentity=- --signEntitlements /tmp/PcCleaner.entitlements \
   --outputDir releases/osx
 ```
@@ -179,3 +179,11 @@ After installing, grant **Full Disk Access** (System Settings → Privacy & Secu
 - **Folder picking** uses the native OS browser (`Windows.Storage.Pickers.FolderPicker` on Windows, `UIDocumentPickerViewController` on macOS) via `IFolderPickerService`, with the typed-path entry kept as a fallback. `CommunityToolkit.Maui`'s `FolderPicker` is still unusable here — its current version requires a newer `Microsoft.Maui.Controls` than this SDK's `maui-windows`/`maccatalyst` workload ships, causing a version-downgrade conflict — hence the hand-rolled platform services.
 - **Recycle Bin / Trash failures on system-owned junk paths** (e.g. `C:\Windows\SoftwareDistribution\Download`, `/Library/Caches`) are expected without elevated privileges — the cleaner reports these as partial failures rather than crashing, but doesn't yet prompt for elevation.
 - Startup item disabling for **system-scope** entries (`HKLM` Run keys on Windows, `/Library/LaunchAgents`, `/Library/LaunchDaemons` on macOS) requires admin/root and will throw; the UI surfaces the error but doesn't yet offer an elevation prompt.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building, testing and what a good pull request looks like. Security problems go through [SECURITY.md](SECURITY.md), not a public issue.
+
+## License
+
+PC Cleaner is open source under the [Apache License 2.0](LICENSE), copyright 2026 WiseLead Solutions. Third-party software and fonts are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The name "PC Cleaner", the WiseLead name and the icon are trademarks and are not covered by the code licence; see [TRADEMARKS.md](TRADEMARKS.md).
