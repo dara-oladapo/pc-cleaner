@@ -11,13 +11,14 @@ public sealed partial class DuplicateGroupViewModel : ObservableObject
 
     public ObservableCollection<FileEntryViewModel> Files { get; }
 
-    public DuplicateGroupViewModel(DuplicateGroup model)
+    /// <param name="cloudLookup">Finds the cloud drive folder a path is in. Copies in one are marked cloud only and never ticked.</param>
+    public DuplicateGroupViewModel(DuplicateGroup model, Func<string, CloudSyncRoot?>? cloudLookup = null)
     {
         Model = model;
 
         // Keep the first copy unselected by default; pre-select the rest as the ones to remove.
         var fileVms = model.Files
-            .Select((f, index) => new FileEntryViewModel(f) { IsSelected = index > 0 })
+            .Select((f, index) => new FileEntryViewModel(f, cloudLookup?.Invoke(f.Path)) { IsSelected = index > 0 })
             .ToList();
 
         foreach (var fileVm in fileVms)
@@ -33,6 +34,9 @@ public sealed partial class DuplicateGroupViewModel : ObservableObject
 
         Files = new ObservableCollection<FileEntryViewModel>(fileVms);
     }
+
+    /// <summary>How many copies are in a cloud drive. They stay, whatever else is ticked.</summary>
+    public int CloudCopyCount => Files.Count(f => f.IsCloudOnly);
 
     public string SizeEachText => ByteSizeFormatter.Format(Model.SizeBytesEach);
 

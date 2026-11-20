@@ -6,6 +6,7 @@
         x:Class="PcCleaner.Desktop.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="PC Cleaner"
+        Icon="avares://PcCleaner.Desktop/Assets/pccleaner.png"
         Width="1120" Height="780"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen">
@@ -18,6 +19,9 @@
   <Window.DataTemplates>
     <DataTemplate DataType="pvm:JunkCleanupViewModel">
       <views:JunkCleanupView />
+    </DataTemplate>
+    <DataTemplate DataType="pvm:AboutViewModel">
+      <views:AboutView />
     </DataTemplate>
     <DataTemplate DataType="vm:NotPortedPage">
       <StackPanel Margin="32" Spacing="8">

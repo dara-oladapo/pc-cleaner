@@ -74,6 +74,7 @@ public sealed partial class ShellViewModel : ObservableObject
     private object Resolve(NavItem item) => item.Route switch
     {
         "junk" => _services.GetRequiredService<JunkCleanupViewModel>(),
+        "about" => _services.GetRequiredService<AboutViewModel>(),
         _ => new NotPortedPage(item.Title),
     };
 }
