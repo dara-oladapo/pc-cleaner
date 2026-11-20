@@ -44,8 +44,9 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
         IDuplicateFileScanner scanner,
         IFileTrasher trasher,
         IDialogService dialogs,
-        IFolderPickerService folderPicker)
-        : base(folderPicker)
+        IFolderPickerService folderPicker,
+        ScanVolumeSettings volumeSettings)
+        : base(folderPicker, volumeSettings)
     {
         _scanner = scanner;
         _trasher = trasher;
@@ -57,9 +58,10 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task ScanAsync()
     {
-        if (RootPaths.Count == 0)
+        var plan = PlanScan();
+        if (plan.Roots.Count == 0)
         {
-            StatusText = "Add at least one folder first.";
+            StatusText = NothingToScanText(plan);
             return;
         }
 
@@ -79,7 +81,7 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
 
         try
         {
-            await foreach (var group in _scanner.ScanAsync(RootPaths.ToList(), MinFileSizeBytes, _scanCts.Token, walkProgress))
+            await foreach (var group in _scanner.ScanAsync(plan.Roots, MinFileSizeBytes, _scanCts.Token, walkProgress))
             {
                 var vm = new DuplicateGroupViewModel(group);
                 vm.PropertyChanged += OnGroupPropertyChanged;
@@ -88,9 +90,11 @@ public sealed partial class DuplicateFinderViewModel : ScanRootsViewModel
                 UpdateShares();
             }
 
-            StatusText = Groups.Count == 0
-                ? "No duplicates found in these folders."
-                : $"Found {Groups.Count} group(s) of identical files.";
+            StatusText = WithSkippedNote(
+                Groups.Count == 0
+                    ? "No duplicates found in these folders."
+                    : $"Found {Groups.Count} group(s) of identical files.",
+                plan);
         }
         catch (OperationCanceledException)
         {

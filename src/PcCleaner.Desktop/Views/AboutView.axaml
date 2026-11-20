@@ -36,7 +36,8 @@
       </StackPanel>
     </ScrollViewer>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}">
+    <!-- Only a copy that can update itself (the release AppImage) gets update buttons; any other copy shows the reason in the status line above (#14). -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{StaticResource Space3}" IsVisible="{Binding CanSelfUpdate}">
       <Button Classes="primary" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
       <Button Content="Download and restart" Command="{Binding DownloadAndRestartCommand}" IsVisible="{Binding UpdateReady}" />
       <ProgressBar Classes="activity" IsVisible="{Binding IsBusy}" />
