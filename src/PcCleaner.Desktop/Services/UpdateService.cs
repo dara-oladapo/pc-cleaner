@@ -31,7 +31,7 @@ namespace PcCleaner.Desktop.Services;
 /// </remarks>
 public sealed class UpdateService : IUpdateService
 {
-    private const string RepoUrl = "https://github.com/dara-oladapo/pc-cleaner";
+    private const string RepoUrl = "https://github.com/wiselead-oss/pc-cleaner";
 
     /// <summary>Set by the AppImage runtime to the path of the .AppImage file; unset for any other launch.</summary>
     public const string AppImageVariable = "APPIMAGE";

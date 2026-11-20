@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.Platform.Linux;
 using PcCleaner.Core.Scanning;
+using PcCleaner.Core.Startup.Linux;
 using PcCleaner.Desktop.Platforms.Linux;
 using PcCleaner.Desktop.Services;
 using PcCleaner.Desktop.ViewModels;
@@ -42,11 +43,13 @@ public static class AppServices
         // TODO(#10 follow-up): JunkCleaner does not re-check for mount points at clean time; see LinuxJunkCleaner.
         services.AddSingleton<IJunkCleaner>(_ => new LinuxJunkCleaner(new JunkCleaner()));
 
-        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner is real
-        // (and read-only); every other one is a stub that touches nothing, and each has its own issue.
+        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner (#10) and the
+        // startup manager (#12) are real; every other one is a stub that touches nothing, and each has its own issue.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11
-        services.AddSingleton<IStartupItemManager, LinuxStartupManager>();        // #12
+        // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
+        // every CI platform; this just binds it to the real environment and the real systemctl.
+        services.AddSingleton<IStartupItemManager>(_ => LinuxStartupItemManager.CreateForCurrentProcess());
         services.AddSingleton<IFolderPickerService, LinuxFolderPicker>();         // #13
         services.AddSingleton<IThemeService, LinuxThemeService>();                // #13
 

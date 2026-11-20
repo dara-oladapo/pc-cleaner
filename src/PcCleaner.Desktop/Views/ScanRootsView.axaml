@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pvm="using:PcCleaner.Presentation.ViewModels"
+             x:Class="PcCleaner.Desktop.Views.ScanRootsView"
+             x:DataType="pvm:ScanRootsViewModel"
+             x:Name="Root">
+
+  <!--
+    "Folders to scan": the list of roots, then Browse / type a path / Add. Duplicates and Large Files both open with
+    this block, and both view models get it from ScanRootsViewModel, so on this side it is one control bound to the
+    base class instead of the same markup pasted into two pages as on MAUI.
+  -->
+  <StackPanel Spacing="{StaticResource Space2}">
+    <TextBlock Classes="eyebrow" Text="FOLDERS TO SCAN" />
+
+    <!-- A capped, scrolling list, so a long list of roots can't push the results off screen. MaxHeight rather than
+         MAUI's fixed HeightRequest="84" (which a CollectionView needs): one or two roots don't leave a blank well. -->
+    <ScrollViewer MaxHeight="84">
+      <ItemsControl ItemsSource="{Binding RootPaths}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,3,12,3">
+              <TextBlock Grid.Column="0" Classes="mono path" Text="{Binding}" VerticalAlignment="Center" />
+              <!-- RemoveFolderCommand already takes the path, so the row reaches the view model directly. -->
+              <Button Grid.Column="1" Classes="inline" Content="Remove"
+                      Command="{Binding #Root.((pvm:ScanRootsViewModel)DataContext).RemoveFolderCommand}"
+                      CommandParameter="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}">
+      <Button Grid.Column="0" Content="Browse…" Command="{Binding BrowseFolderCommand}" />
+      <TextBox Grid.Column="1" Watermark="…or type a folder path" Text="{Binding NewFolderPath}" />
+      <Button Grid.Column="2" Content="Add" Command="{Binding AddFolderCommand}" />
+    </Grid>
+  </StackPanel>
+</UserControl>
