@@ -2,12 +2,16 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Elevation;
+using PcCleaner.Presentation.Services;
 
 namespace PcCleaner.Presentation.ViewModels;
 
 public sealed partial class StartupManagerViewModel : ObservableObject
 {
     private readonly IStartupItemManager _manager;
+    private readonly IElevationService _elevation;
+    private readonly IDialogService _dialogs;
 
     public ObservableCollection<StartupItemViewModel> Items { get; } = [];
 
@@ -20,9 +24,11 @@ public sealed partial class StartupManagerViewModel : ObservableObject
     [ObservableProperty]
     public partial string ItemCountText { get; set; } = "0";
 
-    public StartupManagerViewModel(IStartupItemManager manager)
+    public StartupManagerViewModel(IStartupItemManager manager, IElevationService elevation, IDialogService dialogs)
     {
         _manager = manager;
+        _elevation = elevation;
+        _dialogs = dialogs;
     }
 
     [RelayCommand(CanExecute = nameof(CanLoad))]
@@ -67,13 +73,56 @@ public sealed partial class StartupManagerViewModel : ObservableObject
             StatusText = $"{item.Name} {(newState ? "enabled" : "disabled")}.";
             await LoadAsync();
         }
-        catch (Exception ex)
+        catch (ElevationRequiredException)
         {
-            StatusText = $"Couldn't update {item.Name}: {ex.Message} (this may need administrator/root privileges).";
+            await ToggleElevatedAsync(item, newState);
+        }
+        catch (Exception)
+        {
+            StatusText = $"Couldn't update {item.Name}. It may have been changed or removed by another app — reload and try again.";
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>Asks first, then retries one system-scope toggle through the OS elevation prompt (issue #3).</summary>
+    private async Task ToggleElevatedAsync(StartupItemViewModel item, bool newState)
+    {
+        if (!_elevation.CanElevate(item.Model))
+        {
+            StatusText = $"Couldn't update {item.Name}: it needs administrator permission, which PC Cleaner can't request for this entry.";
+            return;
+        }
+
+        bool confirmed = await _dialogs.ConfirmAsync(
+            title: "Needs administrator permission — continue?",
+            message: $"{item.Name} starts for every user on this computer, so {(newState ? "enabling" : "disabling")} it needs administrator permission. Your system will ask you to approve this one change.",
+            acceptText: "Continue",
+            cancelText: "Cancel");
+
+        if (!confirmed)
+        {
+            StatusText = $"{item.Name} was not changed.";
+            return;
+        }
+
+        ElevationResult result = await _elevation.SetStartupItemEnabledAsync(item.Model, newState);
+        StatusText = result.Status switch
+        {
+            ElevationStatus.Succeeded => $"{item.Name} {(newState ? "enabled" : "disabled")}.",
+            ElevationStatus.Cancelled => $"{item.Name} was not changed — administrator permission was not given.",
+            ElevationStatus.Rejected => $"Couldn't update {item.Name}: PC Cleaner can't change this entry with administrator permission.",
+            _ => $"Couldn't update {item.Name}, even with administrator permission. Reload and try again.",
+        };
+
+        // A toggle is all-or-nothing: anything but full success (including "partial") is reported as a failure.
+        if (result.Status == ElevationStatus.Succeeded)
+        {
+            string message = StatusText;
+            await LoadAsync();
+            StatusText = message;
         }
     }
 

@@ -1,4 +1,5 @@
 using PcCleaner.Core.Abstractions;
+using PcCleaner.Core.Elevation;
 using PcCleaner.Core.Models;
 using PcCleaner.Presentation.Services;
 using PcCleaner.Presentation.ViewModels;
@@ -248,6 +249,20 @@ public class DashboardRunnerTests
 
     // The junk tool is the one that deletes permanently, so its two entry points are pinned down directly.
 
+    /// <summary>These tests never fail a clean, so elevation is never offered.</summary>
+    private sealed class NoElevation : IElevationService
+    {
+        public bool CanElevate(StartupItem item) => false;
+
+        public Task<ElevationResult> SetStartupItemEnabledAsync(StartupItem item, bool enabled, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ElevationResult.Rejected);
+
+        public IReadOnlyList<string> GetElevatableJunkRoots(IEnumerable<string> failedPaths) => [];
+
+        public Task<ElevationResult> CleanJunkRootsAsync(IReadOnlyList<string> roots, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ElevationResult.Rejected);
+    }
+
     private sealed class FakeJunkScanner(params JunkItem[] items) : IJunkScanner
     {
         public async IAsyncEnumerable<JunkItem> ScanAsync(
@@ -282,7 +297,7 @@ public class DashboardRunnerTests
     {
         var dialogs = new FakeDialogs(answer: false);
         var cleaner = new FakeJunkCleaner();
-        var vm = new JunkCleanupViewModel(new FakeJunkScanner(Junk("a"), Junk("big-store", selectedByDefault: false)), cleaner, dialogs);
+        var vm = new JunkCleanupViewModel(new FakeJunkScanner(Junk("a"), Junk("big-store", selectedByDefault: false)), cleaner, dialogs, new NoElevation());
         await vm.ScanCommand.ExecuteAsync(null);
 
         await vm.CleanSelectedAsync(confirm: false);
@@ -297,7 +312,7 @@ public class DashboardRunnerTests
     {
         var dialogs = new FakeDialogs(answer: false);
         var cleaner = new FakeJunkCleaner();
-        var vm = new JunkCleanupViewModel(new FakeJunkScanner(Junk("a")), cleaner, dialogs);
+        var vm = new JunkCleanupViewModel(new FakeJunkScanner(Junk("a")), cleaner, dialogs, new NoElevation());
         await vm.ScanCommand.ExecuteAsync(null);
 
         await vm.CleanCommand.ExecuteAsync(null);
