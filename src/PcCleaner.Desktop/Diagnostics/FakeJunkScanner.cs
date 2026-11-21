@@ -6,13 +6,13 @@ using PcCleaner.Core.Models;
 namespace PcCleaner.Desktop.Diagnostics;
 
 /// <summary>
-/// Debug-only stand-in for the Linux junk scanner (#10), selected by <c>PCCLEANER_FAKE_SCAN=1</c>.
+/// Debug-only alternative to the Linux junk scanner, selected by <c>PCCLEANER_FAKE_SCAN=1</c>.
 /// </summary>
 /// <remarks>
 /// Yields a fixed set of invented results, one at a time with a short delay, so the junk screen's streaming
 /// <c>ObservableCollection</c>, grouping, meters, and selection totals can be seen working under Avalonia.
 /// It never reads or writes the file system: every path is under a directory that does not exist and is
-/// never created, and the scaffold's cleaner is inert anyway.
+/// never created, so the real cleaner, which skips a missing directory, has nothing to delete if you press Clean.
 /// </remarks>
 internal sealed class FakeJunkScanner : IJunkScanner
 {

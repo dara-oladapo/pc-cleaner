@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PcCleaner.Core.Abstractions;
 using PcCleaner.Core.DevCleanup;
+using PcCleaner.Core.Platform.Linux;
 using PcCleaner.Core.Scanning;
 using PcCleaner.Core.Settings;
 using PcCleaner.Core.Startup.Linux;
@@ -36,13 +37,16 @@ public static class AppServices
         services.AddSingleton<IDuplicateFileScanner, DuplicateFileScanner>();
         services.AddSingleton<IDriveSpaceReader, DriveSpaceReader>();
 
-        // Not Core's JunkCleaner yet, although it is cross-platform. Until the Linux scanner (#10) exists, the
-        // only things the junk list can contain are the synthetic Debug results below, and nothing in this
-        // scaffold should be able to delete a file. Swap to JunkCleaner in the same change that lands #10.
-        services.AddSingleton<IJunkCleaner, InertJunkCleaner>();
+        // Core's real cleaner, now that the Linux scanner (#10) decides what the junk list holds. Junk is
+        // regenerable cache, so it is deleted outright, exactly as on Windows and macOS. The home Trash is the one
+        // exception to "delete every file": LinuxJunkCleaner empties it by the freedesktop spec (files/ and info/
+        // stay, each entry goes with its .trashinfo). Only junk: duplicates and large files still go through
+        // LinuxFileTrasher below, which stays a stub that moves nothing.
+        // TODO(#10 follow-up): JunkCleaner does not re-check for mount points at clean time; see LinuxJunkCleaner.
+        services.AddSingleton<IJunkCleaner>(_ => new LinuxJunkCleaner(new JunkCleaner()));
 
-        // Platform-specific. Linux is the only platform this front end serves today. Apart from the junk scanner (#10),
-        // which is still a stub, each of these is real: the trash (#11), startup items (#12), folder picker and theme (#13).
+        // Platform-specific. Linux is the only platform this front end serves today. The junk scanner (#10), trash (#11),
+        // startup items (#12), folder picker and theme (#13) are all real.
         services.AddSingleton(_ => CreateJunkScanner());                          // #10
         services.AddSingleton<IFileTrasher, LinuxFileTrasher>();                  // #11: freedesktop Trash spec
         // #12: XDG autostart + systemd user units. The logic lives in Core (Startup/Linux) so it is unit-tested on
